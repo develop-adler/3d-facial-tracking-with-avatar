@@ -109,6 +109,7 @@ export const getEyebrowRaise = (
     return normalize(dist / faceSize, 0.025, 0.045);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getBrowWeights = (annotations: any, faceSize: number) => {
     const getMid = (arr: number[][]) =>
         Vector3.FromArray(arr.at(getCenterIndex(arr.length))!);
@@ -140,7 +141,9 @@ export const getBrowWeights = (annotations: any, faceSize: number) => {
         browDownRight: 1 - normalize(0.1 - rightOuterDist, 0.0, 0.04),
     };
 };
-const getEyeLookWeights = (
+
+export const getEyeLookWeights = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     annotations: any,
     faceSize: number
 ): Record<string, number> => {
@@ -169,6 +172,7 @@ const getEyeLookWeights = (
 };
 
 export const getJawOpenWeight = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     annotations: any,
     faceSize: number
 ): number => {
@@ -187,6 +191,7 @@ export const getJawOpenWeight = (
 };
 
 export const computeFaceWeights = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     annotations: any,
     faceSize: number
 ): Record<string, number> => {

@@ -172,6 +172,7 @@ export const TRIANGULATION = [
 // Triangle drawing method
 const drawPath = (
   ctx: CanvasRenderingContext2D,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   points: any[][],
   closePath: boolean
 ) => {
@@ -198,15 +199,18 @@ export const drawMesh = (
       //  Draw Triangles
       for (let i = 0; i < TRIANGULATION.length / 3; i++) {
         // Get sets of three keypoints for the triangle
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const points: any[][] = [
           TRIANGULATION[i * 3],
           TRIANGULATION[i * 3 + 1],
           TRIANGULATION[i * 3 + 2],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ].map((index) => (keypoints as any[][])[index]);
         //  Draw triangle
         drawPath(ctx, points, true);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const keypoint of keypoints as any[][]) {
         const x = keypoint[0];
         const y = keypoint[1];
@@ -234,4 +238,4 @@ export const normalize = (value: number, min: number, max: number): number =>
   Math.max(0, Math.min(1, (value - min) / (max - min)));
 
 // get center index of array
-export const getCenterIndex = (arrLength: number) =>  Math.floor(arrLength / 2);
+export const getCenterIndex = (arrLength: number) => Math.floor(arrLength / 2);

@@ -15,20 +15,20 @@ import { CoreScene } from "@/app/3d/CoreScene";
 import { Avatar } from "@/app/3d/Avatar";
 import {
   computeFaceWeights,
-  getEyeBlinkWeight,
-  getEyeBrowRaiseWeights,
   getFaceSize,
   getHeadRotationFromMesh,
-  getMouthOpenWeight,
 } from "@/app/utils/faceDetectionUtils";
 import { drawMesh } from "@/app/utils/utilities";
 
-const applyFaceWeightsToAvatar = (avatar: Avatar, weights: Record<string, number>) => {
+const applyFaceWeightsToAvatar = (
+  avatar: Avatar,
+  weights: Record<string, number>
+) => {
   if (!avatar.morphTargetManager) return;
 
   for (const [name, weight] of Object.entries(weights)) {
     const target = avatar.morphTargetManager.getTargetByName(name);
-    if (target)target.influence = weight;
+    if (target) target.influence = weight;
   }
 };
 
