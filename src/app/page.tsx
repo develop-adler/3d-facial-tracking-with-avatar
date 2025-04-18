@@ -15,10 +15,11 @@ import { CoreScene } from "@/app/3d/CoreScene";
 import { Avatar } from "@/app/3d/Avatar";
 import {
   computeFaceWeights,
-  getFaceSize,
+  getFaceWidth,
   getHeadRotationFromMesh,
 } from "@/app/utils/faceDetectionUtils";
 import { drawMesh } from "@/app/utils/utilities";
+import type { AnnotatedPrediction } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh";
 
 const applyFaceWeightsToAvatar = (
   avatar: Avatar,
@@ -48,8 +49,8 @@ export default function Home() {
       }
     );
     setInterval(() => {
-      detect(detector);
-    }, 1000 / 24);
+      detect(detector).then((faces) => faces && processFace(faces));
+    }, 1000 / 60);
   };
 
   const detect = async (detector: faceDetect.FaceLandmarksDetector) => {
@@ -70,66 +71,69 @@ export default function Home() {
     canvasRef.current.width = videoWidth;
     canvasRef.current.height = videoHeight;
 
-    const faces = await detector.estimateFaces({ input: video });
+    return await detector.estimateFaces({ input: video });
+  };
 
-    if (faces.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const face = faces[0] as any;
-      // console.log('face:', face);
+  const processFace = (faces: AnnotatedPrediction[]) => {
+    if (!canvasRef.current || faces.length < 1) return;
 
-      const annotations = face.annotations;
-      // console.log("annotations:", annotations);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const face = faces[0] as any;
 
-      const faceSize = getFaceSize(face.boundingBox);
-      // const mouthOpenWeight = getMouthOpenWeight(annotations, faceSize);
-      // const leftEyeBlinkWeight = getEyeBlinkWeight(
-      //   annotations.leftEyeUpper0,
-      //   annotations.leftEyeLower0,
-      //   faceSize
-      // );
-      // const rightEyeBlinkWeight = getEyeBlinkWeight(
-      //   annotations.rightEyeUpper0,
-      //   annotations.rightEyeLower0,
-      //   faceSize
-      // );
-      // const leftEyebrowRaiseWeight = getEyeBrowRaiseWeights(
-      //   annotations,
-      //   faceSize,
-      //   "leftEyebrowUpper",
-      //   "leftEyeUpper0"
-      // );
-      // const rightEyebrowRaiseWeight = getEyeBrowRaiseWeights(
-      //   annotations,
-      //   faceSize,
-      //   "rightEyebrowUpper",
-      //   "rightEyeUpper0"
-      // );
+    // console.log("face mesh:", face.mesh);
 
-      // console.log("Mouth Open Weight:", mouthOpenWeight);
-      // console.log("Left Eye Blink Weight:", leftEyeBlinkWeight);
-      // console.log("Right Eye Blink Weight:", rightEyeBlinkWeight);
-      // console.log("Left Eyebrow Raise Weight:", leftEyebrowRaiseWeight);
-      // console.log("Right Eyebrow Raise Weight:", rightEyebrowRaiseWeight);
+    const headRotation = getHeadRotationFromMesh(
+      face.mesh,
+      // correction for the head rotation
+      Quaternion.FromEulerAngles(Math.PI * 0.85, 0, 0)
+    );
 
-      if (!avatarRef.current) return;
+    const faceWidth = getFaceWidth(face.mesh, headRotation);
 
-      const faceWeights = computeFaceWeights(annotations, faceSize);
-      // console.log("Face Weights:", faceWeights);
-      applyFaceWeightsToAvatar(avatarRef.current, faceWeights);
+    // const mouthOpenWeight = getMouthOpenWeight(annotations, faceWidth);
+    // const leftEyeBlinkWeight = getEyeBlinkWeight(
+    //   annotations.leftEyeUpper0,
+    //   annotations.leftEyeLower0,
+    //   faceWidth
+    // );
+    // const rightEyeBlinkWeight = getEyeBlinkWeight(
+    //   annotations.rightEyeUpper0,
+    //   annotations.rightEyeLower0,
+    //   faceWidth
+    // );
+    // const leftEyebrowRaiseWeight = getEyeBrowRaiseWeights(
+    //   annotations,
+    //   faceWidth,
+    //   "leftEyebrowUpper",
+    //   "leftEyeUpper0"
+    // );
+    // const rightEyebrowRaiseWeight = getEyeBrowRaiseWeights(
+    //   annotations,
+    //   faceWidth,
+    //   "rightEyebrowUpper",
+    //   "rightEyeUpper0"
+    // );
 
-      // Sync head rotation with user's face
-      const headBoneNode = avatarRef.current.headBone?.getTransformNode();
-      if (headBoneNode && face.faceInViewConfidence >= 0.85) {
-        headBoneNode.rotationQuaternion = Quaternion.Slerp(
-          headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
-          getHeadRotationFromMesh(
-            face.mesh,
-            // correction for the head rotation
-            Quaternion.FromEulerAngles(Math.PI * 0.85, 0, 0)
-          ),
-          0.3
-        );
-      }
+    // console.log("Mouth Open Weight:", mouthOpenWeight);
+    // console.log("Left Eye Blink Weight:", leftEyeBlinkWeight);
+    // console.log("Right Eye Blink Weight:", rightEyeBlinkWeight);
+    // console.log("Left Eyebrow Raise Weight:", leftEyebrowRaiseWeight);
+    // console.log("Right Eyebrow Raise Weight:", rightEyebrowRaiseWeight);
+
+    if (!avatarRef.current) return;
+
+    const faceWeights = computeFaceWeights(face.mesh, faceWidth, headRotation);
+    // console.log("Face Weights:", faceWeights);
+    applyFaceWeightsToAvatar(avatarRef.current, faceWeights);
+
+    // Sync head rotation with user's face
+    const headBoneNode = avatarRef.current.headBone?.getTransformNode();
+    if (headBoneNode && face.faceInViewConfidence >= 0.85) {
+      headBoneNode.rotationQuaternion = Quaternion.Slerp(
+        headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
+        headRotation,
+        0.3
+      );
     }
 
     // Get canvas context

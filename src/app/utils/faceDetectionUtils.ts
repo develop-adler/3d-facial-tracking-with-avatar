@@ -1,61 +1,63 @@
-import { getCenterIndex, getDistance, normalize } from "@/app/utils/utilities";
+import { getCenterIndex, normalize } from "@/app/utils/utilities";
 
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
-export const getFaceSize = (boundingBox: {
-    topLeft: number[];
-    bottomRight: number[];
-}): number => {
-    const width = boundingBox.bottomRight[0] - boundingBox.topLeft[0];
-    const height = boundingBox.bottomRight[1] - boundingBox.topLeft[1];
-    return Math.sqrt(width ** 2 + height ** 2); // diagonal length
-};
+// export const getFaceSize = (boundingBox: {
+//     topLeft: number[];
+//     bottomRight: number[];
+// }): number => {
+//     const width = boundingBox.bottomRight[0] - boundingBox.topLeft[0];
+//     const height = boundingBox.bottomRight[1] - boundingBox.topLeft[1];
+//     return Math.sqrt(width ** 2 + height ** 2); // diagonal length
+// };
 
-export const getMouthOpenWeight = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    annotations: any,
-    faceSize: number
+// export const getFaceSize = (
+//     mesh: number[][],
+//     headRotation?: Quaternion
+// ): number => {
+//     const forehead = Vector3.FromArray(mesh[10]);
+//     const chin = Vector3.FromArray(mesh[152]);
+//     const leftEar = Vector3.FromArray(mesh[234]);
+//     const rightEar = Vector3.FromArray(mesh[454]);
+
+//     if (headRotation) {
+//         const invRot = headRotation.invert();
+//         const transform = Matrix.Identity();
+//         Matrix.FromQuaternionToRef(invRot, transform);
+
+//         const localForehead = Vector3.TransformCoordinates(forehead, transform);
+//         const localChin = Vector3.TransformCoordinates(chin, transform);
+//         const localLeftEar = Vector3.TransformCoordinates(leftEar, transform);
+//         const localRightEar = Vector3.TransformCoordinates(rightEar, transform);
+
+//         const vertical = Vector3.Distance(localChin, localForehead);
+//         const horizontal = Vector3.Distance(localLeftEar, localRightEar);
+//         return Math.sqrt(vertical ** 2 + horizontal ** 2); // diagonal
+//     }
+
+//     const vertical = Vector3.Distance(chin, forehead);
+//     const horizontal = Vector3.Distance(leftEar, rightEar);
+//     return Math.sqrt(vertical ** 2 + horizontal ** 2);
+// };
+
+export const getFaceWidth = (
+    mesh: number[][],
+    headRotation?: Quaternion
 ): number => {
-    const upper = annotations.lipsUpperInner[5];
-    const lower = annotations.lipsLowerInner[5];
-    const dist = getDistance(upper, lower);
-    return normalize(dist / faceSize, 0.01, 0.07); // 1 = fully open
-};
+    const leftEar = Vector3.FromArray(mesh[234]);
+    const rightEar = Vector3.FromArray(mesh[454]);
 
-/**
- * Calculates the weight of the eyebrow raise based on the distance between the upper brow and lower brow.
- * @param annotations Face detection annotations
- * @param faceSize The size of the face
- * @param upperBrow Key value for the upper brow
- * @param lowerBrow Key value for the lower brow
- * @param sensitivity The lower the value, the more sensitive the detection
- * @returns The weight of the eyebrow raise
- */
-export const getEyeBrowRaiseWeights = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    annotations: any,
-    faceSize: number,
-    upperBrowKey: string,
-    lowerRefKey: string
-): { inner: number; middle: number; outer: number } => {
-    const brow = annotations[upperBrowKey];
-    const eye = annotations[lowerRefKey];
+    if (headRotation) {
+        const invRot = headRotation.invert();
+        const transform = Matrix.Identity();
+        Matrix.FromQuaternionToRef(invRot, transform);
 
-    const getWeight = (
-        browIndex: number,
-        eyeIndex: number,
-        min: number,
-        max: number
-    ) => {
-        const dist = getDistance(brow[browIndex], eye[eyeIndex]);
-        return 1 - normalize(dist / faceSize, min, max);
-    };
+        const localLeftEar = Vector3.TransformCoordinates(leftEar, transform);
+        const localRightEar = Vector3.TransformCoordinates(rightEar, transform);
+        return Vector3.Distance(localLeftEar, localRightEar);
+    }
 
-    return {
-        inner: getWeight(0, 0, 0.03, 0.05),
-        middle: getWeight(2, 2, 0.02, 0.06),
-        outer: getWeight(4, 4, 0.03, 0.05),
-    };
+    return Vector3.Distance(leftEar, rightEar);
 };
 
 export const getHeadRotationFromMesh = (
@@ -88,64 +90,75 @@ export const getHeadRotationFromMesh = (
 };
 
 export const getEyeBlinkWeight = (
-    upper: number[][],
-    lower: number[][],
-    faceSize: number
+    upperIndex: number,
+    lowerIndex: number,
+    mesh: number[][],
+    faceWidth: number,
+    headRotation?: Quaternion
 ): number => {
-    const dist = Vector3.FromArray(upper[3])
-        .subtract(Vector3.FromArray(lower[4]))
-        .length();
-    return 1 - normalize(dist / faceSize, 0.005, 0.025);
+    let upper = Vector3.FromArray(mesh[upperIndex]);
+    let lower = Vector3.FromArray(mesh[lowerIndex]);
+
+    if (headRotation) {
+        const invRot = headRotation.invert();
+        const transform = Matrix.Identity();
+        Matrix.FromQuaternionToRef(invRot, transform);
+        upper = Vector3.TransformCoordinates(upper, transform);
+        lower = Vector3.TransformCoordinates(lower, transform);
+    }
+
+    const dist = Vector3.Distance(upper, lower) / faceWidth;
+    return normalize(dist, 0.065, 0.025);
 };
 
-export const getEyebrowRaise = (
-    brow: number[],
-    eye: number[],
-    faceSize: number
-): number => {
-    const dist = Vector3.FromArray(brow)
-        .subtract(Vector3.FromArray(eye))
-        .length();
-    return normalize(dist / faceSize, 0.025, 0.045);
-};
+export const getBrowWeights = (
+    mesh: number[][],
+    faceWidth: number,
+    headRotation?: Quaternion
+) => {
+    const rotMatrix = headRotation
+        ? (() => {
+              const m = Matrix.Identity();
+              Matrix.FromQuaternionToRef(headRotation.invert(), m);
+              return m;
+          })()
+        : null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getBrowWeights = (annotations: any, faceSize: number) => {
-    const getMid = (arr: number[][]) =>
-        Vector3.FromArray(arr.at(getCenterIndex(arr.length))!);
-    const getFirst = (arr: number[][]) => Vector3.FromArray(arr.at(0)!);
+    const getPoint = (index: number) => {
+        const point = Vector3.FromArray(mesh[index]);
+        return rotMatrix ? Vector3.TransformCoordinates(point, rotMatrix) : point;
+    };
 
-    // Outer brow raise (midpoint)
-    const leftOuter = getMid(annotations.leftEyebrowUpper);
-    const rightOuter = getMid(annotations.rightEyebrowUpper);
-    const leftEye = getMid(annotations.leftEyeUpper0);
-    const rightEye = getMid(annotations.rightEyeUpper0);
+    // Outer brow raise (brow to eyelid)
+    const leftBrowOuter = getPoint(336);
+    const leftEyeUpper = getPoint(386);
+    const rightBrowOuter = getPoint(107);
+    const rightEyeUpper = getPoint(159);
 
-    const leftOuterDist = leftOuter.subtract(leftEye).length() / faceSize;
-    const rightOuterDist = rightOuter.subtract(rightEye).length() / faceSize;
+    const leftBrowDist = Vector3.Distance(leftBrowOuter, leftEyeUpper) / faceWidth;
+    const rightBrowDist = Vector3.Distance(rightBrowOuter, rightEyeUpper) / faceWidth;
 
-    // Inner brow raise (center between left & right)
-    const innerBrow = getFirst(annotations.leftEyebrowUpper)
-        .add(getFirst(annotations.rightEyebrowUpper))
-        .scale(0.5);
-    const innerEye = getFirst(annotations.leftEyeUpper0)
-        .add(getFirst(annotations.rightEyeUpper0))
-        .scale(0.5);
-    const innerDist = innerBrow.subtract(innerEye).length() / faceSize;
+    // Inner brow raise
+    const leftInnerBrow = getPoint(296);
+    const rightInnerBrow = getPoint(334);
+    const innerBrow = Vector3.Center(leftInnerBrow, rightInnerBrow);
+    const centerBetweenEyes = getPoint(168);
+    const innerDist = Vector3.Distance(innerBrow, centerBetweenEyes) / faceWidth;
+    
 
     return {
-        browOuterUpLeft: 1 - normalize(leftOuterDist, 0.02, 0.06),
-        browOuterUpRight: 1 - normalize(rightOuterDist, 0.02, 0.06),
-        browInnerUp: 1 - normalize(innerDist, 0.015, 0.045),
-        browDownLeft: 1 - normalize(0.1 - leftOuterDist, 0.0, 0.04), // inverted outer raise
-        browDownRight: 1 - normalize(0.1 - rightOuterDist, 0.0, 0.04),
+        browOuterUpLeft: normalize(leftBrowDist, 0.225, 0.17),
+        browOuterUpRight: normalize(rightBrowDist, 0.225, 0.17),
+        browInnerUp: normalize(innerDist, 0.318, 0.28),
+        // browDownLeft: 1 - normalize(0.1 - leftBrowDist, 0.0, 0.04),
+        // browDownRight: 1 - normalize(0.1 - rightBrowDist, 0.0, 0.04),
     };
 };
 
 export const getEyeLookWeights = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     annotations: any,
-    faceSize: number
+    faceWidth: number
 ): Record<string, number> => {
     const getCenter = (points: number[][]): Vector3 =>
         Vector3.FromArray(points.at(getCenterIndex(points.length))!);
@@ -155,8 +168,8 @@ export const getEyeLookWeights = (
     const leftEye = getCenter(annotations.leftEyeUpper0);
     const rightEye = getCenter(annotations.rightEyeUpper0);
 
-    const leftDelta = leftIris.subtract(leftEye).scale(1 / faceSize);
-    const rightDelta = rightIris.subtract(rightEye).scale(1 / faceSize);
+    const leftDelta = leftIris.subtract(leftEye).scale(1 / faceWidth);
+    const rightDelta = rightIris.subtract(rightEye).scale(1 / faceWidth);
 
     return {
         eyeLookInLeft: normalize(leftDelta.x, 0.005, 0.03),
@@ -172,47 +185,99 @@ export const getEyeLookWeights = (
 };
 
 export const getJawOpenWeight = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    annotations: any,
-    faceSize: number
+    mesh: number[][],
+    faceWidth: number,
+    headRotation?: Quaternion
 ): number => {
-    const upper =
-        annotations.lipsUpperInner[
-        getCenterIndex(annotations.lipsUpperInner.length)
-        ];
-    const lower =
-        annotations.lipsLowerInner[
-        getCenterIndex(annotations.lipsLowerInner.length)
-        ];
-    const dist = Vector3.FromArray(upper)
-        .subtract(Vector3.FromArray(lower))
-        .length();
-    return normalize(dist / faceSize, 0.01, 0.06);
+    let upper = Vector3.FromArray(mesh[13]); // upper lip center
+    let lower = Vector3.FromArray(mesh[14]); // lower lip center
+
+    if (headRotation) {
+        const invRot = headRotation.invert();
+        const transform = Matrix.Identity();
+        Matrix.FromQuaternionToRef(invRot, transform);
+        upper = Vector3.TransformCoordinates(upper, transform);
+        lower = Vector3.TransformCoordinates(lower, transform);
+    }
+
+    const dist = Vector3.Distance(upper, lower) / faceWidth;
+    return normalize(dist, 0.017, 0.2);
+};
+
+export const getMouthPuckerWeight = (
+    mesh: number[][],
+    faceWidth: number,
+    headRotation?: Quaternion
+): number => {
+    let left = Vector3.FromArray(mesh[61]);
+    let right = Vector3.FromArray(mesh[291]);
+
+    if (headRotation) {
+        const invRot = headRotation.invert();
+        const transform = Matrix.Identity();
+        Matrix.FromQuaternionToRef(invRot, transform);
+        left = Vector3.TransformCoordinates(left, transform);
+        right = Vector3.TransformCoordinates(right, transform);
+    }
+
+    const dist = Vector3.Distance(left, right) / faceWidth;
+    return normalize(dist, 0.355, 0.33);
+};
+
+export const getMouthSmileFrownWeights = (
+    mesh: number[][],
+    faceWidth: number,
+    headRotation?: Quaternion
+) => {
+    const rotMatrix = headRotation
+        ? (() => {
+              const m = Matrix.Identity();
+              Matrix.FromQuaternionToRef(headRotation.invert(), m);
+              return m;
+          })()
+        : null;
+
+    const getPoint = (index: number) => {
+        const point = Vector3.FromArray(mesh[index]);
+        return rotMatrix ? Vector3.TransformCoordinates(point, rotMatrix) : point;
+    };
+
+    const leftEye = getPoint(263);
+    const rightEye = getPoint(33);
+    const leftMouth = getPoint(61);
+    const rightMouth = getPoint(291);
+
+    const leftVertical = (leftEye.y - leftMouth.y) / faceWidth;
+    const rightVertical = (rightEye.y - rightMouth.y) / faceWidth;
+
+    console.log('leftVertical:', leftVertical);
+    console.log('rightVertical:', rightVertical);
+    console.log('-----------');
+
+    return {
+        mouthSmileLeft: normalize(-leftVertical, 0.54, 0.39),
+        mouthSmileRight: normalize(-rightVertical, 0.47, 0.36),
+        mouthFrownLeft: normalize(-leftVertical, 0.01, 0.04),
+        mouthFrownRight: normalize(-rightVertical, 0.01, 0.04),
+    };
 };
 
 export const computeFaceWeights = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    annotations: any,
-    faceSize: number
+    faceMesh: any,
+    faceWidth: number,
+    headRotation: Quaternion
 ): Record<string, number> => {
     const weights: Record<string, number> = {};
 
     // Eyes
-    const leftBlink = getEyeBlinkWeight(
-        annotations.leftEyeUpper0,
-        annotations.leftEyeLower0,
-        faceSize
-    );
-    const rightBlink = getEyeBlinkWeight(
-        annotations.rightEyeUpper0,
-        annotations.rightEyeLower0,
-        faceSize
-    );
+    const leftBlink = getEyeBlinkWeight(386, 374, faceMesh, faceWidth, headRotation);
+    const rightBlink = getEyeBlinkWeight(159, 145, faceMesh, faceWidth, headRotation);
     weights.eyeBlinkLeft = leftBlink;
     weights.eyeBlinkRight = rightBlink;
 
     // Iris (very inaccurate)
-    // const eyeWeights = getEyeLookWeights(annotations, faceSize);
+    // const eyeWeights = getEyeLookWeights(annotations, faceWidth);
     // weights.eyeLookInLeft = eyeWeights.eyeLookInLeft;
     // weights.eyeLookOutLeft = eyeWeights.eyeLookOutLeft;
     // weights.eyeLookUpLeft = eyeWeights.eyeLookUpLeft;
@@ -223,37 +288,33 @@ export const computeFaceWeights = (
     // weights.eyeLookUpRight = eyeWeights.eyeLookUpRight;
     // weights.eyeLookDownRight = eyeWeights.eyeLookDownRight;
 
-    // Brows (brow tracking is faulty right now)
-    // const leftBrow = getEyebrowRaise(
-    //     annotations.leftEyebrowUpper[3],
-    //     annotations.leftEyeUpper0[3],
-    //     faceSize
-    // );
-    // const rightBrow = getEyebrowRaise(
-    //     annotations.rightEyebrowUpper[3],
-    //     annotations.rightEyeUpper0[3],
-    //     faceSize
-    // );
-    // weights.browOuterUpLeft = leftBrow;
-    // weights.browOuterUpRight = rightBrow;
-
-    // const browWeights = getBrowWeights(annotations, faceSize);
-    // weights.browOuterUpLeft = browWeights.browOuterUpLeft;
-    // weights.browOuterUpRight = browWeights.browOuterUpRight;
-    // weights.browInnerUp = browWeights.browInnerUp;
+    // Brows (brow tracking is somewhat faulty right now)
+    const browWeights = getBrowWeights(faceMesh, faceWidth, headRotation);
+    weights.browOuterUpLeft = browWeights.browOuterUpLeft;
+    weights.browOuterUpRight = browWeights.browOuterUpRight;
+    weights.browInnerUp = browWeights.browInnerUp;
     // weights.browDownLeft = browWeights.browDownLeft;
     // weights.browDownRight = browWeights.browDownRight;
 
     // Jaw
-    const jawOpen = getJawOpenWeight(annotations, faceSize);
+    const jawOpen = getJawOpenWeight(faceMesh, faceWidth, headRotation);
     weights.jawOpen = jawOpen;
 
+    weights.mouthPucker = getMouthPuckerWeight(faceMesh, faceWidth, headRotation);
+
     // Mouth (W.I.P, but may not be needed)
-    // const mouthParts = getMouthOpenParts(annotations, faceSize);
+    // const mouthParts = getMouthOpenParts(annotations, faceWidth);
     // weights.mouthLowerDownLeft = mouthParts.mouthLowerDownLeft;
     // weights.mouthLowerDownRight = mouthParts.mouthLowerDownRight;
     // weights.mouthUpperUpLeft = mouthParts.mouthUpperUpLeft;
     // weights.mouthUpperUpRight = mouthParts.mouthUpperUpRight;
+
+    // Smile
+    const smileWeights = getMouthSmileFrownWeights(faceMesh, faceWidth, headRotation);
+    weights.mouthSmileLeft = smileWeights.mouthSmileLeft;
+    weights.mouthSmileRight = smileWeights.mouthSmileRight;
+    // weights.mouthFrownLeft = smileWeights.mouthFrownLeft;
+    // weights.mouthFrownRight = smileWeights.mouthFrownRight;
 
     return weights;
 };

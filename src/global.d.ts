@@ -1,0 +1,1 @@
+export type Array3D = [number, number, number];

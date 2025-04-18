@@ -29,7 +29,11 @@ const RPM_AVATAR_PARAMS = `morphTargets=
         browOuterUpLeft,
         browOuterUpRight,
         jawOpen,
-        mouthPucker
+        mouthPucker,
+        mouthSmileLeft,
+        mouthSmileRight,
+        mouthFrownLeft,
+        mouthFrownRight
     &useDracoMeshCompression=true
     &useQuantizeMeshOptCompression=true
     &textureAtlas=1024

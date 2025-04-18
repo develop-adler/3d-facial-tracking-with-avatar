@@ -1,5 +1,7 @@
 import type { AnnotatedPrediction } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh";
 
+import type { Array3D } from "@/global";
+
 //  Triangulation sets of three
 export const TRIANGULATION = [
   127, 34, 139, 11, 0, 37, 232, 231, 120, 72, 37, 39, 128, 121, 47, 232, 121,
@@ -224,8 +226,14 @@ export const drawMesh = (
   }
 };
 
-export const getDistance = (a: number[], b: number[]): number =>
+export const getDistance = (a: Array3D, b: Array3D): number =>
   Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+export const getCenterPoint = (a: Array3D, b: Array3D): Array3D => [
+  (a[0] + b[0]) / 2,
+  (a[1] + b[1]) / 2,
+  (a[2] + b[2]) / 2,
+];
 
 /**
  * Normalizes a value to a range of 0 to 1
