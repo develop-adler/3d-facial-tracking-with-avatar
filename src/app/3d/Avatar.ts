@@ -7,33 +7,64 @@ import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
 
 registerBuiltInLoaders();
 
-// mouthLowerDownLeft,
-// mouthLowerDownRight,
-// mouthUpperUpLeft,
-// mouthUpperUpRight,
+type EyeBones = {
+    left?: Bone;
+    right?: Bone;
+};
 
-const RPM_AVATAR_PARAMS = `morphTargets=
-        eyeBlinkLeft,
-        eyeBlinkRight,
-        eyeLookDownLeft,
-        eyeLookInLeft,
-        eyeLookOutLeft,
-        eyeLookUpLeft,
-        eyeLookDownRight,
-        eyeLookInRight,
-        eyeLookOutRight,
-        eyeLookUpRight,
+const RPM_AVATAR_PARAMS = `
+    morphTargets=
         browDownLeft,
         browDownRight,
         browInnerUp,
         browOuterUpLeft,
         browOuterUpRight,
+        cheekPuff,
+        cheekSquintLeft,
+        cheekSquintRight,
+        eyeBlinkLeft,
+        eyeBlinkRight,
+        eyeLookDownLeft,
+        eyeLookDownRight,
+        eyeLookInLeft,
+        eyeLookInRight,
+        eyeLookOutLeft,
+        eyeLookOutRight,
+        eyeLookUpLeft,
+        eyeLookUpRight,
+        eyeSquintLeft,
+        eyeSquintRight,
+        eyeWideLeft,
+        eyeWideRight,
+        jawForward,
+        jawLeft,
         jawOpen,
+        jawRight,
+        mouthClose,
+        mouthDimpleLeft,
+        mouthDimpleRight,
+        mouthFrownLeft,
+        mouthFrownRight,
+        mouthFunnel,
+        mouthLeft,
+        mouthLowerDownLeft,
+        mouthLowerDownRight,
+        mouthPressLeft,
+        mouthPressRight,
         mouthPucker,
+        mouthRight,
+        mouthRollLower,
+        mouthRollUpper,
+        mouthShrugLower,
+        mouthShrugUpper,
         mouthSmileLeft,
         mouthSmileRight,
-        mouthFrownLeft,
-        mouthFrownRight
+        mouthStretchLeft,
+        mouthStretchRight,
+        mouthUpperUpLeft,
+        mouthUpperUpRight,
+        noseSneerLeft,
+        noseSneerRight
     &useDracoMeshCompression=true
     &useQuantizeMeshOptCompression=true
     &textureAtlas=1024
@@ -43,11 +74,14 @@ const RPM_AVATAR_PARAMS = `morphTargets=
 export class Avatar {
     readonly scene: Scene;
     container?: AssetContainer;
+    bones?: Bone[];
     headBone?: Bone;
+    eyeBones: EyeBones;
     morphTargetManager?: MorphTargetManager;
 
     constructor(scene: Scene) {
         this.scene = scene;
+        this.eyeBones = {};
     }
 
     async loadAvatar() {
@@ -65,9 +99,24 @@ export class Avatar {
             }
         );
         this.container.addAllToScene();
+        console.log('bones:', this.container.skeletons[0].bones.map((bone) => bone.name));
+
+        this.bones = this.container.skeletons[0].bones;
         this.headBone = this.container.skeletons[0].bones.find(
             (bone) => bone.name === "Head"
         );
+        this.eyeBones.left = this.container.skeletons[0].bones.find(
+            (bone) => bone.name === "LeftEye"
+        );
+        this.eyeBones.right = this.container.skeletons[0].bones.find(
+            (bone) => bone.name === "RightEye"
+        );
+
+        const leftEyeTNode = this.eyeBones.left?.getTransformNode();
+        if (leftEyeTNode) leftEyeTNode.rotationQuaternion = null;
+        const rightEyeTNode = this.eyeBones.right?.getTransformNode();
+        if (rightEyeTNode) rightEyeTNode.rotationQuaternion = null;
+
         if (this.container.morphTargetManagers.length > 0) {
             this.morphTargetManager = this.container.morphTargetManagers[0];
         }

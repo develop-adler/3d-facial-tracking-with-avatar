@@ -2,147 +2,102 @@
 
 import { useEffect, useRef } from "react";
 
-import { Quaternion } from "@babylonjs/core/Maths/math.vector";
-import "@mediapipe/face_mesh";
-import "@tensorflow/tfjs-core";
-// Register WebGL backend.
-import "@tensorflow/tfjs-backend-webgl";
-import * as faceDetect from "@tensorflow-models/face-landmarks-detection";
+import { Matrix, Quaternion } from "@babylonjs/core/Maths/math.vector";
 import Webcam from "react-webcam";
 
 import { CoreEngine } from "@/app/3d/CoreEngine";
 import { CoreScene } from "@/app/3d/CoreScene";
 import { Avatar } from "@/app/3d/Avatar";
-import {
-  computeFaceWeights,
-  getFaceWidth,
-  getHeadRotationFromMesh,
-} from "@/app/utils/faceDetectionUtils";
-import { drawMesh } from "@/app/utils/utilities";
-import type { AnnotatedPrediction } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh";
-
-const applyFaceWeightsToAvatar = (
-  avatar: Avatar,
-  weights: Record<string, number>
-) => {
-  if (!avatar.morphTargetManager) return;
-
-  for (const [name, weight] of Object.entries(weights)) {
-    const target = avatar.morphTargetManager.getTargetByName(name);
-    if (target) target.influence = weight;
-  }
-};
+import { FaceDetector } from "@/app/utils/FaceDetector";
+import { hasGetUserMedia } from "@/app/utils/utilities";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bjsCanvas = useRef<HTMLCanvasElement>(null); // For 3D scene
-  const coreEngineRef = useRef<CoreEngine | null>(null);
-  const coreSceneRef = useRef<CoreScene | null>(null);
-  const avatarRef = useRef<Avatar | null>(null);
+  const coreEngineRef = useRef<CoreEngine>(null);
+  const coreSceneRef = useRef<CoreScene>(null);
+  const avatarRef = useRef<Avatar>(null);
+  const faceDetectorRef = useRef<FaceDetector>(null);
 
   const runFacemesh = async () => {
-    const detector = await faceDetect.load(
-      faceDetect.SupportedPackages.mediapipeFacemesh,
-      {
-        maxFaces: 1,
-      }
+    if (!webcamRef.current) throw new Error("Webcam element not found!");
+
+    faceDetectorRef.current ??= new FaceDetector(
+      webcamRef.current.video as HTMLVideoElement
     );
-    setInterval(() => {
-      detect(detector).then((faces) => faces && processFace(faces));
+    faceDetectorRef.current.init();
+
+    setInterval(async () => {
+      const result = await faceDetectorRef.current?.detect();
+
+      if (!result || result.faceBlendshapes.length === 0) return;
+
+      console.log('result:', result);
+
+      // sync morph targets with avatar
+      const blendShapes = result.faceBlendshapes[0].categories;
+      blendShapes.forEach((blendShape) => {
+        const value = blendShape.score;
+        if (!avatarRef.current?.morphTargetManager) return;
+
+        const target = avatarRef.current.morphTargetManager.getTargetByName(
+          blendShape.categoryName
+        );
+        if (!target) return;
+        target.influence = value > 0.1 ? value : 0;
+      });
+
+      // sync head rotation
+      if (avatarRef.current) {
+        const matrixData = result.facialTransformationMatrixes[0].data;
+        const faceRotation = Quaternion.FromRotationMatrix(Matrix.FromArray(matrixData));
+
+        syncHeadRotation(
+          avatarRef.current,
+          faceRotation
+        );
+      }
+
     }, 1000 / 60);
   };
 
-  const detect = async (detector: faceDetect.FaceLandmarksDetector) => {
-    if (!webcamRef.current || !canvasRef.current) return;
-    if (typeof webcamRef.current === "undefined") return;
-    if (webcamRef.current.video?.readyState !== 4) return;
-
-    // Get Video Properties
-    const video = webcamRef.current.video;
-    const videoWidth = webcamRef.current.video.videoWidth;
-    const videoHeight = webcamRef.current.video.videoHeight;
-
-    // Set video width
-    webcamRef.current.video.width = videoWidth;
-    webcamRef.current.video.height = videoHeight;
-
-    // Set canvas width
-    canvasRef.current.width = videoWidth;
-    canvasRef.current.height = videoHeight;
-
-    return await detector.estimateFaces({ input: video });
+  const onUserMedia = (stream: MediaStream) => {
+    console.log("Webcam stream:", stream);
+    if (webcamRef.current) {
+      webcamRef.current.video!.srcObject = stream;
+    }
+    runFacemesh();
   };
 
-  const processFace = (faces: AnnotatedPrediction[]) => {
-    if (!canvasRef.current || faces.length < 1) return;
+  const syncHeadRotation = (
+    avatar: Avatar,
+    headRotation: Quaternion
+  ) => {
+    // if (face.faceInViewConfidence < 0.85) return;
+    const headBoneNode = avatar.bones?.find(bone => bone.name === "Head")?.getTransformNode();
+    if (!headBoneNode) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const face = faces[0] as any;
-
-    // console.log("face mesh:", face.mesh);
-
-    const headRotation = getHeadRotationFromMesh(
-      face.mesh,
-      // correction for the head rotation
-      Quaternion.FromEulerAngles(Math.PI * 0.85, 0, 0)
+    headBoneNode.rotationQuaternion = Quaternion.Slerp(
+      headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
+      headRotation,
+      0.3
     );
 
-    const faceWidth = getFaceWidth(face.mesh, headRotation);
+    const spine2Node = avatar.bones?.find(bone => bone.name === "Spine1")?.getTransformNode();
+    if (!spine2Node) return;
 
-    // const mouthOpenWeight = getMouthOpenWeight(annotations, faceWidth);
-    // const leftEyeBlinkWeight = getEyeBlinkWeight(
-    //   annotations.leftEyeUpper0,
-    //   annotations.leftEyeLower0,
-    //   faceWidth
-    // );
-    // const rightEyeBlinkWeight = getEyeBlinkWeight(
-    //   annotations.rightEyeUpper0,
-    //   annotations.rightEyeLower0,
-    //   faceWidth
-    // );
-    // const leftEyebrowRaiseWeight = getEyeBrowRaiseWeights(
-    //   annotations,
-    //   faceWidth,
-    //   "leftEyebrowUpper",
-    //   "leftEyeUpper0"
-    // );
-    // const rightEyebrowRaiseWeight = getEyeBrowRaiseWeights(
-    //   annotations,
-    //   faceWidth,
-    //   "rightEyebrowUpper",
-    //   "rightEyeUpper0"
-    // );
-
-    // console.log("Mouth Open Weight:", mouthOpenWeight);
-    // console.log("Left Eye Blink Weight:", leftEyeBlinkWeight);
-    // console.log("Right Eye Blink Weight:", rightEyeBlinkWeight);
-    // console.log("Left Eyebrow Raise Weight:", leftEyebrowRaiseWeight);
-    // console.log("Right Eyebrow Raise Weight:", rightEyebrowRaiseWeight);
-
-    if (!avatarRef.current) return;
-
-    const faceWeights = computeFaceWeights(face.mesh, faceWidth, headRotation);
-    // console.log("Face Weights:", faceWeights);
-    applyFaceWeightsToAvatar(avatarRef.current, faceWeights);
-
-    // Sync head rotation with user's face
-    const headBoneNode = avatarRef.current.headBone?.getTransformNode();
-    if (headBoneNode && face.faceInViewConfidence >= 0.85) {
-      headBoneNode.rotationQuaternion = Quaternion.Slerp(
-        headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
-        headRotation,
-        0.3
-      );
-    }
-
-    // Get canvas context
-    const ctx = canvasRef.current.getContext("2d");
-    if (ctx) {
-      requestAnimationFrame(() => {
-        drawMesh(faces, ctx);
-      });
-    }
+    // slightly rotate the spine with the head
+    const spineRotation = Quaternion.FromEulerAngles(
+      -headRotation.x * 0.7, // forward backward
+      -headRotation.y * 0.65, // rotate left right horizontally
+      -headRotation.z * 0.85 // rotate left right vertically
+    );
+    spine2Node.rotationQuaternion = Quaternion.Slerp(
+      spine2Node.rotationQuaternion ?? Quaternion.Identity(),
+      spineRotation,
+      0.3
+    );
   };
 
   const create3DScene = (canvas: HTMLCanvasElement) => {
@@ -160,7 +115,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    runFacemesh();
+    if (!hasGetUserMedia()) throw new Error("No webcam access!");
+    if (!webcamRef.current) throw new Error("Webcam element not found!");
+
+    faceDetectorRef.current = new FaceDetector(
+      webcamRef.current.video as HTMLVideoElement
+    );
 
     if (!bjsCanvas.current) return;
     const { coreEngine } = create3DScene(bjsCanvas.current);
@@ -171,7 +131,6 @@ export default function Home() {
       window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
       coreEngine.dispose();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -185,6 +144,11 @@ export default function Home() {
           left: 0,
           width: "50%",
           height: "auto",
+        }}
+        mirrored={true}
+        onUserMedia={onUserMedia}
+        onUserMediaError={(err) => {
+          console.error("Webcam error:", err);
         }}
       />
       <canvas
