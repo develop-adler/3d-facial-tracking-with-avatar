@@ -34,25 +34,17 @@ export class FaceDetector {
             outputFaceBlendshapes: true,
             outputFacialTransformationMatrixes: true,
         });
-    };
+    }
 
     private async _predictWebcam(
         faceLandmarker: FaceLandmarker,
-        video: HTMLVideoElement,
-        // isWebcamRunning: boolean
+        video: HTMLVideoElement
     ): Promise<FaceLandmarkerResult | null> {
-        // const aspectRatio = video.videoHeight / video.videoWidth;
-        // video.style.width = videoWidth + "px";
-        // video.style.height = videoWidth * aspectRatio + "px";
-        // canvasElement.style.width = videoWidth + "px";
-        // canvasElement.style.height = videoWidth * aspectRatio + "px";
-        // canvasElement.width = video.videoWidth;
-        // canvasElement.height = video.videoHeight;
-
-        // Now let's start detecting the stream.
         if (faceLandmarkerRunningMode === "IMAGE") {
             faceLandmarkerRunningMode = "VIDEO";
-            await faceLandmarker.setOptions({ runningMode: faceLandmarkerRunningMode });
+            await faceLandmarker.setOptions({
+                runningMode: faceLandmarkerRunningMode,
+            });
         }
 
         let results: FaceLandmarkerResult | null = null;
@@ -62,14 +54,7 @@ export class FaceDetector {
             results = faceLandmarker.detectForVideo(video, startTimeMs);
         }
         return results;
-
-        // // Call this function again to keep predicting when the browser is ready.
-        // if (isWebcamRunning === true) {
-        //     window.requestAnimationFrame(() =>
-        //         _predictWebcam(faceLandmarker, video, isWebcamRunning)
-        //     );
-        // }
-    };
+    }
 
     async init() {
         this.faceLandmarker = await this._createFaceLandmarker();
@@ -78,7 +63,10 @@ export class FaceDetector {
 
     async detect() {
         if (this.faceLandmarker && this.video) {
-            const results = await this._predictWebcam(this.faceLandmarker, this.video);
+            const results = await this._predictWebcam(
+                this.faceLandmarker,
+                this.video
+            );
             return results;
         }
         return null;

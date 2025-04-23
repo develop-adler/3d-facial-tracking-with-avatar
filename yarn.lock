@@ -2,15 +2,15 @@
 # yarn lockfile v1
 
 
-"@babylonjs/core@^8.2.1":
-  version "8.2.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-8.2.1.tgz#d975cf99d97bba8641bb48221b63edd963c747c3"
-  integrity sha512-usNuP3HYgo2EAO/RFpvUd+tzbQo8LMO9hNGLivyoaCtnQep3+a7L4BKrvtZeJYCWqxKvNA5u3Oko3PKepgkkaQ==
+"@babylonjs/core@^8.3.1":
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-8.3.1.tgz#281477b72e95d26499bcae37c3ab22be014358fa"
+  integrity sha512-FBf/rMHeLu1QEhfAm5ye2EV+ACBu2hb9SrnyQnspGhevm8PM4VKA2z2P7IqnDB8CgCjQ4Vr7PCGCmuZ7ZENWoA==
 
-"@babylonjs/loaders@^8.2.1":
-  version "8.2.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-8.2.1.tgz#43f0fb87fa9b2d0d4ad2fb33e0fb0e3f693232a6"
-  integrity sha512-npbwt4wwE1v8nnydRBFceuC9cO27/EYaSLvWqr/ySyReYaxBAyT0dd/xbxH7y1F4j/BDwZxw9pc03kD2vEAlqg==
+"@babylonjs/loaders@^8.3.1":
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-8.3.1.tgz#2ffd8ac3bc15a2c07eb344e46ee199249c76edf9"
+  integrity sha512-cOGzKYyRuU7eMiLKX0VeyLAk+mjBrdY3Tp6UcB4275MVuJ87kuZoZrsHV4qDsTb9t/aOlu1HpH80lPRI52tnVw==
 
 "@emnapi/core@^1.4.0":
   version "1.4.1"

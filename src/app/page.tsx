@@ -11,6 +11,8 @@ import { Avatar } from "@/app/3d/Avatar";
 import { FaceDetector } from "@/app/utils/FaceDetector";
 import { hasGetUserMedia } from "@/app/utils/utilities";
 
+import type { Category } from "@mediapipe/tasks-vision";
+
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,65 +35,74 @@ export default function Home() {
 
       if (!result || result.faceBlendshapes.length === 0) return;
 
-      console.log('result:', result);
-
-      // sync morph targets with avatar
-      const blendShapes = result.faceBlendshapes[0].categories;
-      blendShapes.forEach((blendShape) => {
-        const value = blendShape.score;
-        if (!avatarRef.current?.morphTargetManager) return;
-
-        const target = avatarRef.current.morphTargetManager.getTargetByName(
-          blendShape.categoryName
-        );
-        if (!target) return;
-        target.influence = value > 0.1 ? value : 0;
-      });
-
-      // sync head rotation
       if (avatarRef.current) {
+        // sync morph targets with avatar
+        const blendShapes = result.faceBlendshapes[0].categories;
+        syncMorphTargets(avatarRef.current, blendShapes);
+
+        // sync head rotation
         const matrixData = result.facialTransformationMatrixes[0].data;
-        const faceRotation = Quaternion.FromRotationMatrix(Matrix.FromArray(matrixData));
-
-        syncHeadRotation(
-          avatarRef.current,
-          faceRotation
+        const faceRotation = Quaternion.FromRotationMatrix(
+          Matrix.FromArray(matrixData)
         );
+        syncHeadRotation(avatarRef.current, faceRotation);
       }
-
     }, 1000 / 60);
   };
 
   const onUserMedia = (stream: MediaStream) => {
-    console.log("Webcam stream:", stream);
-    if (webcamRef.current) {
-      webcamRef.current.video!.srcObject = stream;
-    }
+    if (webcamRef.current) webcamRef.current.video!.srcObject = stream;
     runFacemesh();
   };
 
-  const syncHeadRotation = (
-    avatar: Avatar,
-    headRotation: Quaternion
-  ) => {
-    // if (face.faceInViewConfidence < 0.85) return;
-    const headBoneNode = avatar.bones?.find(bone => bone.name === "Head")?.getTransformNode();
+  const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
+    if (!avatar.morphTargetManager) return;
+
+    for (const blendShape of blendShapes) {
+      const value = blendShape.score;
+      const target = avatar.morphTargetManager.getTargetByName(
+        blendShape.categoryName
+      );
+      if (!target) continue;
+      target.influence = value > 0.1 ? value : 0;
+    }
+  };
+
+  const syncHeadRotation = (avatar: Avatar, faceRotation: Quaternion) => {
+    const headBoneNode = avatar.bones
+      ?.find((bone) => bone.name === "Head")
+      ?.getTransformNode();
     if (!headBoneNode) return;
+
+    // Fix looking left-right being inverted
+    const rotation = new Quaternion(
+      -faceRotation.x,
+      faceRotation.y,
+      faceRotation.z,
+      -faceRotation.w  // maintain quaternion unit rotation direction
+    );
+
+    // Fix head looking down more than intended
+    const euler = rotation.toEulerAngles();
+    euler.x -= Math.PI * 0.15;
+    const correctedRotation = Quaternion.FromEulerAngles(euler.x, euler.y, euler.z);
 
     headBoneNode.rotationQuaternion = Quaternion.Slerp(
       headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
-      headRotation,
+      correctedRotation,
       0.3
     );
 
-    const spine2Node = avatar.bones?.find(bone => bone.name === "Spine1")?.getTransformNode();
+    const spine2Node = avatar.bones
+      ?.find((bone) => bone.name === "Spine1")
+      ?.getTransformNode();
     if (!spine2Node) return;
 
     // slightly rotate the spine with the head
     const spineRotation = Quaternion.FromEulerAngles(
-      -headRotation.x * 0.7, // forward backward
-      -headRotation.y * 0.65, // rotate left right horizontally
-      -headRotation.z * 0.85 // rotate left right vertically
+      0, // forward backward
+      correctedRotation.y * 0.8, // rotate left right horizontally
+      correctedRotation.z * 0.85 // rotate left right vertically
     );
     spine2Node.rotationQuaternion = Quaternion.Slerp(
       spine2Node.rotationQuaternion ?? Quaternion.Identity(),
@@ -126,10 +137,10 @@ export default function Home() {
     const { coreEngine } = create3DScene(bjsCanvas.current);
 
     window.addEventListener("resize", coreEngine.resize.bind(coreEngine));
-
     return () => {
       window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
       coreEngine.dispose();
+      faceDetectorRef.current?.dispose();
     };
   }, []);
 

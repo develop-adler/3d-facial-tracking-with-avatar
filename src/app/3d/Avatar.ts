@@ -3,9 +3,6 @@ import type { Bone } from "@babylonjs/core/Bones/bone";
 import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { Scene } from "@babylonjs/core/scene";
-import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
-
-registerBuiltInLoaders();
 
 type EyeBones = {
     left?: Bone;
@@ -69,7 +66,7 @@ const RPM_AVATAR_PARAMS = `
     &useQuantizeMeshOptCompression=true
     &textureAtlas=1024
     &textureFormat=webp
-`.replace(/\s+/g, "");
+`.replace(/\s+/g, '');
 
 export class Avatar {
     readonly scene: Scene;
@@ -99,7 +96,6 @@ export class Avatar {
             }
         );
         this.container.addAllToScene();
-        console.log('bones:', this.container.skeletons[0].bones.map((bone) => bone.name));
 
         this.bones = this.container.skeletons[0].bones;
         this.headBone = this.container.skeletons[0].bones.find(
