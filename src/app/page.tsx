@@ -68,24 +68,32 @@ export default function Home() {
     }
   };
 
-  const syncHeadRotation = (avatar: Avatar, faceRotation: Quaternion) => {
+  const syncHeadRotation = (
+    avatar: Avatar,
+    faceRotation: Quaternion,
+    mirrored: boolean = false
+  ) => {
     const headBoneNode = avatar.bones
       ?.find((bone) => bone.name === "Head")
       ?.getTransformNode();
     if (!headBoneNode) return;
 
-    // Fix looking left-right being inverted
     const rotation = new Quaternion(
-      -faceRotation.x,
+      mirrored ? -faceRotation.x : faceRotation.x,
       faceRotation.y,
       faceRotation.z,
-      -faceRotation.w  // maintain quaternion unit rotation direction
+      // maintain quaternion unit rotation direction when mirrored
+      mirrored ? -faceRotation.w : faceRotation.w
     );
 
     // Fix head looking down more than intended
     const euler = rotation.toEulerAngles();
     euler.x -= Math.PI * 0.15;
-    const correctedRotation = Quaternion.FromEulerAngles(euler.x, euler.y, euler.z);
+    const correctedRotation = Quaternion.FromEulerAngles(
+      euler.x,
+      euler.y,
+      euler.z
+    );
 
     headBoneNode.rotationQuaternion = Quaternion.Slerp(
       headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
@@ -134,9 +142,10 @@ export default function Home() {
     );
 
     if (!bjsCanvas.current) return;
-    const { coreEngine } = create3DScene(bjsCanvas.current);
 
+    const { coreEngine } = create3DScene(bjsCanvas.current);
     window.addEventListener("resize", coreEngine.resize.bind(coreEngine));
+
     return () => {
       window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
       coreEngine.dispose();
@@ -145,25 +154,112 @@ export default function Home() {
   }, []);
 
   return (
-    <div>
-      <Webcam
-        ref={webcamRef}
+    <>
+      {/* centered div horizontally while laying buttons out horizontally */}
+      <div
         style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           position: "absolute",
           margin: "none",
-          top: "25%",
+          top: 0,
           left: 0,
-          width: "50%",
-          height: "auto",
+          width: "100%",
+          height: "25%",
         }}
+      >
+        {/* 
+          asian female: 6809df026026f5144d94f3f4
+          white female: 6809df7c4e68c7a706ac7e55
+          black male: 6809d76c64ce38bc90a10c88
+          white male: 67fe6f7713b3fb7e8aa0328c
+        */}
+        <button
+          style={{
+            margin: "0 0.4rem",
+            padding: "0.2rem 0.4rem",
+            fontSize: "3rem",
+            backgroundColor: "#007BFF",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "background-color 0.3s",
+          }}
+          onClick={() => {
+            avatarRef.current?.dispose();
+            avatarRef.current?.loadAvatar("6809df026026f5144d94f3f4")
+          }}
+        >
+          White female
+        </button>
+        <button
+          style={{
+            margin: "0 0.4rem",
+            padding: "0.2rem 0.4rem",
+            fontSize: "3rem",
+            backgroundColor: "#007BFF",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "background-color 0.3s",
+          }}
+          onClick={() =>{
+            avatarRef.current?.dispose();
+            avatarRef.current?.loadAvatar("6809df7c4e68c7a706ac7e55")
+          }}
+        >
+          Asian female
+        </button>
+        <button
+          style={{
+            margin: "0 0.4rem",
+            padding: "0.2rem 0.4rem",
+            fontSize: "3rem",
+            backgroundColor: "#007BFF",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "background-color 0.3s",
+          }}
+          onClick={() =>{
+            avatarRef.current?.dispose();
+            avatarRef.current?.loadAvatar("6809d76c64ce38bc90a10c88")
+          }}
+        >
+          Black male
+        </button>
+        <button
+          style={{
+            margin: "0 0.4rem",
+            padding: "0.2rem 0.4rem",
+            fontSize: "3rem",
+            backgroundColor: "#007BFF",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "background-color 0.3s",
+          }}
+          onClick={() =>{
+            avatarRef.current?.dispose();
+            avatarRef.current?.loadAvatar("67fe6f7713b3fb7e8aa0328c")
+          }}
+        >
+          White male
+        </button>
+      </div>
+      <Webcam
+        ref={webcamRef}
         mirrored={true}
+        audio={false}
         onUserMedia={onUserMedia}
         onUserMediaError={(err) => {
           console.error("Webcam error:", err);
         }}
-      />
-      <canvas
-        ref={canvasRef}
         style={{
           position: "absolute",
           margin: "none",
@@ -173,6 +269,24 @@ export default function Home() {
           height: "auto",
         }}
       />
+      <div
+        style={{
+          position: "absolute",
+          margin: "none",
+          top: "25%",
+          left: 0,
+          width: "50%",
+          height: "auto",
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "auto",
+          }}
+        />
+      </div>
       <canvas
         ref={bjsCanvas}
         style={{
@@ -183,8 +297,15 @@ export default function Home() {
           width: "50%",
           height: "auto",
           userSelect: "none",
+
+          // mirror
+          transform: "scaleX(-1)",
+          WebkitTransform: "scaleX(-1)",
+          OTransform: "scaleX(-1)",
+          MozTransform: "scaleX(-1)",
+          filter: "FlipH",
         }}
       />
-    </div>
+    </>
   );
 }
