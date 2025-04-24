@@ -90,15 +90,12 @@ export class Avatar {
         if (this._isLoadingAvatar || this.currentAvatarId === id) return;
 
         this._isLoadingAvatar = true;
-        this.currentAvatarId = id;
-
-        this.dispose();
 
         // asian female: 6809df026026f5144d94f3f4
         // white female: 6809df7c4e68c7a706ac7e55
         // black male: 6809d76c64ce38bc90a10c88
         // white male: 67fe6f7713b3fb7e8aa0328c
-        this.container = await loadAssetContainerAsync(
+        const container = await loadAssetContainerAsync(
             `https://models.readyplayer.me/${id}.glb?` +
             RPM_AVATAR_PARAMS,
             this.scene,
@@ -111,16 +108,18 @@ export class Avatar {
                 },
             }
         );
-        this.container.addAllToScene();
+        this.dispose();
+        container.addAllToScene();
+        this.currentAvatarId = id;
 
-        this.bones = this.container.skeletons[0].bones;
-        this.headBone = this.container.skeletons[0].bones.find(
+        this.bones = container.skeletons[0].bones;
+        this.headBone = container.skeletons[0].bones.find(
             (bone) => bone.name === "Head"
         );
-        this.eyeBones.left = this.container.skeletons[0].bones.find(
+        this.eyeBones.left = container.skeletons[0].bones.find(
             (bone) => bone.name === "LeftEye"
         );
-        this.eyeBones.right = this.container.skeletons[0].bones.find(
+        this.eyeBones.right = container.skeletons[0].bones.find(
             (bone) => bone.name === "RightEye"
         );
 
@@ -129,14 +128,21 @@ export class Avatar {
         const rightEyeTNode = this.eyeBones.right?.getTransformNode();
         if (rightEyeTNode) rightEyeTNode.rotationQuaternion = null;
 
-        if (this.container.morphTargetManagers.length > 0) {
-            this.morphTargetManager = this.container.morphTargetManagers[0];
+        if (container.morphTargetManagers.length > 0) {
+            this.morphTargetManager = container.morphTargetManagers[0];
         }
+        this.container = container;
         this._isLoadingAvatar = false;
         return [this.container, this.headBone] as const;
     }
 
     dispose() {
+        this.bones = undefined;
+        this.headBone = undefined;
+        this.eyeBones = {};
+        this.morphTargetManager = undefined;
+        this.currentAvatarId = '';
+        this._isLoadingAvatar = false;
         this.container?.dispose();
     }
 }
