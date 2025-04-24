@@ -81,9 +81,14 @@ export class Avatar {
         this.eyeBones = {};
     }
 
-    async loadAvatar() {
+    async loadAvatar(id: string = '67fe6f7713b3fb7e8aa0328c') {
+        // asian female: 6809df026026f5144d94f3f4
+        // white female: 6809df7c4e68c7a706ac7e55
+        // black male: 6809d76c64ce38bc90a10c88
+        // white male: 67fe6f7713b3fb7e8aa0328c
+
         this.container = await loadAssetContainerAsync(
-            "https://models.readyplayer.me/67fe6f7713b3fb7e8aa0328c.glb?" +
+            `https://models.readyplayer.me/${id}.glb?` +
             RPM_AVATAR_PARAMS,
             this.scene,
             {
