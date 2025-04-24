@@ -9,7 +9,7 @@ import { CoreEngine } from "@/app/3d/CoreEngine";
 import { CoreScene } from "@/app/3d/CoreScene";
 import { Avatar } from "@/app/3d/Avatar";
 import { FaceDetector } from "@/app/utils/FaceDetector";
-import { hasGetUserMedia } from "@/app/utils/utilities";
+import { clamp, hasGetUserMedia, normalize } from "@/app/utils/utilities";
 
 import type { Category } from "@mediapipe/tasks-vision";
 
