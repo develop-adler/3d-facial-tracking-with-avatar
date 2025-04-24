@@ -64,7 +64,14 @@ export default function Home() {
         blendShape.categoryName
       );
       if (!target) continue;
-      target.influence = value > 0.1 ? value : 0;
+
+      let val = value;
+
+      // if is eyeblink then make the value more pronounced
+      if (target.name.includes("eyeBlink")) {
+        val = clamp(normalize(value, 0, 0.75), 0, 1);
+      }
+      target.influence = val > 0.1 ? val : 0;
     }
   };
 
