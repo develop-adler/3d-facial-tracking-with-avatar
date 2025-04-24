@@ -188,27 +188,7 @@ export default function Home() {
             transition: "background-color 0.3s",
           }}
           onClick={() => {
-            avatarRef.current?.dispose();
             avatarRef.current?.loadAvatar("6809df026026f5144d94f3f4")
-          }}
-        >
-          White female
-        </button>
-        <button
-          style={{
-            margin: "0 0.4rem",
-            padding: "0.2rem 0.4rem",
-            fontSize: "3rem",
-            backgroundColor: "#007BFF",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-            transition: "background-color 0.3s",
-          }}
-          onClick={() =>{
-            avatarRef.current?.dispose();
-            avatarRef.current?.loadAvatar("6809df7c4e68c7a706ac7e55")
           }}
         >
           Asian female
@@ -226,7 +206,24 @@ export default function Home() {
             transition: "background-color 0.3s",
           }}
           onClick={() =>{
-            avatarRef.current?.dispose();
+            avatarRef.current?.loadAvatar("6809df7c4e68c7a706ac7e55")
+          }}
+        >
+          White female
+        </button>
+        <button
+          style={{
+            margin: "0 0.4rem",
+            padding: "0.2rem 0.4rem",
+            fontSize: "3rem",
+            backgroundColor: "#007BFF",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "background-color 0.3s",
+          }}
+          onClick={() =>{
             avatarRef.current?.loadAvatar("6809d76c64ce38bc90a10c88")
           }}
         >
@@ -245,7 +242,6 @@ export default function Home() {
             transition: "background-color 0.3s",
           }}
           onClick={() =>{
-            avatarRef.current?.dispose();
             avatarRef.current?.loadAvatar("67fe6f7713b3fb7e8aa0328c")
           }}
         >
