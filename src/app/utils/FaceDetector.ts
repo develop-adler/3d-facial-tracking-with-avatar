@@ -1,10 +1,10 @@
+import { globalTimestamp, updateGlobalTimestamp } from '@/app/global';
 import {
     FaceLandmarker,
     FilesetResolver,
     type FaceLandmarkerResult,
 } from "@mediapipe/tasks-vision";
 
-let lastVideoTime = -1;
 let faceLandmarkerRunningMode: "IMAGE" | "VIDEO" = "VIDEO";
 
 export class FaceDetector {
@@ -47,13 +47,8 @@ export class FaceDetector {
             });
         }
 
-        let results: FaceLandmarkerResult | null = null;
-        const startTimeMs = performance.now();
-        if (lastVideoTime !== video.currentTime) {
-            lastVideoTime = video.currentTime;
-            results = faceLandmarker.detectForVideo(video, startTimeMs);
-        }
-        return results;
+        updateGlobalTimestamp(performance.now());
+        return faceLandmarker.detectForVideo(video, globalTimestamp);
     }
 
     async init() {
@@ -79,3 +74,5 @@ export class FaceDetector {
         }
     }
 }
+
+export type FaceDetectorType = InstanceType<typeof FaceDetector>;

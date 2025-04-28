@@ -20,3 +20,5 @@ export class CoreEngine {
         this.engine.dispose();
     }
 }
+
+export type CoreEngineType = InstanceType<typeof CoreEngine>;

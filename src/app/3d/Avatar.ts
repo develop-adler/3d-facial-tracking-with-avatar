@@ -1,6 +1,8 @@
+import { BoneIKController } from "@babylonjs/core/Bones/boneIKController";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Bone } from "@babylonjs/core/Bones/bone";
 import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { Scene } from "@babylonjs/core/scene";
 
@@ -77,6 +79,8 @@ export class Avatar {
     headBone?: Bone;
     eyeBones: EyeBones;
     morphTargetManager?: MorphTargetManager;
+    boneIKController?: BoneIKController;
+    boneIKUpdateObserver?: Observer<Scene>;
 
     currentAvatarId: string = '';
     private _isLoadingAvatar: boolean = false;
@@ -110,6 +114,10 @@ export class Avatar {
         );
         this.dispose();
         container.addAllToScene();
+
+        this.boneIKUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+            this.boneIKController?.update();
+        });
         this.currentAvatarId = id;
 
         this.bones = container.skeletons[0].bones;
@@ -143,6 +151,11 @@ export class Avatar {
         this.morphTargetManager = undefined;
         this.currentAvatarId = '';
         this._isLoadingAvatar = false;
+
+        this.boneIKUpdateObserver?.remove();
+        this.boneIKUpdateObserver = undefined;
+        this.boneIKController = undefined;
+
         this.container?.dispose();
     }
 }

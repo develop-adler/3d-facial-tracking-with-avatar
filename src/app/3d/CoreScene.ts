@@ -88,3 +88,5 @@ export class CoreScene {
         this.scene.dispose();
     }
 }
+
+export type CoreSceneType = InstanceType<typeof CoreScene>;

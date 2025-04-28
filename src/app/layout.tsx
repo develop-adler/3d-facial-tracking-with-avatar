@@ -1,3 +1,6 @@
+// This component must be the top-most import in this file!
+import { ReactScan } from "@/app/ReactScanComponent";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -24,6 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <ReactScan />
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>
