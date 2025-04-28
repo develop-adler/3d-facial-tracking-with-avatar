@@ -13,8 +13,8 @@ import { useAvatarStore } from "@/app/stores/useAvatarStore";
 import type { Category } from "@mediapipe/tasks-vision";
 
 export const VideoChat: FC = () => {
-  const [video] = useState<HTMLVideoElement>(document.createElement("video"));
-  const [isStreamReady, setIsStreamReady] = useState(false);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [isStreamReady, setIsStreamReady] = useState<boolean>(false);
 
   const faceDetectorRef = useRef<FaceDetector>(null);
   const handDetectorRef = useRef<HandDetector>(null);
@@ -28,7 +28,7 @@ export const VideoChat: FC = () => {
   const avatar = useAvatarStore((state) => state.avatar);
 
   const runFaceDetection = async () => {
-    if (!video.srcObject) throw new Error("No video stream!");
+    if (!videoElement?.srcObject) throw new Error("No video stream!");
 
     if (detectFaceInterval.current) {
       clearInterval(detectFaceInterval.current);
@@ -41,7 +41,7 @@ export const VideoChat: FC = () => {
   };
 
   const runHandDetection = async () => {
-    if (!video.srcObject) throw new Error("No video stream!");
+    if (!videoElement?.srcObject) throw new Error("No video stream!");
 
     if (detectHandInterval.current) {
       clearInterval(detectHandInterval.current);
@@ -149,7 +149,7 @@ export const VideoChat: FC = () => {
     );
   };
 
-  const getUserVideoStream = async () => {
+  const getUserVideoStream = async (video: HTMLVideoElement) => {
     if (!hasGetUserMedia()) throw new Error("No webcam access!");
 
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -172,7 +172,9 @@ export const VideoChat: FC = () => {
   }, [isStreamReady, avatar]);
 
   useEffect(() => {
-    getUserVideoStream();
+    const video = document.createElement("video");
+    setVideoElement(video);
+    getUserVideoStream(video);
 
     faceDetectorRef.current ??= new FaceDetector(video);
     faceDetectorRef.current.init();
@@ -183,7 +185,6 @@ export const VideoChat: FC = () => {
       faceDetectorRef.current?.dispose();
       handDetectorRef.current?.dispose();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;
