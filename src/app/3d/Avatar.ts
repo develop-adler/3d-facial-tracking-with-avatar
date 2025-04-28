@@ -5,6 +5,8 @@ import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { Scene } from "@babylonjs/core/scene";
+import { isValidRPMAvatarId } from "../utils/utilities";
+import { useAvatarStore } from "../stores/useAvatarStore";
 
 type EyeBones = {
     left?: Bone;
@@ -90,15 +92,11 @@ export class Avatar {
         this.eyeBones = {};
     }
 
-    async loadAvatar(id: string = DEFAULT_AVATAR_ID) {
+    async loadAvatar(id: string = useAvatarStore.getState().avatarId ?? DEFAULT_AVATAR_ID) {
         if (this._isLoadingAvatar || this.currentAvatarId === id) return;
 
         this._isLoadingAvatar = true;
 
-        // asian female: 6809df026026f5144d94f3f4
-        // white female: 6809df7c4e68c7a706ac7e55
-        // black male: 6809d76c64ce38bc90a10c88
-        // white male: 67fe6f7713b3fb7e8aa0328c
         const container = await loadAssetContainerAsync(
             `https://models.readyplayer.me/${id}.glb?` +
             RPM_AVATAR_PARAMS,
@@ -118,7 +116,9 @@ export class Avatar {
         this.boneIKUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
             this.boneIKController?.update();
         });
+
         this.currentAvatarId = id;
+        useAvatarStore.getState().setAvatarId(id);
 
         this.bones = container.skeletons[0].bones;
         this.headBone = container.skeletons[0].bones.find(
@@ -142,6 +142,29 @@ export class Avatar {
         this.container = container;
         this._isLoadingAvatar = false;
         return [this.container, this.headBone] as const;
+    }
+
+    async changeAvatar(url: string) {
+        if (this._isLoadingAvatar) {
+            let interval: NodeJS.Timeout | null = null;
+            await new Promise<void>((resolve) => {
+                interval = setInterval(() => {
+                    if (!this._isLoadingAvatar) {
+                        clearInterval(interval!);
+                        resolve();
+                    }
+                }, 50);
+            });
+        }
+
+        // extract id from url
+        const id = url.split("/").pop()?.split(".")[0];
+        if (!id || !isValidRPMAvatarId(id)) {
+            window.alert("Invalid avatar URL");
+            return;
+        }
+        if (this.currentAvatarId === id) return;
+        return this.loadAvatar(id);
     }
 
     dispose() {

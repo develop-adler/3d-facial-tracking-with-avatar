@@ -10,6 +10,9 @@ export class CoreEngine {
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.engine = new Engine(canvas, true);
+
+        // render at twice the resolution
+        this.engine.setHardwareScalingLevel(0.5);
     }
 
     resize() {
