@@ -13,6 +13,7 @@ export class CoreEngine {
 
         // render at twice the resolution
         this.engine.setHardwareScalingLevel(0.5);
+        this.engine.maxFPS = 90;
     }
 
     resize() {

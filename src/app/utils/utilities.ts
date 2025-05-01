@@ -24,6 +24,17 @@ export const getCenterPoint = (a: Array3D, b: Array3D): Array3D => [
 export const normalize = (value: number, min: number, max: number): number =>
   Math.max(0, Math.min(1, (value - min) / (max - min)));
 
+export const normalizeToRange = (
+  value: number,
+  min: number,
+  max: number,
+  newMin: number,
+  newMax: number
+): number => {
+  const normalizedValue = normalize(value, min, max);
+  return newMin + normalizedValue * (newMax - newMin);
+};
+
 // get center index of array
 export const getCenterIndex = (arrLength: number) => Math.floor(arrLength / 2);
 

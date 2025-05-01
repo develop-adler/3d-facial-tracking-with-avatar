@@ -15,8 +15,8 @@ import { useAvatarStore } from "@/app/stores/useAvatarStore";
 import { useScreenControlStore } from "@/app/stores/useScreenControlStore";
 
 export const TopMenu = () => {
-    const [hide, setHide] = useState(false);
-    const [lastScrollY, setLastScrollY] = useState(0);
+    const [hide, setHide] = useState<boolean>(false);
+    const [lastScrollY, setLastScrollY] = useState<number>(0);
     const [openIframe, setOpenIframe] = useState(false);
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 

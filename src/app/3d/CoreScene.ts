@@ -62,7 +62,7 @@ export class CoreScene {
 
         // prevent clipping
         this.camera.minZ = 0.1;
-        this.camera.maxZ = 10;
+        this.camera.maxZ = 200;
 
         // lower rotation sensitivity, higher value = less sensitive
         this.camera.angularSensibilityX = 1500;

@@ -49,16 +49,18 @@ export const AvatarScene: FC = () => {
     useEffect(() => {
         if (!bjsCanvas.current) return;
 
-        const { coreEngine } = create3DScene(bjsCanvas.current);
+        const canvas = bjsCanvas.current;
+
+        const { coreEngine } = create3DScene(canvas);
         window.addEventListener("resize", coreEngine.resize.bind(coreEngine));
-        bjsCanvas.current.addEventListener(
+        canvas.addEventListener(
             "resize",
             coreEngine.resize.bind(coreEngine)
         );
 
         return () => {
             window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
-            bjsCanvas.current?.removeEventListener(
+            canvas.removeEventListener(
                 "resize",
                 coreEngine.resize.bind(coreEngine)
             );
@@ -68,10 +70,19 @@ export const AvatarScene: FC = () => {
     }, []);
 
     return (
-        <CanvasStyled
-            ref={bjsCanvas}
-            $viewportFill={isViewportFill}
-            $fullscreen={isFullscreen}
-        />
+        <>
+            <CanvasStyled
+                id="hand-canvas"
+                $viewportFill={isViewportFill}
+                $fullscreen={isFullscreen}
+                style={{ border: "none", zIndex: 1 }}
+            />
+            <CanvasStyled
+                id="avatar-canvas"
+                ref={bjsCanvas}
+                $viewportFill={isViewportFill}
+                $fullscreen={isFullscreen}
+            />
+        </>
     );
 };
