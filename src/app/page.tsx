@@ -1,17 +1,5 @@
-import { VideoChat } from "@/components/VideoChat";
-// import { VoiceChat } from "@/components/VoiceChat";
-import { AvatarScene } from "@/components/AvatarScene";
-import { ScreenControlButtons } from "@/components/ScreenControlButtons";
-import { TopMenu } from "@/components/TopMenu";
+import Page from "@/components/HomePage";
 
 export default function Home() {
-  return (
-    <>
-      <TopMenu />
-      <ScreenControlButtons />
-      <AvatarScene />
-      <VideoChat />
-      {/* <VoiceChat /> */}
-    </>
-  );
+  return <Page />;
 }

@@ -1,4 +1,4 @@
-import { globalTimestamp, updateGlobalTimestamp } from '@/global';
+import { globalTimestamp, updateGlobalTimestamp } from 'global';
 import {
     HandLandmarker,
     FilesetResolver,
@@ -26,7 +26,7 @@ export class HandDetector {
         );
         return await HandLandmarker.createFromOptions(filesetResolver, {
             baseOptions: {
-                modelAssetPath: "/hand_landmarker.task", // `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                modelAssetPath: "/landmarker/hand_landmarker.task", // `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
                 delegate: "GPU",
             },
             numHands: 2,

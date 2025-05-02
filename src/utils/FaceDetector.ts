@@ -1,4 +1,4 @@
-import { globalTimestamp, updateGlobalTimestamp } from '@/global';
+import { globalTimestamp, updateGlobalTimestamp } from 'global';
 import {
     FaceLandmarker,
     FilesetResolver,
@@ -26,7 +26,7 @@ export class FaceDetector {
         );
         return await FaceLandmarker.createFromOptions(filesetResolver, {
             baseOptions: {
-                modelAssetPath: "/face_landmarker.task", // `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                modelAssetPath: "/landmarker/face_landmarker.task", // `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
                 delegate: "GPU",
             },
             numFaces: 1,

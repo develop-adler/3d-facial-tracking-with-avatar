@@ -78,21 +78,4 @@ export const COLOR = {
     studioBlueButton: "#5C69E0",
     whiteAlpha: (opacity: number) => `rgba(255, 255, 255, ${opacity})`,
     blackAlpha: (opacity: number) => `rgba(0, 0, 0, ${opacity})`,
-    studioXGizmoSub: "#D61A5E",
-    studioYGizmo: "#2DFC49",
-    studioYGizmoSub: "#188731",
-    studioZGizmo: "#2D49FC",
-    studioZGizmoSub: "#1D2FA1",
-
-    interactionWheelBackground: `rgba(17, 17, 17, 0.60)`,
-    interactionWheelCircleBorder: `rgba(255, 255, 255, 0.10)`,
-    interactionWheelDivider: `rgba(255, 255, 255, 0.15)`,
-    interactionWheelPressed: `rgba(176, 0, 68, 0.80)`,
-    interactionWheelHovered: `rgba(168, 101, 127, 0.8)`,
-    interactionWheelStopButtonBackground: `rgba(17, 17, 17, 0.50)`,
-
-    avatarMultiplayProfileBackground: "#1111118C",
-    avatarMultiplayProfileBoxBorder: "#AAAAAA",
-
-    nakamaDebugTextColor: "#cf131f",
 };

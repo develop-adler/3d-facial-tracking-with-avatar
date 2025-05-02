@@ -3,17 +3,19 @@
 import { useEffect, useState, type FC } from "react";
 
 import {
-    ControlBar,
     RoomAudioRenderer,
     RoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Room } from "livekit-client";
 
+import { VirtualAvatarVideo } from "@/components/VirtualAvatarVideo";
 import { MyVideoConference } from "@/components/LiveKit/MyVideoConference";
+import { CanvasPublisher } from "@/components/LiveKit/RoomPage/components/CanvasPublisher";
+import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { clientSettings } from "clientSettings";
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 type Props = {
     room: string;
@@ -47,6 +49,7 @@ export const RoomPage: FC<Props> = ({ room, name }) => {
                     setRoomAndName(null);
                 });
             } catch (e) {
+                setRoomAndName(null);
                 console.error(e);
             }
         })();
@@ -59,15 +62,23 @@ export const RoomPage: FC<Props> = ({ room, name }) => {
     }, [roomInstance]);
 
     return (
-        <RoomContext.Provider value={roomInstance}>
-            <div data-lk-theme="default" style={{ height: "100dvh" }}>
-                {/* Your custom component with basic video conferencing functionality. */}
-                <MyVideoConference />
-                {/* The RoomAudioRenderer takes care of room-wide audio for you. */}
-                <RoomAudioRenderer />
-                {/* Controls for the user to start/stop audio, video, and screen share tracks */}
-                <ControlBar />
-            </div>
-        </RoomContext.Provider>
+        <>
+            <RoomContext.Provider value={roomInstance}>
+                {/* To publish 3D babylon.js canvas as camera stream */}
+                <CanvasPublisher room={roomInstance} />
+
+                <div data-lk-theme="default" style={{ height: "100dvh" }}>
+                    {/* Your custom component with basic video conferencing functionality. */}
+                    <MyVideoConference />
+                    {/* The RoomAudioRenderer takes care of room-wide audio for you. */}
+                    <RoomAudioRenderer />
+                    {/* Controls for user */}
+                    <CustomControlBar />
+                </div>
+            </RoomContext.Provider>
+
+            {/* Run the 3D avatar scene with facial tracking */}
+            <VirtualAvatarVideo />
+        </>
     );
 };

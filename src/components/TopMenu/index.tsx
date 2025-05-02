@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent } from "react";
-import { Menu, MenuItem, Toolbar } from "@mui/material";
+import { usePathname, useRouter } from "next/navigation";
+
+import { useState, type MouseEvent } from "react";
+
+import HomeIcon from "@mui/icons-material/Home";
+import { Box, Menu, MenuItem, Toolbar } from "@mui/material";
 
 import {
     ButtonContainer,
@@ -15,18 +19,15 @@ import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 export const TopMenu = () => {
-    const [hide, setHide] = useState<boolean>(false);
-    const [lastScrollY, setLastScrollY] = useState<number>(0);
+    const router = useRouter();
+    const pathName = usePathname();
+
     const [openIframe, setOpenIframe] = useState(false);
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const avatar = useAvatarStore((state) => state.avatar);
-    const isViewportFill = useScreenControlStore(
-        (state) => state.isViewportFill
-    );
-    const isFullscreen = useScreenControlStore(
-        (state) => state.isFullscreen
-    );
+    const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
+    const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
 
     const handleDropdownOpen = (event: MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -40,20 +41,11 @@ export const TopMenu = () => {
         avatar?.loadAvatar(avatarId);
     };
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            if (currentScrollY > lastScrollY && currentScrollY > 50) {
-                setHide(true);
-            } else {
-                setHide(false);
-            }
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [lastScrollY]);
+    const pushRoute = (route: string) => {
+        if (pathName === route) return;
+        if (!pathName.startsWith("/")) throw new Error("Invalid path name");
+        router.push(route);
+    };
 
     if (isViewportFill || isFullscreen) {
         return null; // Don't show the menu in fullscreen or viewport fill mode
@@ -61,9 +53,29 @@ export const TopMenu = () => {
 
     return (
         <>
-            <StyledAppBar position="fixed" hide={hide}>
+            <StyledAppBar>
                 <Toolbar sx={{ minHeight: "50px !important" }}>
+                    {/* Left-side: Home button */}
+                    <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
+                        <StyledButton
+                            variant="contained"
+                            color="primary"
+                            onClick={() => pushRoute("/")}
+                            sx={{ minWidth: 0, padding: 1 }}
+                        >
+                            <HomeIcon />
+                        </StyledButton>
+                    </Box>
+
+                    {/* Center: Avatar controls */}
                     <ButtonContainer>
+                        <StyledButton
+                            variant="contained"
+                            color="warning"
+                            onClick={() => pushRoute("/room")}
+                        >
+                            Join a call room
+                        </StyledButton>
                         <StyledButton
                             variant="contained"
                             color="secondary"
@@ -98,6 +110,9 @@ export const TopMenu = () => {
                             Avatar presets ⬇️
                         </StyledButton>
                     </ButtonContainer>
+
+                    {/* Right-side filler (to balance flex layout) */}
+                    <Box sx={{ flex: 1 }} />
                 </Toolbar>
             </StyledAppBar>
 

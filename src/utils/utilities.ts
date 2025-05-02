@@ -1,9 +1,26 @@
 import type { Array3D } from "global";
 
 export const hasGetUserMedia = (): boolean => {
-  // Check if the browser has webcam access
-  return !!(navigator.mediaDevices?.getUserMedia);
-}
+  // Check if the browser has device access
+  return !!navigator.mediaDevices?.getUserMedia;
+};
+
+export const hasWebcam = async (): Promise<boolean> => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
+    const videoTracks = stream.getVideoTracks();
+    const hasCamera = videoTracks.length > 0;
+    videoTracks.forEach((track) => track.stop());
+    stream.getTracks().forEach((track) => stream.removeTrack(track));
+    return hasCamera;
+    // eslint-disable-next-line
+  } catch (e) {
+    return false;
+  }
+};
 
 export const getDistance = (a: Array3D, b: Array3D): number =>
   Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -46,4 +63,4 @@ export const clamp = (value: number, min: number, max: number): number =>
 export const isValidRPMAvatarId = (id: string): boolean => {
   const objectIdRegex = /^[a-f0-9]{24}$/;
   return objectIdRegex.test(id);
-}
+};

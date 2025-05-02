@@ -23,8 +23,8 @@ export const MyVideoConference = () => {
             style={{ height: "calc(100vh - var(--lk-control-bar-height))" }}
         >
             {/* The GridLayout accepts zero or one child. The child is used
-      as a template to render all passed in tracks. */}
+                as a template to render all passed in tracks. */}
             <ParticipantTile />
         </GridLayout>
     );
-}
+};

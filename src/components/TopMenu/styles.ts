@@ -1,13 +1,15 @@
 import { AppBar, Button, Box, styled, Modal } from "@mui/material";
 
+import { COLOR } from "constant";
+
 // Styled Components
-export const StyledAppBar = styled(AppBar)<{ hide: boolean }>(({ hide }) => ({
-    backgroundColor: "#26244a",
+export const StyledAppBar = styled(AppBar)({
+    backgroundColor: COLOR.grayScale17,
     transition: "top 0.3s",
-    top: hide ? "-60px" : "0",
+    top: 0,
     height: 50,
     justifyContent: "center",
-}));
+});
 
 export const ButtonContainer = styled(Box)(({ theme }) => ({
     flexGrow: 1,

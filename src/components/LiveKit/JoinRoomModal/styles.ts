@@ -1,22 +1,6 @@
-import { styled, Box, Typography } from "@mui/material";
 
-export const ModalContainer = styled(Box)(({ theme }) => ({
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: "50%",
-  height: "auto",
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "1rem",
-  boxShadow: theme.shadows[5],
-  padding: theme.spacing(4),
-  gap: theme.spacing(2),
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center", // centered inner elements vertically
-  alignItems: "center", // centered inner elements horizontally
-}));
+import { Button, styled, Box, TextField, Typography } from "@mui/material";
+import { COLOR } from "constant";
 
 export const ModalTitle = styled(Typography)(({ theme }) => ({
   fontSize: theme.typography.h3.fontSize,
@@ -24,3 +8,33 @@ export const ModalTitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.common.black,
   marginBottom: theme.spacing(4),
 }));
+
+
+export const ModalTextFieldContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing(2),
+  width: "50%",
+  marginBottom: theme.spacing(2),
+}));
+
+export const ModalTextField = styled(TextField)(({ theme }) => ({
+  marginBottom: theme.spacing(1),
+}));
+
+export const RandomNameButton = styled(Button)(({ theme }) => ({
+  backgroundColor: COLOR.brandPrimary,
+  color: theme.palette.common.white,
+  width: "12rem",
+  height: "auto",
+  marginLeft: "auto",
+  marginRight: "0",
+}));
+
+export const SubmitButton = styled(Button)({
+  borderRadius: "2rem",
+  backgroundColor: COLOR.brandPrimary,
+  color: COLOR.white,
+  padding: "0.5rem 2rem",
+  fontSize: "1.2rem",
+});
