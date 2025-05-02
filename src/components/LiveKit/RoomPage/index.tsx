@@ -13,11 +13,14 @@ import { Room } from "livekit-client";
 import { MyVideoConference } from "@/components/LiveKit/MyVideoConference";
 
 import { clientSettings } from "clientSettings";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
-export const RoomPage: FC = () => {
-    // TODO: get user input for room and name
-    const room = "test-room";
-    const name = "gavin";
+type Props = {
+    room: string;
+    name: string;
+};
+
+export const RoomPage: FC<Props> = ({ room, name }) => {
     const [roomInstance] = useState(
         () =>
             new Room({
@@ -27,6 +30,8 @@ export const RoomPage: FC = () => {
                 dynacast: true,
             })
     );
+
+    const setRoomAndName = useLiveKitStore((state) => state.setRoomAndName);
 
     useEffect(() => {
         let mounted = true;
@@ -38,6 +43,9 @@ export const RoomPage: FC = () => {
                 if (data.token && clientSettings.LIVEKIT_URL) {
                     await roomInstance.connect(clientSettings.LIVEKIT_URL, data.token);
                 }
+                roomInstance.on("disconnected", () => {
+                    setRoomAndName(null);
+                });
             } catch (e) {
                 console.error(e);
             }
@@ -47,6 +55,7 @@ export const RoomPage: FC = () => {
             mounted = false;
             roomInstance.disconnect();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [roomInstance]);
 
     return (

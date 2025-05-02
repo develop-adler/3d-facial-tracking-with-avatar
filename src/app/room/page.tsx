@@ -1,5 +1,5 @@
-import { RoomPage } from "@/components/LiveKit/RoomPage";
+import { LiveKitPage } from "@/components/LiveKit/index";
 
 export default function Page() {
-    return <RoomPage />;
+    return <LiveKitPage />;
 }

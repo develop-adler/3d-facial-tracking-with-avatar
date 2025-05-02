@@ -104,7 +104,7 @@ export class Avatar {
 
         const bones = container.skeletons[0].bones;
 
-        console.log('bones', bones.map((bone) => bone.name));
+        // console.log('bones', bones.map((bone) => bone.name));
 
         this.bones = bones;
         this.headBone = bones.find((bone) => bone.name === "Head");
