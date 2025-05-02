@@ -32,8 +32,6 @@ export const RoomPage: FC = () => {
         let mounted = true;
         (async () => {
             try {
-                console.log('LIVEKIT_URL:', clientSettings.LIVEKIT_URL);
-
                 const resp = await fetch(`/api/token?room=${room}&username=${name}`);
                 const data = await resp.json();
                 if (!mounted) return;
