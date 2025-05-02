@@ -2,7 +2,7 @@
 
 import { useEffect, type FC } from "react";
 
-import { useScreenControlStore } from "@/app/stores/useScreenControlStore";
+import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";

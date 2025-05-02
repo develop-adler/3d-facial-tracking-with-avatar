@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { FaceDetectorType } from '@/app/utils/FaceDetector';
+import type { FaceDetectorType } from '@/utils/FaceDetector';
 
 type FaceDetectorStore = {
   faceDetector: FaceDetectorType | null;

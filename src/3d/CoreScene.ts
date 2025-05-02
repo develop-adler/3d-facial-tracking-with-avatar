@@ -3,7 +3,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 
-import type { CoreEngine } from "@/app/3d/CoreEngine";
+import type { CoreEngine } from "@/3d/CoreEngine";
 
 export class CoreScene {
     readonly coreEngine: CoreEngine;

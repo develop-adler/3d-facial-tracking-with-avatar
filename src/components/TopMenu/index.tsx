@@ -11,8 +11,8 @@ import {
     StyledButton,
 } from "./styles";
 
-import { useAvatarStore } from "@/app/stores/useAvatarStore";
-import { useScreenControlStore } from "@/app/stores/useScreenControlStore";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 export const TopMenu = () => {
     const [hide, setHide] = useState<boolean>(false);

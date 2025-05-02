@@ -4,15 +4,15 @@ import { useEffect, useRef, useState, type FC } from "react";
 
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
-import { FaceDetector } from "@/app/utils/FaceDetector";
-import { HandDetector } from "@/app/utils/HandDetector";
-import { clamp, hasGetUserMedia, lerp, normalize, normalizeToRange } from "@/app/utils/utilities";
+import { FaceDetector } from "@/utils/FaceDetector";
+import { HandDetector } from "@/utils/HandDetector";
+import { clamp, hasGetUserMedia, lerp, normalize, normalizeToRange } from "@/utils/utilities";
 
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import type { AvatarType } from "@/app/3d/Avatar";
-import { useAvatarStore } from "@/app/stores/useAvatarStore";
-import { drawConnectors, drawLandmarks } from "@/app/utils/draw_hands";
+import type { AvatarType } from "@/3d/Avatar";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { drawConnectors, drawLandmarks } from "@/utils/draw_hands";
 import type { Category, NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 const getLeftRightHandIndices = (handedness: Category[][]) => {

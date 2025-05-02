@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { AvatarType } from "@/app/3d/Avatar";
+import type { AvatarType } from "@/3d/Avatar";
 import { persist } from "zustand/middleware";
 
 type AvatarStore = {

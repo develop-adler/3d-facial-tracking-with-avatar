@@ -1,8 +1,8 @@
-import { VideoChat } from "@/app/components/VideoChat";
-// import { VoiceChat } from "@/app/components/VoiceChat";
-import { AvatarScene } from "@/app/components/AvatarScene";
-import { ScreenControlButtons } from "@/app/components/ScreenControlButtons";
-import { TopMenu } from "@/app/components/TopMenu";
+import { VideoChat } from "@/components/VideoChat";
+// import { VoiceChat } from "@/components/VoiceChat";
+import { AvatarScene } from "@/components/AvatarScene";
+import { ScreenControlButtons } from "@/components/ScreenControlButtons";
+import { TopMenu } from "@/components/TopMenu";
 
 export default function Home() {
   return (

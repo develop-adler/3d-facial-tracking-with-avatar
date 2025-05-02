@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { CoreSceneType } from '@/app/3d/CoreScene';
+import type { CoreSceneType } from '@/3d/CoreScene';
 
 type SceneStore = {
     coreScene: CoreSceneType | null;

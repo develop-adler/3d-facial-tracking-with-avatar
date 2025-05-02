@@ -1,4 +1,4 @@
-import { globalTimestamp, updateGlobalTimestamp } from '@/app/global';
+import { globalTimestamp, updateGlobalTimestamp } from '@/global';
 import {
     FaceLandmarker,
     FilesetResolver,

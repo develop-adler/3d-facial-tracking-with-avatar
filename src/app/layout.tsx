@@ -1,5 +1,5 @@
 // This component must be the top-most import in this file!
-import { ReactScan } from "@/app/ReactScanComponent";
+import { ReactScan } from "@/ReactScanComponent";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";

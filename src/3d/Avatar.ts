@@ -8,8 +8,8 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { Scene } from "@babylonjs/core/scene";
-import { isValidRPMAvatarId } from "@/app/utils/utilities";
-import { useAvatarStore } from "@/app/stores/useAvatarStore";
+import { isValidRPMAvatarId } from "@/utils/utilities";
+import { useAvatarStore } from "@/stores/useAvatarStore";
 
 const RPM_AVATAR_PARAMS = `
     morphTargets=

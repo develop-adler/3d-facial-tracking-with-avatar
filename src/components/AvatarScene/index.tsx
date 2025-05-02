@@ -4,13 +4,13 @@ import { useEffect, useRef, type FC } from "react";
 
 import { CanvasStyled } from "./styles";
 
-import { CoreEngine } from "@/app/3d/CoreEngine";
-import { CoreScene } from "@/app/3d/CoreScene";
-import { Avatar } from "@/app/3d/Avatar";
-import { useAvatarStore } from "@/app/stores/useAvatarStore";
-import { useEngineStore } from "@/app/stores/useEngineStore";
-import { useSceneStore } from "@/app/stores/useSceneStore";
-import { useScreenControlStore } from "@/app/stores/useScreenControlStore";
+import { CoreEngine } from "@/3d/CoreEngine";
+import { CoreScene } from "@/3d/CoreScene";
+import { Avatar } from "@/3d/Avatar";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useEngineStore } from "@/stores/useEngineStore";
+import { useSceneStore } from "@/stores/useSceneStore";
+import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 export const AvatarScene: FC = () => {
     const bjsCanvas = useRef<HTMLCanvasElement>(null); // For 3D scene
