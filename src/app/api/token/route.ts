@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
         );
     }
 
-    const apiKey = clientSettings.LIVEKIT_API_KEY;
-    const apiSecret = clientSettings.LIVEKIT_API_SECRET;
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
     const wsUrl = clientSettings.LIVEKIT_URL;
 
     if (!apiKey || !apiSecret || !wsUrl) {
