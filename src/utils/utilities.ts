@@ -1,4 +1,4 @@
-import type { Array3D } from "global";
+import type { Array3D } from "global.d";
 
 export const hasGetUserMedia = (): boolean => {
   // Check if the browser has device access
