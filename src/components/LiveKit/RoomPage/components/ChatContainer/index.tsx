@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 
 import { useChatToggleStore } from "@/stores/useChatToggle";
 
-import { ROOM_CHAT_WIDTH } from "constant";
+import { TOP_MENU_HEIGHT } from "constant";
 
 export const ChatContainer = () => {
     const isChatOpen = useChatToggleStore((state) => state.isChatOpen);
@@ -13,8 +13,9 @@ export const ChatContainer = () => {
                 position: "absolute",
                 top: 0,
                 right: 0,
-                width: ROOM_CHAT_WIDTH,
-                height: "100%",
+                marginTop: `${TOP_MENU_HEIGHT} !important`,
+                width: "clamp(200px, 55ch, 60ch)",
+                height: `calc(100vh - ${TOP_MENU_HEIGHT} - var(--lk-control-bar-height))`,
                 transition: "transform 0.3s ease, opacity 0.3s ease",
                 transform: isChatOpen ? "translateX(0)" : "translateX(100%)",
                 opacity: isChatOpen ? 1 : 0,
@@ -23,7 +24,8 @@ export const ChatContainer = () => {
             }}
         >
             <Chat
-                style={{ height: "calc(100vh - var(--lk-control-bar-height))" }}
+                // need to explicitly set the height to 100% otherwise it'll be tiny
+                style={{ height: '100%' }}
             />
         </Box>
     );

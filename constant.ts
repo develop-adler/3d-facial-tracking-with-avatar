@@ -81,4 +81,5 @@ export const COLOR = {
 };
 
 
-export const ROOM_CHAT_WIDTH = "24.5%";
+export const ROOM_CHAT_WIDTH = 'clamp(200px, 55ch, 60ch)';
+export const TOP_MENU_HEIGHT = '3rem';

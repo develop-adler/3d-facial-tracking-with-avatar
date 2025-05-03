@@ -1,13 +1,13 @@
 import { AppBar, Button, Box, styled, Modal } from "@mui/material";
 
-import { COLOR } from "constant";
+import { COLOR, TOP_MENU_HEIGHT } from "constant";
 
 // Styled Components
 export const StyledAppBar = styled(AppBar)({
-    backgroundColor: COLOR.grayScale17,
-    transition: "top 0.3s",
+    position: "fixed",
     top: 0,
-    height: 50,
+    height: TOP_MENU_HEIGHT,
+    backgroundColor: COLOR.grayScale17,
     justifyContent: "center",
 });
 

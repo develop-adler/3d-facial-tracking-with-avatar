@@ -67,7 +67,7 @@ export const RoomPage: FC<Props> = ({ room, name }) => {
                 {/* To publish 3D babylon.js canvas as camera stream */}
                 <CanvasPublisher room={roomInstance} />
 
-                <div data-lk-theme="default" style={{ height: "100dvh" }}>
+                <div data-lk-theme="default">
                     {/* This one contains layout of participants and chat window */}
                     <MainConferenceBody />
                     {/* The RoomAudioRenderer takes care of room-wide audio for you. */}
