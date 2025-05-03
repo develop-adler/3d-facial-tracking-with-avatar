@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 
 // import { TopMenu } from "@/components/TopMenu";
 
-const TopMenu = dynamic(() => import('@/components/TopMenu').then(p => p.TopMenu), { ssr: false });
+const TopMenu = dynamic(() => import('@/components/TopMenu'), { ssr: false });
 
 export default function LayoutWithTopMenu({
     children,

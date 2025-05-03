@@ -26,6 +26,8 @@ export const CanvasStyled = styled("canvas")<{ $isForRoom?: boolean }>(
         userSelect: "none",
         zIndex: $isForRoom ? 0 : -999999,
         visibility: $isForRoom ? "hidden" : "visible", 
+        // don't interfere with current DOM elements
+        position: $isForRoom ? 'fixed' : 'static',
 
         // mirrored
         transform: "scaleX(-1)",

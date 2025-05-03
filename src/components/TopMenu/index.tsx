@@ -18,7 +18,7 @@ import {
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
-export const TopMenu = () => {
+const TopMenu = () => {
     const router = useRouter();
     const pathName = usePathname();
 
@@ -150,3 +150,5 @@ export const TopMenu = () => {
         </>
     );
 };
+
+export default TopMenu;
