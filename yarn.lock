@@ -151,15 +151,15 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
-"@babylonjs/core@^8.3.1":
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-8.3.1.tgz#281477b72e95d26499bcae37c3ab22be014358fa"
-  integrity sha512-FBf/rMHeLu1QEhfAm5ye2EV+ACBu2hb9SrnyQnspGhevm8PM4VKA2z2P7IqnDB8CgCjQ4Vr7PCGCmuZ7ZENWoA==
+"@babylonjs/core@^8.6.1":
+  version "8.6.1"
+  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-8.6.1.tgz#1d905156308aa194d42cdd9d01f12675fa8d65d9"
+  integrity sha512-7/VhqaDPdtav0vGoGJ7XwGGzhcoeY4M3/C4ROsqHdD8lpsFvG94CDzmIRON+FGSB3mOCB59Vs84SPSpW18Unlg==
 
-"@babylonjs/loaders@^8.3.1":
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-8.3.1.tgz#2ffd8ac3bc15a2c07eb344e46ee199249c76edf9"
-  integrity sha512-cOGzKYyRuU7eMiLKX0VeyLAk+mjBrdY3Tp6UcB4275MVuJ87kuZoZrsHV4qDsTb9t/aOlu1HpH80lPRI52tnVw==
+"@babylonjs/loaders@^8.6.1":
+  version "8.6.1"
+  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-8.6.1.tgz#802c30ee22685731fbfb93cfbd537c12390fe7c5"
+  integrity sha512-Kv5gYJz5KNLF3txBFDrrxT77qOeHF2msKBI6dVAgRFIuJ60CaC881gWOZl3TkgMDDlUrtyzGMTd8A+coBBAIDg==
 
 "@bufbuild/protobuf@^1.10.0", "@bufbuild/protobuf@^1.7.2":
   version "1.10.1"
