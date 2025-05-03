@@ -16,6 +16,7 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { useChatToggleStore } from "@/stores/useChatToggle";
+import { KrispNoiseFilterInputBox } from "../KrispNoiseFilterInputBox";
 
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector
@@ -59,6 +60,9 @@ export const CustomControlBar = () => {
     return (
         <LayoutContextProvider>
             <div className="lk-control-bar">
+                <div className="lk-button-group">
+                    <KrispNoiseFilterInputBox />
+                </div>
                 <div className="lk-button-group">
                     <TrackToggle
                         source={Track.Source.Microphone}
