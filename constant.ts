@@ -79,3 +79,6 @@ export const COLOR = {
     whiteAlpha: (opacity: number) => `rgba(255, 255, 255, ${opacity})`,
     blackAlpha: (opacity: number) => `rgba(0, 0, 0, ${opacity})`,
 };
+
+
+export const ROOM_CHAT_WIDTH = "24.5%";
