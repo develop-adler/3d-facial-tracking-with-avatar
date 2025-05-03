@@ -86,6 +86,11 @@ export const CustomControlBar = () => {
                             source={Track.Source.Camera}
                             showIcon={true}
                             onChange={cameraOnChange}
+                            style={{
+                                // fix right side borders being right angled
+                                borderTopRightRadius: 'var(--lk-border-radius)',
+                                borderBottomRightRadius: 'var(--lk-border-radius)',
+                            }}
                         >
                             Camera
                         </TrackToggle>
