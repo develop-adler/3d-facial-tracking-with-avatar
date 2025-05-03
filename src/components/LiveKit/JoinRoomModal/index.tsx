@@ -61,7 +61,7 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                 <Box
                     component="form"
                     acceptCharset="UTF-8"
-                    autoComplete="off"
+                    // autoComplete="off"
                     sx={{
                         position: "absolute",
                         top: "50%",
