@@ -10,6 +10,7 @@ import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManage
 import type { Scene } from "@babylonjs/core/scene";
 import { isValidRPMAvatarId } from "@/utils/utilities";
 import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
 
 const RPM_AVATAR_PARAMS = `
     morphTargets=
@@ -47,7 +48,7 @@ export class Avatar {
     boneIKControllers: {
         left?: BoneIKController;
         right?: BoneIKController;
-    }
+    };
     boneIKUpdateObserver?: Observer<Scene>;
     readonly boneIKTargets: {
         left: {
@@ -58,7 +59,7 @@ export class Avatar {
             pole: TransformNode;
             target: TransformNode;
         };
-    }
+    };
     private _isLoadingAvatar: boolean = false;
 
     constructor(scene: Scene) {
@@ -74,7 +75,7 @@ export class Avatar {
                 pole: new TransformNode("rightHandPoleTarget", scene),
                 target: new TransformNode("rightHandTarget", scene),
             },
-        }
+        };
     }
 
     async loadAvatar(
@@ -94,9 +95,16 @@ export class Avatar {
                         compileMaterials: true,
                     },
                 },
+                onProgress: (e) => {
+                    const percentage = Math.floor((e.loaded / e.total) * 100);
+                    useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
+                },
             }
         );
+
         this.dispose();
+
+        useAvatarLoadingStore.getState().setNotLoading();
         container.addAllToScene();
 
         this.currentAvatarId = id;
@@ -158,7 +166,7 @@ export class Avatar {
             bones.find((bone) => bone.name === "RightHand")!,
             {
                 targetMesh: this.boneIKTargets.right.target,
-                poleTargetBone: bones.find(bone => bone.name === "RightForeArm"), // orient bending based on this bone
+                poleTargetBone: bones.find((bone) => bone.name === "RightForeArm"), // orient bending based on this bone
                 poleTargetMesh: this.boneIKTargets.right.pole,
                 // poleAngle: 0,
                 // bendAxis: Vector3.Right(),      // usually 'Right' for arms

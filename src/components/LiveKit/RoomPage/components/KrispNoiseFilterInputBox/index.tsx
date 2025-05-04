@@ -118,7 +118,7 @@ export const KrispNoiseFilterInputBox = () => {
                 MozUserSelect: "none",
                 msUserSelect: "none",
             }}
-            label={isNoiseFilterPending ? "Enabling" : "Krisp Noise Filter"}
+            label="Krisp Noise Filter"
         />
     );
 };

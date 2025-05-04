@@ -10,12 +10,8 @@ export const CanvasContainer = styled("div")<{
         top: fill ? 0 : "50%",
         left: fill ? 0 : "50%",
         translate: fill ? undefined : "-50% -50%",
-        width: fill ? "100vw" : "auto",
-        height: fill ? "100vh" : "60%",
-
-        // border
-        borderRadius: "0.6rem",
-        border: fill ? "none" : "0.2rem solid #FC2D7C",
+        width: fill ? "100%" : "auto",
+        height: fill ? "100%" : "60%",
     };
 });
 

@@ -16,6 +16,8 @@ import { useSceneStore } from "@/stores/useSceneStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 import { updateMediaStream } from "global";
+import LoadingBar from "./components/LoadingBar";
+import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
 
 export const AvatarScene: FC = () => {
     const pathName = usePathname();
@@ -31,6 +33,7 @@ export const AvatarScene: FC = () => {
     const setAvatar = useAvatarStore((state) => state.setAvatar);
     const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
+    const setIsLoading = useAvatarLoadingStore((state) => state.setIsLoading);
 
     const create3DScene = (canvas: HTMLCanvasElement) => {
         const coreEngine = new CoreEngine(canvas);
@@ -51,6 +54,11 @@ export const AvatarScene: FC = () => {
     };
 
     useEffect(() => {
+        setIsLoading(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
         coreEngineRef.current?.resize();
     }, [isViewportFill]);
 
@@ -64,7 +72,8 @@ export const AvatarScene: FC = () => {
         canvas.addEventListener("resize", coreEngine.resize.bind(coreEngine));
 
         // Create MediaStream to pass to LiveKit
-        if (pathName === "/room") updateMediaStream(bjsCanvas.current.captureStream(60));
+        if (pathName === "/room")
+            updateMediaStream(bjsCanvas.current.captureStream(60));
 
         return () => {
             window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
@@ -93,13 +102,14 @@ export const AvatarScene: FC = () => {
                 <CanvasStyled
                     id="avatar-canvas"
                     ref={bjsCanvas}
-                    $isForRoom={pathName === "/room"}
+                    $isForRoom
                 />
             ) : (
                 <CanvasContainer
                     $viewportFill={isViewportFill}
                     $fullscreen={isFullscreen}
                 >
+                    <LoadingBar />
                     <CanvasStyled id="avatar-canvas" ref={bjsCanvas} />
                 </CanvasContainer>
             )}
