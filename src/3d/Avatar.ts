@@ -84,6 +84,8 @@ export class Avatar {
         if (this._isLoadingAvatar || this.currentAvatarId === id) return;
 
         this._isLoadingAvatar = true;
+        useAvatarLoadingStore.getState().setIsLoading(true);
+        useAvatarLoadingStore.getState().setLoadingPercentage(0);
 
         const container = await loadAssetContainerAsync(
             `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS,
