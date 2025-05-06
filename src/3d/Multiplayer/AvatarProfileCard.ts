@@ -18,7 +18,7 @@ const PROFILE_CARD_SIZE = {
 class AvatarProfileCard {
     readonly avatar: Avatar;
     readonly participant: Participant;
-    readonly htmlMesh: typeof HtmlMesh;
+    readonly htmlMesh: HtmlMesh;
     htmlElement: Nullable<HTMLElement> = null;
     readonly sceneRenderObserver: Observer<Scene>;
     isDisplayed: boolean = false;
@@ -59,7 +59,7 @@ class AvatarProfileCard {
         };
         eventBus.onWithEvent('multiplayer:avatarProfileCardUpdate', this.windowEventListenerCallback);
     }
-    private _init(): typeof HtmlMesh {
+    private _init(): HtmlMesh {
         const htmlMesh = new HtmlMesh(this.avatar.scene, 'htmlMesh_' + this.participant.sid, {
             isCanvasOverlay: true,
         });
