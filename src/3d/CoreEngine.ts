@@ -1,4 +1,5 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
+import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { DracoCompression } from "@babylonjs/core/Meshes/Compression/dracoCompression";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { Logger } from "@babylonjs/core/Misc/logger";
@@ -11,6 +12,17 @@ import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 
 registerBuiltInLoaders();
 
+const SafeCanvas = (() => {
+    if (typeof document !== 'undefined') {
+        return document.createElement('canvas');
+    } else {
+        // Minimal fake canvas object to avoid SSR crash
+        return {
+            getContext: () => null,
+        } as unknown as HTMLCanvasElement;
+    }
+})();
+
 export class CoreEngine {
     private static instance: CoreEngine;
     readonly canvas: HTMLCanvasElement;
@@ -21,14 +33,6 @@ export class CoreEngine {
     spaceLoadingData: SpaceLoadingPerformance;
 
     private constructor() {
-        this.canvas = document.createElement("canvas");
-        this.canvas.style.width = "100%";
-        this.canvas.style.height = "100%";
-        this.canvas.style.outline = "none";
-        this.canvas.style.border = "none";
-
-        this.engine = this._createEngine(this.canvas);
-
         this.spaceLoadingData = {
             space_data_loaded: -1,
             space_3d_objects_loaded: -1,
@@ -47,7 +51,29 @@ export class CoreEngine {
             space_uh_lod_ready: -1,
             space_fully_loaded: -1,
         };
+
+        if (typeof document === 'undefined') {
+            this.canvas = SafeCanvas;
+            this.engine = new NullEngine();
+        }
+
+        this.canvas = document.createElement("canvas");
+        this.canvas.style.width = "100%";
+        this.canvas.style.height = "100%";
+        this.canvas.style.outline = "none";
+        this.canvas.style.border = "none";
+
+        this.engine = this._createEngine(this.canvas);
+
     }
+
+    static getInstance(): CoreEngine {
+        if (!CoreEngine.instance) {
+            CoreEngine.instance = new CoreEngine();
+        }
+        return CoreEngine.instance;
+    }
+
     private _createEngine(canvas: HTMLCanvasElement): Engine {
         this._setBabylonJSDefaults();
         const engine = new Engine(canvas, true, {
@@ -74,13 +100,6 @@ export class CoreEngine {
         this.isSettingUpHavok = false;
         eventBus.emitWithEvent('havok:ready', havok);
         return havok;
-    }
-
-    static getInstance(): CoreEngine {
-        if (!CoreEngine.instance) {
-            CoreEngine.instance = new CoreEngine();
-        }
-        return CoreEngine.instance;
     }
 
     private _setBabylonJSDefaults(): void {
