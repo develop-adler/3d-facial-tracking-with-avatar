@@ -151,6 +151,11 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
+"@babylonjs/addons@^8.6.1":
+  version "8.6.1"
+  resolved "https://registry.yarnpkg.com/@babylonjs/addons/-/addons-8.6.1.tgz#350f57742dda2c2bb3ddbe8ec054770cbb25cc36"
+  integrity sha512-PnS96JLJR+uhlIl0nvLQHBlD6SCoO3F9AAgTMEy2x7cxceK1Iq+CNP+x3Po9uNPnhoJCetU+Z6UzpGIBVF+Bmg==
+
 "@babylonjs/core@^8.6.1":
   version "8.6.1"
   resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-8.6.1.tgz#1d905156308aa194d42cdd9d01f12675fa8d65d9"
@@ -1518,11 +1523,6 @@ babel-plugin-macros@^3.1.0:
     "@babel/runtime" "^7.12.5"
     cosmiconfig "^7.0.0"
     resolve "^1.19.0"
-
-babylon-htmlmesh@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/babylon-htmlmesh/-/babylon-htmlmesh-2.0.1.tgz#5bbdde2df2fadc4146ea7c6b66d5f25cb209bd79"
-  integrity sha512-wS45srNm02ZNE7Akv4n5XTobnci7TkWBKKzVR0WMuyyJloqLs/mNi8hmzpMJYGYo2ACU0k9HzC4N3Pp9QZdbRw==
 
 balanced-match@^1.0.0:
   version "1.0.2"

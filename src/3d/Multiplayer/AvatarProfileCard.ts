@@ -1,5 +1,5 @@
+import { HtmlMesh } from "@babylonjs/addons/htmlMesh";
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { HtmlMesh } from 'babylon-htmlmesh';
 import type { Participant } from 'livekit-client';
 
 import type Avatar from '@/3d/Multiplayer/Avatar';
@@ -18,7 +18,7 @@ const PROFILE_CARD_SIZE = {
 class AvatarProfileCard {
     readonly avatar: Avatar;
     readonly participant: Participant;
-    readonly htmlMesh: HtmlMesh;
+    readonly htmlMesh: typeof HtmlMesh;
     htmlElement: Nullable<HTMLElement> = null;
     readonly sceneRenderObserver: Observer<Scene>;
     isDisplayed: boolean = false;
@@ -59,7 +59,7 @@ class AvatarProfileCard {
         };
         eventBus.onWithEvent('multiplayer:avatarProfileCardUpdate', this.windowEventListenerCallback);
     }
-    private _init(): HtmlMesh {
+    private _init(): typeof HtmlMesh {
         const htmlMesh = new HtmlMesh(this.avatar.scene, 'htmlMesh_' + this.participant.sid, {
             isCanvasOverlay: true,
         });
