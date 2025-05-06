@@ -238,7 +238,9 @@ class RoomManager {
         }
     }
 
-    dispose() { }
+    dispose() {
+        this.room.unregisterRpcMethod("syncAvatar");
+    }
 }
 
 export default RoomManager;
