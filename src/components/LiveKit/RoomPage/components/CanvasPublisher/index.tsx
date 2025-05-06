@@ -12,7 +12,7 @@ type Props = {
 };
 
 export const CanvasPublisher: FC<Props> = ({ room }) => {
-    const { localParticipant } = useLocalParticipant();
+    const { localParticipant } = useLocalParticipant({ room: room });
 
     const coreScene = useSceneStore((state) => state.coreScene);
 

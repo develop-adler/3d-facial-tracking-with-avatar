@@ -10,23 +10,23 @@ const RoomPage = dynamic(
     }
 );
 
-import type { RoomAndName } from "@/api/entities";
+import type { RoomAndName } from "@/apis/entities";
 import { JoinRoomModal } from "@/components/LiveKit/JoinRoomModal";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 export const LiveKitPage: FC = () => {
-    const roomAndName = useLiveKitStore((state) => state.roomAndName);
-    const setRoomAndName = useLiveKitStore((state) => state.setRoomAndName);
+    const roomNameAndUsername = useLiveKitStore((state) => state.roomNameAndUsername);
+    const setRoomNameAndUsername = useLiveKitStore((state) => state.setRoomNameAndUsername);
 
     const handleFormSubmit = (data: RoomAndName) => {
-        setRoomAndName(data);
+        setRoomNameAndUsername(data);
     };
 
     return (
         <>
-            <JoinRoomModal open={roomAndName === null} onSubmit={handleFormSubmit} />
-            {roomAndName && (
-                <RoomPage room={roomAndName.room} name={roomAndName.name} />
+            <JoinRoomModal open={roomNameAndUsername === null} onSubmit={handleFormSubmit} />
+            {roomNameAndUsername && (
+                <RoomPage roomName={roomNameAndUsername.room} name={roomNameAndUsername.name} />
             )}
         </>
     );

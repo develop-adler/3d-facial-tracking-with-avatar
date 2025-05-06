@@ -7,50 +7,47 @@ import { useMediaDevices } from "@livekit/components-react";
 
 import { CanvasContainer, CanvasStyled, WaitingText } from "./styles";
 
-import { CoreEngine } from "@/3d/CoreEngine";
-import { CoreScene } from "@/3d/CoreScene";
-import { Avatar } from "@/3d/Avatar";
+import LoadingBar from "@/components/VirtualAvatarVideo/components/AvatarScene/components/LoadingBar";
+import { Scene3D } from "@/3d/VideoChat/Scene3D";
+import { Avatar } from "@/3d/VideoChat/Avatar";
 import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useSceneStore } from "@/stores/useSceneStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
-import { updateMediaStream } from "global";
-import LoadingBar from "./components/LoadingBar";
-import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
+import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
 
 export const AvatarScene: FC = () => {
     const pathName = usePathname();
     const videoDevices = useMediaDevices({ kind: "videoinput" });
 
-    const bjsCanvas = useRef<HTMLCanvasElement>(null); // For 3D scene
+    const bjsCanvasContainer = useRef<HTMLDivElement>(null); // For 3D scene
     const avatarRef = useRef<Avatar>(null);
-    const coreEngineRef = useRef<CoreEngine>(null);
-    const coreSceneRef = useRef<CoreScene>(null);
+    const scene3DRef = useRef<Scene3D>(null);
 
-    const setEngine = useEngineStore((state) => state.setEngine);
+    const coreEngine = useEngineStore((state) => state.coreEngine);
     const setScene = useSceneStore((state) => state.setScene);
     const setAvatar = useAvatarStore((state) => state.setAvatar);
     const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
     const setIsLoading = useAvatarLoadingStore((state) => state.setIsLoading);
 
-    const create3DScene = (canvas: HTMLCanvasElement) => {
-        const coreEngine = new CoreEngine(canvas);
-        const coreScene = new CoreScene(coreEngine);
-        const avatar = new Avatar(coreScene.scene);
+    const create3DScene = (container: HTMLDivElement) => {
+        coreEngine.insertCanvasToDOM(container);
 
-        coreEngineRef.current = coreEngine;
-        coreSceneRef.current = coreScene;
+        const scene3D = new Scene3D(coreEngine);
+        const avatar = new Avatar(scene3D.scene);
+
+        scene3DRef.current = scene3D;
         avatarRef.current = avatar;
 
         avatar.loadAvatar();
 
-        setEngine(coreEngine);
-        setScene(coreScene);
+        setScene(scene3D);
         setAvatar(avatar);
 
-        return { coreEngine, coreScene, avatar };
+        return { coreEngine, scene3D, avatar };
     };
 
     useEffect(() => {
@@ -59,26 +56,29 @@ export const AvatarScene: FC = () => {
     }, []);
 
     useEffect(() => {
-        coreEngineRef.current?.resize();
-    }, [isViewportFill]);
+        coreEngine.resize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isViewportFill, isFullscreen]);
 
     useEffect(() => {
-        if (videoDevices.length === 0 || !bjsCanvas.current) return;
+        if (videoDevices.length === 0 || !bjsCanvasContainer.current) return;
 
-        const canvas = bjsCanvas.current;
+        const container = bjsCanvasContainer.current;
 
-        const { coreEngine } = create3DScene(canvas);
+        const { coreEngine } = create3DScene(container);
         window.addEventListener("resize", coreEngine.resize.bind(coreEngine));
-        canvas.addEventListener("resize", coreEngine.resize.bind(coreEngine));
+        container.addEventListener("resize", coreEngine.resize.bind(coreEngine));
 
         // Create MediaStream to pass to LiveKit
-        if (pathName === "/room")
-            updateMediaStream(bjsCanvas.current.captureStream(60));
+        if (pathName === "/room") {
+            updateMediaStream(coreEngine.canvas.captureStream(60));
+        }
 
         return () => {
             window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
-            canvas.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
-            coreEngine.dispose();
+            container.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
+            mediaStreamFrom3DCanvas?.getVideoTracks().forEach(track => track.stop());
+            updateMediaStream(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoDevices]);
@@ -101,7 +101,7 @@ export const AvatarScene: FC = () => {
             {pathName === "/room" ? (
                 <CanvasStyled
                     id="avatar-canvas"
-                    ref={bjsCanvas}
+                    ref={bjsCanvasContainer}
                     $isForRoom
                 />
             ) : (
@@ -110,7 +110,7 @@ export const AvatarScene: FC = () => {
                     $fullscreen={isFullscreen}
                 >
                     <LoadingBar />
-                    <CanvasStyled id="avatar-canvas" ref={bjsCanvas} />
+                    <CanvasStyled id="avatar-canvas" ref={bjsCanvasContainer} />
                 </CanvasContainer>
             )}
         </>

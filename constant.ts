@@ -1,3 +1,5 @@
+import type { AvatarInteractionType } from "@/apis/entities";
+
 export const COLOR = {
     white: "#FFFFFF",
     black: "#000000",
@@ -83,3 +85,79 @@ export const COLOR = {
 
 export const ROOM_CHAT_WIDTH = 'clamp(200px, 55ch, 60ch)';
 export const TOP_MENU_HEIGHT = '3rem';
+
+export const PHYSICS_SHAPE_FILTER_GROUPS = {
+  // don't use 0, it will be ignored, value has to be 2^n
+  NONE: 1,
+  ENVIRONMENT: 2,
+  AVATAR_BODIES_SELF: 4,
+  AVATAR_CAPSULE_SELF: 8,
+  AVATAR_CAPSULE_OTHER: 16,
+  AVATAR_GROUND_CHECK: 32,
+} as const;
+
+export const PHYSICS_MOTION_TYPE = {
+  STATIC: 0,
+  ANIMATED: 1,
+  DYNAMIC: 2,
+} as const;
+
+export const AVATAR_INTERACTIONS: Record<string, AvatarInteractionType> = {
+  Bow: "single",
+  Clap: "single",
+  Cry: "single",
+  Wave: "single",
+  HipHopDance: "single", // 'loop',
+  Sit: "continuous",
+  Kick: "hitting",
+  Punch: "hitting",
+  HeadFlinch: "gethit",
+  ChestFlinch: "gethit",
+};
+
+export const AVATAR_PARAMS = {
+  CAMERA_HEAD_HEIGHT_MALE: 1.75,
+  CAMERA_HEAD_HEIGHT_FEMALE: 1.65,
+  CAPSULE_HEIGHT_AVERAGE: 1.75,
+  CAPSULE_HEIGHT_FEMALE: 1.7,
+  CAPSULE_HEIGHT_MALE: 1.85,
+  CAPSULE_RADIUS: 0.2,
+  CROUCH_SPHERE_RADIUS: 0.5,
+  CAMERA_BETA_LOWER_LIMIT_AVATAR: Math.PI / 4,
+  CAMERA_BETA_UPPER_LIMIT_AVATAR: Math.PI / 1.4,
+  CAMERA_HORIZONTAL_ROTATION_SPEED_AVATAR: 1500,
+  CAMERA_HORIZONTAL_ROTATION_SPEED_AVATAR_MOBILE: 750,
+  CAMERA_RADIUS_LOWER_AVATAR: 0.5,
+  CAMERA_RADIUS_UPPER_AVATAR: 4.8,
+  LERP_SPEED_240FPS: 0.05,
+  LERP_SPEED_120FPS: 0.1,
+  LERP_SPEED_60FPS: 0.2,
+} as const;
+
+export const AVATAR_CONTROLLER_PARAMS = {
+  CROUCH_SPEED: 1.6,
+  WALK_SPEED: 3,
+  RUN_SPEED: 6.5,
+  JUMP_FORCE: 12,
+  FOV_FIRSTPERSON_MOBILE: 1.4,
+  FOV_FIRSTPERSON: 1,
+  FOV_THIRDPERSON_MOBILE: 1.4,
+  FOV_THIRDPERSON: 0.8,
+  STAIR_STEP_MAX_HEIGHT: 0.2,
+  STAIR_STEP_MIN_DEPTH: 0.12,
+  STAIR_DOWN_MAX_HEIGHT: 0.2,
+} as const;
+
+export const MULTIPLAYER_PARAMS = {
+  DEFAULT_CAMERA_RADIUS: 5,
+  CAMERA_BETA_PREVIEW: Math.PI / 2.55,
+  CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW: 3500,
+  CAMERA_MINZ: 0.1,
+  CAMERA_MAXZ: 200,
+  CAMERA_ALPHA_LOWER_LIMIT_PREVIEW: Math.PI / 3.5,
+  CAMERA_ALPHA_UPPER_LIMIT_PREVIEW: Math.PI / 1.4,
+  CAMERA_TARGET_PREVIEW: [0, 5, 0],
+  CAMERA_TARGET_AVATAR: [0, 1.75, 2.2],
+} as const;
+
+export const WORLD_GRAVITY = -29.43; // gravity = -9.81 * 3

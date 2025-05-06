@@ -15,7 +15,7 @@ export const CanvasContainer = styled("div")<{
     };
 });
 
-export const CanvasStyled = styled("canvas")<{ $isForRoom?: boolean }>(
+export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
     ({ $isForRoom }) => ({
         width: "100%",
         height: "100%",

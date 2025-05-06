@@ -15,8 +15,9 @@ import {
     // useTrackByName,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+
+import { KrispNoiseFilterInputBox } from "@/components/LiveKit/RoomPage/components/KrispNoiseFilterInputBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
-import { KrispNoiseFilterInputBox } from "../KrispNoiseFilterInputBox";
 
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector

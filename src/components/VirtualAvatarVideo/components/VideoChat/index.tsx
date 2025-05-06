@@ -10,7 +10,7 @@ import { clamp, hasGetUserMedia, lerp, normalize, normalizeToRange } from "@/uti
 
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import type { AvatarType } from "@/3d/Avatar";
+import type { Avatar } from "@/3d/VideoChat/Avatar";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { drawConnectors, drawLandmarks } from "@/utils/draw_hands";
 import type { Category, NormalizedLandmark } from "@mediapipe/tasks-vision";
@@ -189,7 +189,7 @@ export const VideoChat: FC = () => {
     avatar.boneIKControllers.right?.update();
   };
 
-  const syncMorphTargets = (avatar: AvatarType, blendShapes: Category[]) => {
+  const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
     if (!avatar.morphTargetManager) return;
 
     for (const blendShape of blendShapes) {
@@ -214,7 +214,7 @@ export const VideoChat: FC = () => {
   };
 
   const syncHeadRotation = (
-    avatar: AvatarType,
+    avatar: Avatar,
     faceRotation: Quaternion,
     mirrored: boolean = false
   ) => {
@@ -264,7 +264,7 @@ export const VideoChat: FC = () => {
     );
   };
 
-  const syncHeadPosition = (avatar: AvatarType, faceMatrix: Matrix) => {
+  const syncHeadPosition = (avatar: Avatar, faceMatrix: Matrix) => {
     const faceMatrixPosition = faceMatrix.getTranslation();
 
     // fix distance of avatar from 3D camera's position

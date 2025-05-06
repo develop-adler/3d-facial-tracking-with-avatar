@@ -1,12 +1,12 @@
 import { create } from "zustand";
 
-import type { AvatarType } from "@/3d/Avatar";
+import type { Avatar } from "@/3d/VideoChat/Avatar";
 import { persist } from "zustand/middleware";
 
 type AvatarStore = {
   avatarId: string | null;
-  avatar: AvatarType | null;
-  setAvatar: (avatar: AvatarType | null) => void;
+  avatar: Avatar | null;
+  setAvatar: (avatar: Avatar | null) => void;
   setAvatarId: (avatarId: string | null) => void;
 };
 

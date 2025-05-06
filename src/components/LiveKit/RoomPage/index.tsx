@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FC } from "react";
+import { useEffect, type FC } from "react";
 
-import {
-    RoomAudioRenderer,
-    RoomContext,
-} from "@livekit/components-react";
-import "@livekit/components-styles";
-import { Room } from "livekit-client";
+import { RoomAudioRenderer } from "@livekit/components-react";
 
 import { VirtualAvatarVideo } from "@/components/VirtualAvatarVideo";
 import { CanvasPublisher } from "@/components/LiveKit/RoomPage/components/CanvasPublisher";
@@ -16,66 +11,72 @@ import { MainConferenceBody } from "@/components/LiveKit/RoomPage/components/Mai
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { clientSettings } from "clientSettings";
+import { useRouter } from "next/navigation";
 
 type Props = {
-    room: string;
+    roomName: string;
     name: string;
 };
 
-export const RoomPage: FC<Props> = ({ room, name }) => {
-    const [roomInstance] = useState(
-        () =>
-            new Room({
-                // Optimize video quality for each participant's screen
-                adaptiveStream: true,
-                // Enable automatic audio/video quality optimization
-                dynacast: true,
-            })
+export const RoomPage: FC<Props> = ({ roomName, name }) => {
+    const router = useRouter();
+
+    const room = useLiveKitStore((state) => state.room);
+    const setRoomNameAndUsername = useLiveKitStore(
+        (state) => state.setRoomNameAndUsername
     );
 
-    const setRoomAndName = useLiveKitStore((state) => state.setRoomAndName);
-
     useEffect(() => {
-        let mounted = true;
         (async () => {
             try {
-                const resp = await fetch(`/api/token?room=${room}&username=${name}`);
+                const resp = await fetch(
+                    `/api/token?room=${roomName}&username=${name}`
+                );
                 const data = await resp.json();
-                if (!mounted) return;
                 if (data.token && clientSettings.LIVEKIT_URL) {
-                    await roomInstance.connect(clientSettings.LIVEKIT_URL, data.token);
+                    await room.connect(clientSettings.LIVEKIT_URL, data.token);
                 }
-                roomInstance.on("disconnected", () => {
-                    setRoomAndName(null);
-                });
             } catch (e) {
-                setRoomAndName(null);
+                setRoomNameAndUsername(null);
                 console.error(e);
             }
         })();
 
-        return () => {
-            mounted = false;
-            roomInstance.disconnect();
-        };
+        // only disconnect when user navigates away from the /room/* page
+        // return () => {
+        //     room.disconnect();
+        //     setRoomNameAndUsername(null);
+        // };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomInstance]);
+    }, [room]);
 
     return (
         <>
-            <RoomContext.Provider value={roomInstance}>
-                {/* To publish 3D babylon.js canvas as camera stream */}
-                <CanvasPublisher room={roomInstance} />
+            <button
+                onClick={() => {
+                    router.push("/room/space");
+                }}
+                style={{
+                    position: "absolute",
+                    top: '10%',
+                    left: '10%',
+                    fontSize: '3rem',
+                    zIndex: 1000,
+                }}
+            >
+                Go to 3D Space
+            </button>
+            {/* To publish 3D babylon.js canvas as camera stream */}
+            <CanvasPublisher room={room} />
 
-                <div data-lk-theme="default">
-                    {/* This one contains layout of participants and chat window */}
-                    <MainConferenceBody />
-                    {/* The RoomAudioRenderer takes care of room-wide audio for you. */}
-                    <RoomAudioRenderer />
-                    {/* Controls for user */}
-                    <CustomControlBar />
-                </div>
-            </RoomContext.Provider>
+            <div data-lk-theme="default">
+                {/* This one contains layout of participants and chat window */}
+                <MainConferenceBody />
+                {/* The RoomAudioRenderer takes care of room-wide audio for you. */}
+                <RoomAudioRenderer />
+                {/* Controls for user */}
+                <CustomControlBar />
+            </div>
 
             {/* Run the 3D avatar scene with facial tracking */}
             <VirtualAvatarVideo />
