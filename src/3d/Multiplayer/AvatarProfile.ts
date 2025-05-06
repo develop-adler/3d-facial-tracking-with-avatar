@@ -1,44 +1,43 @@
-import '@babylonjs/core/Animations/animatable';
-import { Animation } from '@babylonjs/core/Animations/animation';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+import "@babylonjs/core/Animations/animatable";
+import { Animation } from "@babylonjs/core/Animations/animation";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
 // import { Texture } from '@babylonjs/core/Materials/Textures/texture';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 // import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
-import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
-import { CreatePolygon } from '@babylonjs/core/Meshes/Builders/polygonBuilder';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { AdvancedDynamicTexture } from '@babylonjs/gui/2D/advancedDynamicTexture';
-import { TextBlock } from '@babylonjs/gui/2D/controls/textBlock';
-import earcut from 'earcut';
+import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
+import { CreatePolygon } from "@babylonjs/core/Meshes/Builders/polygonBuilder";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture";
+import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
+import earcut from "earcut";
 
-import type Avatar from '@/3d/Multiplayer/Avatar';
-import { isAndroid } from '@/utils/browserUtils';
-import { generateRandomId } from '@/utils/functionUtils';
+import type Avatar from "@/3d/Multiplayer/Avatar";
+import { isAndroid } from "@/utils/browserUtils";
+import { generateRandomId } from "@/utils/functionUtils";
 
-import { clientSettings } from 'clientSettings';
-import { COLOR } from 'constant';
+import { clientSettings } from "clientSettings";
+import { COLOR } from "constant";
 
-import type { Mesh } from '@babylonjs/core/Meshes/mesh';
-import type { Scene } from '@babylonjs/core/scene';
-import type { Nullable } from '@babylonjs/core/types';
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Scene } from "@babylonjs/core/scene";
 
 class AvatarProfile {
     readonly avatar: Avatar;
     readonly scene: Scene;
 
-    rootTransformNode: Nullable<TransformNode> = null;
-    // profilePicture: Nullable<Mesh> = null;
+    rootTransformNode?: TransformNode;
+    // profilePicture?: Mesh;
     username: Mesh;
-    chatBubble: Nullable<Mesh> = null;
-    message: Nullable<Mesh> = null;
+    chatBubble?: Mesh;
+    message?: Mesh;
 
-    clearMessageTimeout: Nullable<NodeJS.Timeout> = null;
+    clearMessageTimeout?: globalThis.NodeJS.Timeout;
 
     private _messageList: Array<string> = [];
 
-    static readonly USERNAME_COLOR = '#ffffff';
+    static readonly USERNAME_COLOR = "#ffffff";
     static readonly USERNAME_FONT_SIZE = 68;
     private static readonly USERNAME_PLANE_HEIGHT = 0.06;
 
@@ -47,11 +46,11 @@ class AvatarProfile {
     static readonly MESSAGE_DISPLAY_TIME_DEFAULT = 4;
     static readonly MESSAGE_DISPLAY_TIME_MAX = 25;
     static readonly MESSAGE_FONT_SIZE = 42;
-    static readonly MESSAGE_FONT = 'Pretendard';
+    static readonly MESSAGE_FONT = "Pretendard";
     static readonly MESSAGE_LINE_HEIGHT = 1.5 * AvatarProfile.MESSAGE_FONT_SIZE;
     static readonly MESSAGE_EMPTY_GAP_HEIGHT = 23;
 
-    static readonly SEPARATOR_LINE_COLOR = '#898989';
+    static readonly SEPARATOR_LINE_COLOR = "#898989";
 
     private static readonly PROFILE_CHAT_BUBBLE_WIDTH = 0.6;
     private static readonly PROFILE_CHAT_BUBBLE_HEIGHT_DEFAULT = 0.1;
@@ -61,7 +60,7 @@ class AvatarProfile {
         this.scene = avatar.scene;
 
         this.rootTransformNode = new TransformNode(
-            'profileTransformNode_' + this.avatar.participant.identity,
+            "profileTransformNode_" + this.avatar.participant.identity,
             this.scene
         );
         this.rootTransformNode.billboardMode = 2; // BILLBOARDMODE_Y
@@ -72,7 +71,7 @@ class AvatarProfile {
         // this._createProfilePicture();
         this.username = this._createUsername();
 
-        this.setProfileStyle('default');
+        this.setProfileStyle("default");
     }
 
     // private async _createProfilePicture(): Promise<void> {
@@ -173,10 +172,10 @@ class AvatarProfile {
     /**
      * Set profile picture and username to fit bubble chat
      */
-    setProfileStyle(style: 'default' | 'bubble'): void {
+    setProfileStyle(style: "default" | "bubble"): void {
         // if (!this.profilePicture) this._createProfilePicture();
 
-        if (style === 'default') {
+        if (style === "default") {
             this.username.setEnabled(true);
 
             // // set profile picture
@@ -211,10 +210,12 @@ class AvatarProfile {
         const ratio = AvatarProfile.USERNAME_PLANE_HEIGHT / DTHeight;
 
         //Use a temporay dynamic texture to calculate the length of the text on the dynamic texture canvas
-        const tempDT = new DynamicTexture('tempDynamicTexture', 64, this.scene);
+        const tempDT = new DynamicTexture("tempDynamicTexture", 64, this.scene);
         const dtContext = tempDT.getContext();
         dtContext.font = tempFont;
-        const DTWidth = dtContext.measureText(this.avatar.participant.identity).width;
+        const DTWidth = dtContext.measureText(
+            this.avatar.participant.identity
+        ).width;
         tempDT.dispose();
 
         // Calculate width the plane has to be
@@ -226,7 +227,7 @@ class AvatarProfile {
 
         if (isAndroid()) {
             plane = CreatePlane(
-                'usernamePlaneMesh_' + this.avatar.participant.identity,
+                "usernamePlaneMesh_" + this.avatar.participant.identity,
                 {
                     width: planeWidth,
                     height: planeWidth,
@@ -235,22 +236,23 @@ class AvatarProfile {
             );
 
             const usernameTexture = new DynamicTexture(
-                'avatarInfoTexture_' + this.avatar.participant.identity,
+                "avatarInfoTexture_" + this.avatar.participant.identity,
                 2048,
                 this.scene
             );
             usernameTexture.hasAlpha = true;
             usernameTexture.drawText(
                 this.avatar.participant.identity,
-                null,
-                null,
+                undefined,
+                undefined,
                 font,
                 AvatarProfile.USERNAME_COLOR,
+                // eslint-disable-next-line unicorn/no-null
                 null,
                 true
             );
             const material = new StandardMaterial(
-                'usernamePlaneMaterial_' + this.avatar.participant.identity,
+                "usernamePlaneMaterial_" + this.avatar.participant.identity,
                 this.scene
             );
             material.diffuseTexture = usernameTexture;
@@ -260,7 +262,7 @@ class AvatarProfile {
         } else {
             const widthHeightRatio = planeWidth / AvatarProfile.USERNAME_PLANE_HEIGHT;
             plane = CreatePlane(
-                'usernamePlaneMesh_' + this.avatar.participant.identity,
+                "usernamePlaneMesh_" + this.avatar.participant.identity,
                 {
                     width: planeWidth,
                     height: AvatarProfile.USERNAME_PLANE_HEIGHT,
@@ -273,14 +275,17 @@ class AvatarProfile {
                 1024,
                 false
             );
-            const text = new TextBlock(`textBlock_${this.avatar.participant.identity}`, this.avatar.participant.identity);
-            text.color = 'white';
+            const text = new TextBlock(
+                `textBlock_${this.avatar.participant.identity}`,
+                this.avatar.participant.identity
+            );
+            text.color = "white";
             text.fontSize = 850;
             text.fontFamily = AvatarProfile.MESSAGE_FONT;
-            text.shadowColor = 'black';
+            text.shadowColor = "black";
             text.shadowBlur = 50;
             text.textWrapping = false;
-            advancedTexture.background = 'transparent';
+            advancedTexture.background = "transparent";
             advancedTexture.addControl(text);
         }
 
@@ -293,11 +298,13 @@ class AvatarProfile {
         plane.isOccluded = false;
 
         // set username position and scaling
+        // eslint-disable-next-line unicorn/no-null
         plane.parent = null;
         plane.rotation.setAll(0);
-        plane.position.y = this.avatar.gender === 'male' ? -0.09 : -0.13;
+        plane.position.y = this.avatar.gender === "male" ? -0.09 : -0.13;
         plane.scaling.setAll(2.5);
-        plane.parent = this.rootTransformNode;
+        // eslint-disable-next-line unicorn/no-null
+        plane.parent = this.rootTransformNode ?? null;
 
         // this.avatar.highlightLayer?.addExcludedMesh(this.username);
 
@@ -320,20 +327,30 @@ class AvatarProfile {
         // bottom left corner
         for (let theta = Math.PI; theta <= 1.5 * Math.PI; theta += dTheta) {
             shape.push(
-                new Vector3(extendX + radius * Math.cos(theta), 0, extendZ + radius * Math.sin(theta))
+                new Vector3(
+                    extendX + radius * Math.cos(theta),
+                    0,
+                    extendZ + radius * Math.sin(theta)
+                )
             );
         }
 
         // extruding triangle in the bottom center
-        shape.push(new Vector3(centerX - 0.02, 0, bottomZ));
-        shape.push(new Vector3(centerX, 0, bottomZ - 0.025));
-        shape.push(new Vector3(centerX + 0.02, 0, bottomZ));
+        shape.push(
+            new Vector3(centerX - 0.02, 0, bottomZ),
+            new Vector3(centerX, 0, bottomZ - 0.025),
+            new Vector3(centerX + 0.02, 0, bottomZ)
+        );
 
         // bottom right corner
         extendX = 0.5 * width - radius;
         for (let theta = 1.5 * Math.PI; theta <= 2 * Math.PI; theta += dTheta) {
             shape.push(
-                new Vector3(extendX + radius * Math.cos(theta), 0, extendZ + radius * Math.sin(theta))
+                new Vector3(
+                    extendX + radius * Math.cos(theta),
+                    0,
+                    extendZ + radius * Math.sin(theta)
+                )
             );
         }
 
@@ -341,7 +358,11 @@ class AvatarProfile {
         extendZ = 0.5 * height - radius;
         for (let theta = 0; theta <= 0.5 * Math.PI; theta += dTheta) {
             shape.push(
-                new Vector3(extendX + radius * Math.cos(theta), 0, extendZ + radius * Math.sin(theta))
+                new Vector3(
+                    extendX + radius * Math.cos(theta),
+                    0,
+                    extendZ + radius * Math.sin(theta)
+                )
             );
         }
 
@@ -350,13 +371,17 @@ class AvatarProfile {
         extendZ = 0.5 * height - radius;
         for (let theta = 0.5 * Math.PI; theta <= Math.PI; theta += dTheta) {
             shape.push(
-                new Vector3(extendX + radius * Math.cos(theta), 0, extendZ + radius * Math.sin(theta))
+                new Vector3(
+                    extendX + radius * Math.cos(theta),
+                    0,
+                    extendZ + radius * Math.sin(theta)
+                )
             );
         }
         // ============ End of polygon shape creation ============ //
 
         const polygon = CreatePolygon(
-            'polygon_' + this.avatar.participant.identity,
+            "polygon_" + this.avatar.participant.identity,
             { shape: shape },
             this.scene,
             earcut
@@ -364,7 +389,7 @@ class AvatarProfile {
         polygon.rotate(Vector3.Right(), -Math.PI * 0.5);
 
         const textPlaneBackgroundMaterial = new StandardMaterial(
-            'infoPlaneBackgroundMaterial_' + this.avatar.participant.identity,
+            "infoPlaneBackgroundMaterial_" + this.avatar.participant.identity,
             this.scene
         );
         textPlaneBackgroundMaterial.emissiveColor = this.avatar.isSelf
@@ -384,7 +409,8 @@ class AvatarProfile {
         polygon.occlusionQueryAlgorithmType = 1; // AbstractMesh.OCCLUSION_ALGORITHM_TYPE_CONSERVATIVE;
         polygon.isOccluded = false;
 
-        polygon.parent = this.rootTransformNode;
+        // eslint-disable-next-line unicorn/no-null
+        polygon.parent = this.rootTransformNode ?? null;
 
         // this.avatar.highlightLayer?.addExcludedMesh(this.chatBubble);
 
@@ -398,7 +424,7 @@ class AvatarProfile {
         height: number
     ): void {
         this.message = CreatePlane(
-            'avatarMessagePlaneMesh_' + id,
+            "avatarMessagePlaneMesh_" + id,
             {
                 width: width,
                 height: height,
@@ -406,7 +432,10 @@ class AvatarProfile {
             this.scene
         );
 
-        const textPlaneMaterial = new StandardMaterial('messagePlaneMaterial_' + id, this.scene);
+        const textPlaneMaterial = new StandardMaterial(
+            "messagePlaneMaterial_" + id,
+            this.scene
+        );
         textPlaneMaterial.disableLighting = true;
         textPlaneMaterial.emissiveColor = Color3.White();
         textPlaneMaterial.diffuseTexture = dynamicTexture;
@@ -422,7 +451,8 @@ class AvatarProfile {
         this.message.occlusionQueryAlgorithmType = 1; // AbstractMesh.OCCLUSION_ALGORITHM_TYPE_CONSERVATIVE;
         this.message.isOccluded = false;
 
-        this.message.parent = this.rootTransformNode;
+        // eslint-disable-next-line unicorn/no-null
+        this.message.parent = this.rootTransformNode ?? null;
 
         // offset message down a bit for Y padding
         this.message.position.y = -0.02;
@@ -442,7 +472,10 @@ class AvatarProfile {
 
         // truncate message if it exceeds the character limit
         if (processedMessage.length > AvatarProfile.MESSAGE_CHARACTER_LIMIT) {
-            processedMessage = processedMessage.substring(0, AvatarProfile.MESSAGE_CHARACTER_LIMIT);
+            processedMessage = processedMessage.slice(
+                0,
+                Math.max(0, AvatarProfile.MESSAGE_CHARACTER_LIMIT)
+            );
         }
 
         if (this._messageList.length === 3) {
@@ -466,38 +499,41 @@ class AvatarProfile {
                 while (messagePart.length > 0) {
                     if (messagePart.length > AvatarProfile.MESSAGE_LINE_CHARACTER_LIMIT) {
                         let splitIndex = messagePart.lastIndexOf(
-                            ' ',
+                            " ",
                             AvatarProfile.MESSAGE_LINE_CHARACTER_LIMIT
                         );
 
                         // if space is not found or is at index >= than the character limit,
                         // split at the character limit
-                        if (splitIndex >= AvatarProfile.MESSAGE_LINE_CHARACTER_LIMIT || splitIndex === -1) {
+                        if (
+                            splitIndex >= AvatarProfile.MESSAGE_LINE_CHARACTER_LIMIT ||
+                            splitIndex === -1
+                        ) {
                             splitIndex = AvatarProfile.MESSAGE_LINE_CHARACTER_LIMIT;
                         }
 
                         // push part of message into array as 1 line
-                        messageArray.push(messagePart.substring(0, splitIndex));
+                        messageArray.push(messagePart.slice(0, Math.max(0, splitIndex)));
 
                         // get next part of message
-                        messagePart = messagePart.substring(splitIndex + 1);
+                        messagePart = messagePart.slice(Math.max(0, splitIndex + 1));
                     } else {
                         messageArray.push(messagePart);
-                        messagePart = '';
+                        messagePart = "";
                     }
                 }
             } else {
                 messageArray.push(message);
             }
 
-            if (i > 0) messageArray.push('');
+            if (i > 0) messageArray.push("");
         }
 
         const font = `normal 6vh ${AvatarProfile.MESSAGE_FONT}`;
 
         let chatBubbleHeight = AvatarProfile.MESSAGE_LINE_HEIGHT;
         for (const text of messageArray) {
-            if (text === '') {
+            if (text === "") {
                 chatBubbleHeight += AvatarProfile.MESSAGE_EMPTY_GAP_HEIGHT;
                 continue;
             }
@@ -507,7 +543,11 @@ class AvatarProfile {
         const messageId = generateRandomId();
 
         // ========== Create dynamic texture to draw text ========== //
-        const dynamicTexture = new DynamicTexture('textDynamicTexture_' + messageId, 2048, this.scene);
+        const dynamicTexture = new DynamicTexture(
+            "textDynamicTexture_" + messageId,
+            2048,
+            this.scene
+        );
         dynamicTexture.hasAlpha = true;
 
         // get width of longest text line to fit all texts
@@ -525,9 +565,10 @@ class AvatarProfile {
 
         // print line by line
         let labelY = AvatarProfile.MESSAGE_LINE_HEIGHT;
-        dynamicTexture.drawText('', 0, 0, font, COLOR.black, null, true, true);
+        // eslint-disable-next-line unicorn/no-null
+        dynamicTexture.drawText("", 0, 0, font, COLOR.black, null, true, true);
         for (const text of messageArray) {
-            if (text === '') {
+            if (text === "") {
                 labelY += AvatarProfile.MESSAGE_EMPTY_GAP_HEIGHT;
                 continue;
             }
@@ -536,7 +577,8 @@ class AvatarProfile {
                 0,
                 labelY,
                 font,
-                this.avatar.isSelf ? 'black' : 'white',
+                this.avatar.isSelf ? "black" : "white",
+                // eslint-disable-next-line unicorn/no-null
                 null,
                 true,
                 true
@@ -549,7 +591,8 @@ class AvatarProfile {
         const widthForMessagePlane = longestLineWidth * 0.001;
 
         // set correct height for chat bubble based on message length
-        const messageAreaHeight = AvatarProfile.PROFILE_CHAT_BUBBLE_HEIGHT_DEFAULT - 0.02;
+        const messageAreaHeight =
+            AvatarProfile.PROFILE_CHAT_BUBBLE_HEIGHT_DEFAULT - 0.02;
 
         // calculate bubble width and height based on message length
         const bubbleHeight =
@@ -568,7 +611,7 @@ class AvatarProfile {
         this.chatBubble = this._createChatBubble(bubbleWidth, bubbleHeight);
 
         // set style for profile picture and username
-        this.setProfileStyle('bubble');
+        this.setProfileStyle("bubble");
 
         // Create message plane
         this._createMessage(
@@ -579,16 +622,19 @@ class AvatarProfile {
         );
 
         // Handle message display time
-        if (this.clearMessageTimeout !== null) {
+        if (this.clearMessageTimeout) {
             clearTimeout(this.clearMessageTimeout);
-            this.clearMessageTimeout = null;
+            this.clearMessageTimeout = undefined;
         }
 
         // display time is proportional to the length of the message
         let messageDisplayTime = AvatarProfile.MESSAGE_DISPLAY_TIME_DEFAULT * 1000;
 
         // get total characters in all message (don't count white space)
-        const totalCharacters = messageArray.reduce((acc, val) => acc + val.length, 0);
+        const totalCharacters = messageArray.reduce(
+            (acc, val) => acc + val.length,
+            0
+        );
 
         // calculate display time based on character count
         messageDisplayTime = Math.min(
@@ -599,10 +645,11 @@ class AvatarProfile {
         this.clearMessageTimeout = setTimeout(() => {
             if (this.message) {
                 this.fadeMesh(this.message, () => {
-                    if (!this.rootTransformNode || this.rootTransformNode.isDisposed()) return;
+                    if (!this.rootTransformNode || this.rootTransformNode.isDisposed())
+                        return;
 
                     this.message?.dispose(false, true);
-                    this.setProfileStyle('default');
+                    this.setProfileStyle("default");
 
                     // clear messages
                     this._messageList = [];
@@ -610,24 +657,25 @@ class AvatarProfile {
             }
             if (this.chatBubble) {
                 this.fadeMesh(this.chatBubble, () => {
-                    if (!this.rootTransformNode || this.rootTransformNode.isDisposed()) return;
+                    if (!this.rootTransformNode || this.rootTransformNode.isDisposed())
+                        return;
 
                     this.chatBubble?.dispose(false, true);
-                    this.setProfileStyle('default');
+                    this.setProfileStyle("default");
                 });
             }
-            this.clearMessageTimeout = null;
+            this.clearMessageTimeout = undefined;
         }, messageDisplayTime);
 
         if (clientSettings.DEBUG) {
-            console.log('Message printed:', processedMessage);
+            console.log("Message printed:", processedMessage);
         }
     }
 
     fadeMesh(mesh: Mesh, endAnimCallback?: () => void): void {
         const fadeAnimation = new Animation(
-            'fadeAnimation',
-            'visibility',
+            "fadeAnimation",
+            "visibility",
             30,
             Animation.ANIMATIONTYPE_FLOAT,
             Animation.ANIMATIONLOOPMODE_CYCLE
@@ -657,14 +705,14 @@ class AvatarProfile {
         this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
 
         this.rootTransformNode?.dispose(false, true);
-        this.rootTransformNode = null;
+        this.rootTransformNode = undefined;
         // this.profilePicture?.dispose(false, true);
-        // this.profilePicture = null;
+        // this.profilePicture = undefined;
         this.username.dispose(false, true);
         this.message?.dispose(false, true);
-        this.message = null;
+        this.message = undefined;
         this.chatBubble?.dispose(false, true);
-        this.chatBubble = null;
+        this.chatBubble = undefined;
 
         this.scene.blockfreeActiveMeshesAndRenderingGroups = false;
     }

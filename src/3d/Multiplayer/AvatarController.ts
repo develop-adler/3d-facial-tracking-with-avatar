@@ -1,44 +1,47 @@
 // import { Animation } from '@babylonjs/core/Animations/animation';
 // import { Ray } from '@babylonjs/core/Culling/ray';
-import { KeyboardEventTypes } from '@babylonjs/core/Events/keyboardEvents';
+import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 // import { Axis } from '@babylonjs/core/Maths/math.axis';
-import { Quaternion, Vector2 as BJSVector2, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import {
+    Quaternion,
+    Vector2 as BJSVector2,
+    Vector3,
+} from "@babylonjs/core/Maths/math.vector";
 // import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { ProximityCastResult } from '@babylonjs/core/Physics/proximityCastResult';
-import { ShapeCastResult } from '@babylonjs/core/Physics/shapeCastResult';
-import { PhysicsBody } from '@babylonjs/core/Physics/v2/physicsBody';
-import { PhysicsShapeCylinder } from '@babylonjs/core/Physics/v2/physicsShape';
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { ProximityCastResult } from "@babylonjs/core/Physics/proximityCastResult";
+import { ShapeCastResult } from "@babylonjs/core/Physics/shapeCastResult";
+import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
+import { PhysicsShapeCylinder } from "@babylonjs/core/Physics/v2/physicsShape";
 
-import type Avatar from '@/3d/Multiplayer/Avatar';
-import { Vector2 } from '@/apis/entities';
-import eventBus from '@/eventBus';
+import type Avatar from "@/3d/Multiplayer/Avatar";
+import { Vector2 } from "@/apis/entities";
+import eventBus from "@/eventBus";
 // import { useGlobalModalStoreImmediate } from '@/stores/useGlobalModalStore';
-import { isMobile } from '@/utils/browserUtils';
-import { lerp } from '@/utils/functionUtils';
+import { isMobile } from "@/utils/browserUtils";
+import { lerp } from "@/utils/functionUtils";
 
-import { clientSettings } from 'clientSettings';
+import { clientSettings } from "clientSettings";
 import {
     AVATAR_CONTROLLER_PARAMS,
     AVATAR_INTERACTIONS,
     AVATAR_PARAMS,
     PHYSICS_SHAPE_FILTER_GROUPS,
-} from 'constant';
+} from "constant";
 
-import type { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import type { Camera } from '@babylonjs/core/Cameras/camera';
-import type { KeyboardInfo } from '@babylonjs/core/Events/keyboardEvents';
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { Camera } from "@babylonjs/core/Cameras/camera";
+import type { KeyboardInfo } from "@babylonjs/core/Events/keyboardEvents";
 // import type { PointerInfo } from '@babylonjs/core/Events/pointerEvents';
 // import type { Mesh } from '@babylonjs/core/Meshes/mesh';
-import type { Observer } from '@babylonjs/core/Misc/observable';
-import type { PhysicsRaycastResult } from '@babylonjs/core/Physics/physicsRaycastResult';
-import type { HavokPlugin } from '@babylonjs/core/Physics/v2/Plugins/havokPlugin';
-import type { Scene } from '@babylonjs/core/scene';
-import type { Nullable } from '@babylonjs/core/types';
-import type { WebXRCamera } from '@babylonjs/core/XR/webXRCamera';
+import type { Observer } from "@babylonjs/core/Misc/observable";
+import type { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResult";
+import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+import type { Scene } from "@babylonjs/core/scene";
+import type { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
 
 type JoystickAxes = Vector2;
-type CameraMode = 'thirdPerson' | 'firstPerson';
+type CameraMode = "thirdPerson" | "firstPerson";
 
 interface KeyStatus {
     KeyW: boolean;
@@ -89,21 +92,21 @@ class AvatarController {
     private readonly _joystickAxes: JoystickAxes;
     private _isActive: boolean = false;
 
-    private _refreshBoundingInfoObserver: Nullable<Observer<Scene>> = null;
+    private _refreshBoundingInfoObserver?: Observer<Scene>;
     private _controllerObservers: Array<Observer<Scene> | Observer<Camera>> = [];
-    // private _useControlCameraObserver: Nullable<Observer<PointerInfo>> = null;
+    // private _useControlCameraObserver?: Observer<PointerInfo>;
     private _hitWall: boolean = false;
     private _cameraShortened: boolean = false;
     // private _isCameraControlledByUser: boolean = false;
 
     // ENTERING_XR = 0, EXITING_XR = 1, IN_XR = 2, NOT_IN_XR = 3
     private _xrState: 0 | 1 | 2 | 3 = 3;
-    private _xrCamera: Nullable<WebXRCamera> = null;
+    private _xrCamera?: WebXRCamera;
 
     private _isCameraOffset: boolean = false;
-    private _cameraMode: CameraMode = 'thirdPerson';
+    private _cameraMode: CameraMode = "thirdPerson";
     // private _isCameraModeTransitioning: boolean = false;
-    private _cameraBodyObserver: Nullable<Observer<Scene>> = null;
+    private _cameraBodyObserver?: Observer<Scene>;
 
     readonly movementKeys: KeyStatus = {
         KeyW: false,
@@ -131,7 +134,7 @@ class AvatarController {
     readonly _jumpBufferTime: number = 0.2;
     private _coyoteTimeCounter: number = 0;
     private _jumpBufferCounter: number = 0;
-    private _jumpingCooldownTimer: Nullable<NodeJS.Timeout> = null;
+    private _jumpingCooldownTimer?: globalThis.NodeJS.Timeout;
 
     // private _stairHeightHitSphere: Nullable<Mesh> = null;
     // private _stairDepthHitSphere: Nullable<Mesh> = null;
@@ -140,8 +143,10 @@ class AvatarController {
     private readonly _stairHeightHitWorldProximityResult: ProximityCastResult =
         new ProximityCastResult();
     private readonly _stairHeightCheckPhysicsShape: PhysicsShapeCylinder;
-    private readonly _stairDepthLocalShapeCastResult: ShapeCastResult = new ShapeCastResult();
-    private readonly _stairDepthHitWorldShapeCastResult: ShapeCastResult = new ShapeCastResult();
+    private readonly _stairDepthLocalShapeCastResult: ShapeCastResult =
+        new ShapeCastResult();
+    private readonly _stairDepthHitWorldShapeCastResult: ShapeCastResult =
+        new ShapeCastResult();
 
     private _dontZoomOut: boolean = false;
 
@@ -165,7 +170,7 @@ class AvatarController {
         this.camera = camera;
         this.scene = scene;
         this._joystickAxes = joystickAxes ?? { x: 0, y: 0 };
-        this.customHeadNode = new TransformNode('customHeadNode', scene, true);
+        this.customHeadNode = new TransformNode("customHeadNode", scene, true);
         this.customHeadNode.parent = this.avatar.root;
         this.customHeadNode.position.y += this.avatar.headHeight;
 
@@ -175,11 +180,16 @@ class AvatarController {
             AVATAR_PARAMS.CAPSULE_RADIUS * 1.125,
             scene
         );
-        this._stairHeightCheckPhysicsShape.material = { friction: 0, restitution: 0 };
-        this._stairHeightCheckPhysicsShape.filterMembershipMask = PHYSICS_SHAPE_FILTER_GROUPS.NONE;
-        this._stairHeightCheckPhysicsShape.filterCollideMask = PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT;
+        this._stairHeightCheckPhysicsShape.material = {
+            friction: 0,
+            restitution: 0,
+        };
+        this._stairHeightCheckPhysicsShape.filterMembershipMask =
+            PHYSICS_SHAPE_FILTER_GROUPS.NONE;
+        this._stairHeightCheckPhysicsShape.filterCollideMask =
+            PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT;
 
-        this._moveSpeed *= this.avatar.gender === 'female' ? 0.75 : 1;
+        this._moveSpeed *= this.avatar.gender === "female" ? 0.75 : 1;
 
         // Enable keyboard control
         this.keyboardPressObserver = this._createKeyboardObserver();
@@ -195,7 +205,7 @@ class AvatarController {
     start(): void {
         if (this._isActive) return;
         if (this._controllerObservers.length > 0) {
-            this._controllerObservers.forEach(observer => observer.remove());
+            for (const observer of this._controllerObservers) observer.remove();
             this._controllerObservers = [];
         }
 
@@ -241,23 +251,27 @@ class AvatarController {
         this._controllerObservers.push(
             this.scene.onBeforeCameraRenderObservable.add(() => {
                 this._updateCamera();
-            })
-        );
-
-        this._controllerObservers.push(
+            }),
             this.scene.onBeforeRenderObservable.add(() => {
                 this._updateCharacter();
                 this._updateCharacterAnimation();
                 this._updateCharacterHead();
 
-                Object.values(this.avatar.animations).forEach(anim => {
+                for (const anim of Object.values(this.avatar.animations)) {
                     // fix blending speed
-                    anim.blendingSpeed = getSlerpValue(this.scene.getAnimationRatio() * 0.5, 0.05, 0.15);
-                });
+                    anim.blendingSpeed = getSlerpValue(
+                        this.scene.getAnimationRatio() * 0.5,
+                        0.05,
+                        0.15
+                    );
+                }
             })
         );
 
-        this.scene.getEngine().getRenderingCanvas()!.addEventListener("blur", this.stopAllMovements.bind(this));
+        this.scene
+            .getEngine()
+            .getRenderingCanvas()!
+            .addEventListener("blur", this.stopAllMovements.bind(this));
 
         // offset so that avatar stays on the left side of the screen
         if (!isMobile()) {
@@ -286,22 +300,23 @@ class AvatarController {
         // });
         this._isActive = true;
         if (clientSettings.DEBUG) {
-            console.log('AvatarController started');
+            console.log("AvatarController started");
         }
     }
 
     stop(): void {
         this._cameraBodyObserver?.remove();
-        this._cameraBodyObserver = null;
+        this._cameraBodyObserver = undefined;
         this._refreshBoundingInfoObserver?.remove();
-        this._refreshBoundingInfoObserver = null;
+        this._refreshBoundingInfoObserver = undefined;
         // this._useControlCameraObserver?.remove();
-        this._controllerObservers.forEach(observer => observer.remove());
+        for (const observer of this._controllerObservers) observer.remove();
         this._controllerObservers = [];
         // this._useControlCameraObserver = null;
         // useGlobalModalStoreImmediate.getState().setOpenAvatarInteractionModal(false);
 
         // remove camera locked target
+        // eslint-disable-next-line unicorn/no-null
         this.camera.targetHost = null;
 
         // remove camera target offset
@@ -311,33 +326,33 @@ class AvatarController {
         this._isActive = false;
 
         if (clientSettings.DEBUG) {
-            console.log('AvatarController stopped');
+            console.log("AvatarController stopped");
         }
     }
 
     cancelCharacterInteraction(): void {
         if (this.avatar.isControlledByAnotherSession) return;
         if (!this.avatar.interaction) return;
-        if (this.avatar.interaction.type === 'gethit') return;
+        if (this.avatar.interaction.type === "gethit") return;
 
         // useGlobalModalStoreImmediate.getState().setOpenAvatarInteractionModal(false);
 
         // play the x-to-idle animation for continuous interactions
         // like sit interaction
-        if (this.avatar.interaction.type === 'continuous') {
+        if (this.avatar.interaction.type === "continuous") {
             this.avatar.interaction.endContinuousInteraction(() => {
                 this.avatar.interaction?.dispose();
-                this.avatar.interaction = null;
+                this.avatar.interaction = undefined;
             });
             return;
         }
 
         this.avatar.interaction.dispose();
-        this.avatar.interaction = null;
+        this.avatar.interaction = undefined;
     }
 
     private _createKeyboardObserver(): Observer<KeyboardInfo> {
-        return this.scene.onKeyboardObservable.add(kbInfo => {
+        return this.scene.onKeyboardObservable.add((kbInfo) => {
             switch (kbInfo.type) {
                 case KeyboardEventTypes.KEYDOWN: {
                     const key = kbInfo.event.code;
@@ -355,7 +370,7 @@ class AvatarController {
                     }
 
                     switch (key) {
-                        case 'KeyI':
+                        case "KeyI": {
                             if (this.avatar.isControlledByAnotherSession) break;
                             if (this.avatar.interaction) break;
 
@@ -365,52 +380,83 @@ class AvatarController {
                             //         !useGlobalModalStoreImmediate.getState().openAvatarInteractionModal
                             //     );
                             break;
-                        case 'KeyC':
+                        }
+                        case "KeyC": {
                             if (!this.avatar.isInteractionByAnotherSession) {
                                 this.avatar.isControlledByUser = true;
                             }
                             this.toggleCrouch();
                             break;
-                        case 'Escape':
+                        }
+                        case "Escape": {
                             // if (
                             //     this.avatar.interaction?.type === 'loop' ||
                             //     this.avatar.interaction?.type === 'multi'
                             // )
                             this.cancelCharacterInteraction();
                             break;
-                        case 'ShiftLeft':
+                        }
+                        case "ShiftLeft": {
                             this.run();
                             break;
+                        }
                     }
 
-                    if (!this.avatar.isMoving && this.avatar.isGrounded && !this.avatar.interaction) {
+                    if (
+                        !this.avatar.isMoving &&
+                        this.avatar.isGrounded &&
+                        !this.avatar.interaction
+                    ) {
                         if (this.avatar.isControlledByAnotherSession) return;
 
                         switch (key) {
-                            case 'Digit1':
-                                this.avatar.playInteraction('Wave', AVATAR_INTERACTIONS['Wave']);
+                            case "Digit1": {
+                                this.avatar.playInteraction(
+                                    "Wave",
+                                    AVATAR_INTERACTIONS["Wave"]
+                                );
                                 break;
-                            case 'Digit2':
-                                this.avatar.playInteraction('Bow', AVATAR_INTERACTIONS['Bow']);
+                            }
+                            case "Digit2": {
+                                this.avatar.playInteraction("Bow", AVATAR_INTERACTIONS["Bow"]);
                                 break;
-                            case 'Digit3':
-                                this.avatar.playInteraction('Clap', AVATAR_INTERACTIONS['Clap']);
+                            }
+                            case "Digit3": {
+                                this.avatar.playInteraction(
+                                    "Clap",
+                                    AVATAR_INTERACTIONS["Clap"]
+                                );
                                 break;
-                            case 'Digit4':
-                                this.avatar.playInteraction('Cry', AVATAR_INTERACTIONS['Cry']);
+                            }
+                            case "Digit4": {
+                                this.avatar.playInteraction("Cry", AVATAR_INTERACTIONS["Cry"]);
                                 break;
-                            case 'Digit5':
-                                this.avatar.playInteraction('HipHopDance', AVATAR_INTERACTIONS['HipHopDance']);
+                            }
+                            case "Digit5": {
+                                this.avatar.playInteraction(
+                                    "HipHopDance",
+                                    AVATAR_INTERACTIONS["HipHopDance"]
+                                );
                                 break;
-                            case 'Digit6':
-                                this.avatar.playInteraction('Kick', AVATAR_INTERACTIONS['Kick']);
+                            }
+                            case "Digit6": {
+                                this.avatar.playInteraction(
+                                    "Kick",
+                                    AVATAR_INTERACTIONS["Kick"]
+                                );
                                 break;
-                            case 'Digit7':
-                                this.avatar.playInteraction('Punch', AVATAR_INTERACTIONS['Punch']);
+                            }
+                            case "Digit7": {
+                                this.avatar.playInteraction(
+                                    "Punch",
+                                    AVATAR_INTERACTIONS["Punch"]
+                                );
                                 break;
-                            case 'Digit8':
-                                this.avatar.playInteraction('Sit', AVATAR_INTERACTIONS['Sit']);
+                            }
+                            case "Digit8": {
+                                this.avatar.playInteraction("Sit", AVATAR_INTERACTIONS["Sit"]);
                                 break;
+                            }
                         }
                     }
                     break;
@@ -423,14 +469,14 @@ class AvatarController {
                         // if non of the movement keys are pressed and are not in
                         // interaction by other session, free other avatars in other sessions
                         if (
-                            Object.values(this.movementKeys).every(v => v === false) &&
+                            Object.values(this.movementKeys).every((v) => v === false) &&
                             !this.avatar.isInteractionByAnotherSession
                         ) {
                             this.avatar.setNotControlledByUser();
                         }
                         setTimeout(() => {
                             if (
-                                Object.values(this.movementKeys).every(v => v === false) &&
+                                Object.values(this.movementKeys).every((v) => v === false) &&
                                 !this.avatar.isInteractionByAnotherSession
                             ) {
                                 this.avatar.setNotControlledByUser();
@@ -438,11 +484,15 @@ class AvatarController {
                         }, 8);
                     }
 
-                    if (key === 'KeyC' && !this.avatar.interaction && this.avatar.isGrounded) {
+                    if (
+                        key === "KeyC" &&
+                        !this.avatar.interaction &&
+                        this.avatar.isGrounded
+                    ) {
                         this.avatar.setNotControlledByUser();
                         setTimeout(() => {
                             if (
-                                Object.values(this.movementKeys).every(v => v === false) &&
+                                Object.values(this.movementKeys).every((v) => v === false) &&
                                 !this.avatar.isInteractionByAnotherSession
                             ) {
                                 this.avatar.setNotControlledByUser();
@@ -450,7 +500,7 @@ class AvatarController {
                         }, 8);
                     }
 
-                    if (key === 'ShiftLeft') this.walk();
+                    if (key === "ShiftLeft") this.walk();
                     break;
                 }
             }
@@ -458,13 +508,14 @@ class AvatarController {
     }
 
     private _updateCharacterAnimation(): void {
-        if (this.avatar.isControlledByAnotherSession || this.avatar.interaction !== null) return;
+        if (this.avatar.isControlledByAnotherSession || this.avatar.interaction)
+            return;
 
-        const animPrefix = this.avatar.gender === 'male' ? 'Male' : 'Female';
+        const animPrefix = this.avatar.gender === "male" ? "Male" : "Female";
 
         // play jump animation if not on ground
         if (!this.avatar.isGrounded) {
-            this.avatar.playAnimation(animPrefix + 'Jump');
+            this.avatar.playAnimation(animPrefix + "Jump");
             return;
         }
 
@@ -474,28 +525,28 @@ class AvatarController {
 
             if (Math.abs(velocity.x) <= 0.02 && Math.abs(velocity.z) <= 0.02) {
                 if (this.avatar.isCrouching) {
-                    this.avatar.playAnimation(animPrefix + 'Crouch');
+                    this.avatar.playAnimation(animPrefix + "Crouch");
                     return;
                 }
 
-                this.avatar.playAnimation(animPrefix + 'Idle');
+                this.avatar.playAnimation(animPrefix + "Idle");
                 return;
             }
 
             if (this.avatar.isCrouching) {
-                this.avatar.playAnimation(animPrefix + 'CrouchWalk');
+                this.avatar.playAnimation(animPrefix + "CrouchWalk");
                 return;
             } else if (this.avatar.isRunning) {
-                this.avatar.playAnimation(animPrefix + 'Run');
+                this.avatar.playAnimation(animPrefix + "Run");
                 return;
             } else {
-                this.avatar.playAnimation(animPrefix + 'Walk');
+                this.avatar.playAnimation(animPrefix + "Walk");
                 return;
             }
         }
 
         // play idle animation by default
-        this.avatar.playAnimation(animPrefix + 'Idle');
+        this.avatar.playAnimation(animPrefix + "Idle");
     }
 
     /**
@@ -521,15 +572,19 @@ class AvatarController {
     }
 
     private _updateCharacter(): void {
-        if (!this._isActive || !this.avatar.capsuleBody || this.avatar.isControlledByAnotherSession)
+        if (
+            !this._isActive ||
+            !this.avatar.capsuleBody ||
+            this.avatar.isControlledByAnotherSession
+        )
             return;
 
         // prevent movement when continuous interaction is playing
-        if (this.avatar.interaction?.type === 'continuous') return;
+        if (this.avatar.interaction?.type === "continuous") return;
 
         // sync avatar rotation with camera rotation in first person mode
-        if (this._xrCamera || this._cameraMode === 'firstPerson') {
-            const cameraToUse = this._xrCamera ? this._xrCamera : this.camera;
+        if (this._xrCamera || this._cameraMode === "firstPerson") {
+            const cameraToUse = this._xrCamera ?? this.camera;
 
             const cameraRotation = cameraToUse.absoluteRotation;
 
@@ -537,15 +592,22 @@ class AvatarController {
             const cameraEuler = cameraRotation.toEulerAngles();
 
             // Create a new quaternion that only includes the Y-axis (yaw) rotation
-            const targetQuaternion = Quaternion.RotationYawPitchRoll(cameraEuler.y, 0, 0);
+            const targetQuaternion = Quaternion.RotationYawPitchRoll(
+                cameraEuler.y,
+                0,
+                0
+            );
 
             // Smoothly interpolate between the avatar's current rotation and the target yaw rotation
-            const currentRotation = this.avatar.root.rotationQuaternion || Quaternion.Identity();
+            const currentRotation =
+                this.avatar.root.rotationQuaternion || Quaternion.Identity();
 
             const ray = cameraToUse.getForwardRay(0.1);
             const forwardTarget = ray.origin.add(ray.direction.scale(10));
             const forward = this.avatar.root.forward.normalize();
-            const toTarget = forwardTarget.subtract(this.avatar.root.position).normalize();
+            const toTarget = forwardTarget
+                .subtract(this.avatar.root.position)
+                .normalize();
             const dot = Vector3.Dot(forward, toTarget);
 
             // only rotate avatar when head is turned to the shoulder
@@ -575,7 +637,10 @@ class AvatarController {
             // ENTERING_XR = 0, EXITING_XR = 1, IN_XR = 2, NOT_IN_XR = 3
             if (this._xrState === 1 || this._xrState === 3) {
                 // calculate the rotation angle based on joystick's x and y
-                const joystickAngle = Math.atan2(-this._joystickAxes.x, -this._joystickAxes.y);
+                const joystickAngle = Math.atan2(
+                    -this._joystickAxes.x,
+                    -this._joystickAxes.y
+                );
 
                 // calculate towards camera direction
                 const angleYCameraDirection = Math.atan2(
@@ -583,14 +648,17 @@ class AvatarController {
                     this.camera.position.z - this.avatar.root.position.z
                 );
 
-                if (this._cameraMode === 'thirdPerson') {
+                if (this._cameraMode === "thirdPerson") {
                     // rotate mesh with respect to camera direction with lerp
                     if (this.avatar.root.rotationQuaternion === null) {
                         this.avatar.root.rotationQuaternion = Quaternion.Identity();
                     }
                     this.avatar.root.rotationQuaternion = Quaternion.Slerp(
                         this.avatar.root.rotationQuaternion,
-                        Quaternion.RotationAxis(Vector3.Up(), angleYCameraDirection + joystickAngle),
+                        Quaternion.RotationAxis(
+                            Vector3.Up(),
+                            angleYCameraDirection + joystickAngle
+                        ),
                         getSlerpValue(1 / this.scene.getAnimationRatio(), 0.05, 0.2)
                     );
                 }
@@ -600,7 +668,10 @@ class AvatarController {
             // move physics body
 
             // normalize to 1 for joystic x and y for controlled movement speed
-            const { x, y } = normalizeToMaxOne(this._joystickAxes.x, this._joystickAxes.y);
+            const { x, y } = normalizeToMaxOne(
+                this._joystickAxes.x,
+                this._joystickAxes.y
+            );
             this.moveDirection.set(x, 0, y);
             this.moveDirection.scaleInPlace(this._moveSpeed);
 
@@ -608,11 +679,18 @@ class AvatarController {
             const cameraEuler = this.camera.absoluteRotation.toEulerAngles();
 
             // Create a new quaternion that only includes the Y-axis (yaw) rotation
-            const targetQuaternion = Quaternion.RotationYawPitchRoll(cameraEuler.y, 0, 0);
+            const targetQuaternion = Quaternion.RotationYawPitchRoll(
+                cameraEuler.y,
+                0,
+                0
+            );
 
             // move relative to camera's rotation
             if (this._xrState === 1 || this._xrState === 3) {
-                this.moveDirection.rotateByQuaternionToRef(targetQuaternion, this.moveDirection);
+                this.moveDirection.rotateByQuaternionToRef(
+                    targetQuaternion,
+                    this.moveDirection
+                );
             } else if (this._xrCamera) {
                 this.moveDirection.rotateByQuaternionToRef(
                     this._xrCamera.absoluteRotation,
@@ -651,10 +729,14 @@ class AvatarController {
         }
 
         // keyboard controls
-        const forward = !!this.movementKeys['KeyW'] || !!this.movementKeys['ArrowUp'];
-        const backward = !!this.movementKeys['KeyS'] || !!this.movementKeys['ArrowDown'];
-        const left = !!this.movementKeys['KeyA'] || !!this.movementKeys['ArrowLeft'];
-        const right = !!this.movementKeys['KeyD'] || !!this.movementKeys['ArrowRight'];
+        const forward =
+            !!this.movementKeys["KeyW"] || !!this.movementKeys["ArrowUp"];
+        const backward =
+            !!this.movementKeys["KeyS"] || !!this.movementKeys["ArrowDown"];
+        const left =
+            !!this.movementKeys["KeyA"] || !!this.movementKeys["ArrowLeft"];
+        const right =
+            !!this.movementKeys["KeyD"] || !!this.movementKeys["ArrowRight"];
 
         if (forward || backward || left || right) {
             this.avatar.isMoving = true;
@@ -674,11 +756,18 @@ class AvatarController {
             const cameraEuler = this.camera.absoluteRotation.toEulerAngles();
 
             // Create a new quaternion that only includes the Y-axis (yaw) rotation
-            const targetQuaternion = Quaternion.RotationYawPitchRoll(cameraEuler.y, 0, 0);
+            const targetQuaternion = Quaternion.RotationYawPitchRoll(
+                cameraEuler.y,
+                0,
+                0
+            );
 
             // move relative to camera's rotation
             if (this._xrState === 1 || this._xrState === 3) {
-                this.moveDirection.rotateByQuaternionToRef(targetQuaternion, this.moveDirection);
+                this.moveDirection.rotateByQuaternionToRef(
+                    targetQuaternion,
+                    this.moveDirection
+                );
             } else if (this._xrCamera) {
                 this.moveDirection.rotateByQuaternionToRef(
                     this._xrCamera.absoluteRotation,
@@ -696,9 +785,9 @@ class AvatarController {
 
             if (
                 // if in third person mode, always rotate mesh with respect to movement direction
-                this._cameraMode === 'thirdPerson' ||
+                this._cameraMode === "thirdPerson" ||
                 // if in first person mode, only rotate mesh when moving forward
-                ((this._cameraMode === 'firstPerson' || this._xrCamera !== null) && forward)
+                ((this._cameraMode === "firstPerson" || this._xrCamera) && forward)
             ) {
                 // calculate towards camera direction
                 const angleYCameraDirection = Math.atan2(
@@ -714,7 +803,10 @@ class AvatarController {
                 }
                 this.avatar.root.rotationQuaternion = Quaternion.Slerp(
                     this.avatar.root.rotationQuaternion,
-                    Quaternion.RotationAxis(Vector3.Up(), angleYCameraDirection + directionOffset),
+                    Quaternion.RotationAxis(
+                        Vector3.Up(),
+                        angleYCameraDirection + directionOffset
+                    ),
                     getSlerpValue(1 / this.scene.getAnimationRatio(), 0.05, 0.2)
                 );
             }
@@ -732,11 +824,7 @@ class AvatarController {
         }
 
         const velocity = this.avatar.capsuleBody.getLinearVelocity();
-        if (velocity.y < -3) {
-            this.avatar.isFalling = true;
-        } else {
-            this.avatar.isFalling = false;
-        }
+        this.avatar.isFalling = velocity.y < -3 ? true : false;
 
         this._handleJumping(this.avatar.capsuleBody);
         this._handleStairs();
@@ -755,7 +843,7 @@ class AvatarController {
             this._coyoteTimeCounter -= this.scene.getEngine().getDeltaTime() / 1000;
         }
 
-        if (this.movementKeys['Space'] === true) {
+        if (this.movementKeys["Space"] === true) {
             this._jumpBufferCounter = this._jumpBufferTime;
         } else {
             this._jumpBufferCounter -= this.scene.getEngine().getDeltaTime() / 1000;
@@ -797,8 +885,10 @@ class AvatarController {
         }
 
         // if button is not released, jump higher when user is holding jump button for longer time
-        if (this.movementKeys['Space'] === false && velocity.y > 0) {
-            capsuleBody.setLinearVelocity(new Vector3(velocity.x, velocity.y * 0.5, velocity.z));
+        if (this.movementKeys["Space"] === false && velocity.y > 0) {
+            capsuleBody.setLinearVelocity(
+                new Vector3(velocity.x, velocity.y * 0.5, velocity.z)
+            );
             this._coyoteTimeCounter = 0;
         }
         // ========================================================
@@ -810,7 +900,10 @@ class AvatarController {
         const physicsEngine = this.scene.getPhysicsEngine();
         if (!physicsEngine) return;
 
-        const hk = physicsEngine?.getPhysicsPlugin() as HavokPlugin | null | undefined;
+        const hk = physicsEngine?.getPhysicsPlugin() as
+            | HavokPlugin
+            | null
+            | undefined;
         if (!hk) return;
 
         this._stairHeightLocalProximityResult.reset();
@@ -881,7 +974,9 @@ class AvatarController {
             !this._stairDepthHitWorldShapeCastResult.body
         ) {
             // teleport avatar up to stair step height
-            this.avatar.setPosition(new Vector3(avatarPosition.x, heightHitPoint.y, avatarPosition.z));
+            this.avatar.setPosition(
+                new Vector3(avatarPosition.x, heightHitPoint.y, avatarPosition.z)
+            );
             return;
         }
 
@@ -889,10 +984,15 @@ class AvatarController {
         const depthOffset = hitPoint.subtract(heightHitPoint);
 
         // if stair step isn't deep enough, return
-        if (Math.abs(depthOffset.z) < AVATAR_CONTROLLER_PARAMS.STAIR_STEP_MIN_DEPTH) return;
+        if (Math.abs(depthOffset.z) < AVATAR_CONTROLLER_PARAMS.STAIR_STEP_MIN_DEPTH)
+            return;
 
         // check if stair step is too high to prevent walking up very steep surfaces
-        if (depthOffset.y - heightHitPoint.y > AVATAR_CONTROLLER_PARAMS.STAIR_STEP_MAX_HEIGHT) return;
+        if (
+            depthOffset.y - heightHitPoint.y >
+            AVATAR_CONTROLLER_PARAMS.STAIR_STEP_MAX_HEIGHT
+        )
+            return;
 
         // for debugging
         // if (!this._stairDepthHitSphere) {
@@ -913,7 +1013,11 @@ class AvatarController {
 
         // teleport avatar up to stair step height
         this.avatar.setPosition(
-            new Vector3(avatarPosition.x, avatarPosition.y + depthOffset.y, avatarPosition.z)
+            new Vector3(
+                avatarPosition.x,
+                avatarPosition.y + depthOffset.y,
+                avatarPosition.z
+            )
         );
 
         // // shoot ray down to snap avatar down step instead of floating when doing down stairs
@@ -946,11 +1050,11 @@ class AvatarController {
      */
     private _updateCharacterHead(): void {
         if (!this._isActive || !this.avatar.boneLookController) {
-            this.avatar.currentBoneLookControllerTarget = null;
+            this.avatar.currentBoneLookControllerTarget = undefined;
             return;
         }
 
-        const cameraToUse = this._xrCamera ? this._xrCamera : this.camera;
+        const cameraToUse = this._xrCamera ?? this.camera;
         // target is the point on the other side of the camera compare to the camera target
         const target = cameraToUse.globalPosition.add(
             this.customHeadNode.absolutePosition
@@ -971,51 +1075,40 @@ class AvatarController {
         if (dot >= 0.2) {
             this.avatar.update(target);
         } else {
-            this.avatar.currentBoneLookControllerTarget = null;
+            this.avatar.currentBoneLookControllerTarget = undefined;
         }
     }
 
     // this prevents camera from clipping through walls
     private _updateRaycaster() {
-        if (this._cameraMode === 'firstPerson' || this._xrCamera !== null) return;
+        if (this._cameraMode === "firstPerson" || this._xrCamera) return;
 
         const physicsEngine = this.scene.getPhysicsEngine();
         if (!physicsEngine) return;
-
-        const checkCollision = (result: PhysicsRaycastResult): boolean => {
-            if (!result.hasHit || !result.body) {
-                this._hitWall = false;
-                return false;
-            }
-    
-            this._hitWall = true;
-    
-            // prevent clipping through objects
-            this.camera.radius = lerp(
-                this.camera.radius,
-                Vector3.Distance(result.hitPointWorld, this.customHeadNode.absolutePosition) - 0.03,
-                0.5
-            );
-            this._cameraShortened = true;
-
-            return true;
-        };
 
         const raycastResult = physicsEngine.raycast(
             this.customHeadNode.absolutePosition,
             this.camera.globalPosition,
             {
                 collideWith:
-                    PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT | PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF,
+                    PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
+                    PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF,
             }
         );
 
         // if is avatar body, widen to not clip through avatar body
-        if (raycastResult.body !== this.avatar.capsuleBody && raycastResult.body?.transformNode?.name.includes('avatar')) {
+        if (
+            raycastResult.body !== this.avatar.capsuleBody &&
+            raycastResult.body?.transformNode?.name.includes("avatar")
+        ) {
             // if hit point distance is within 0.6 of the camera radius, widen the radius
             const hitPoint = raycastResult.hitPointWorld;
-            const distanceToHead = Vector3.Distance(hitPoint, this.customHeadNode.absolutePosition);
-            const avatarOtherSide = distanceToHead + (AVATAR_PARAMS.CAPSULE_RADIUS * 2.25);
+            const distanceToHead = Vector3.Distance(
+                hitPoint,
+                this.customHeadNode.absolutePosition
+            );
+            const avatarOtherSide =
+                distanceToHead + AVATAR_PARAMS.CAPSULE_RADIUS * 2.25;
 
             // check if other side of avatar has collision
             const raycastResult2 = physicsEngine.raycast(
@@ -1026,18 +1119,47 @@ class AvatarController {
                 }
             );
 
-            if (checkCollision(raycastResult2)) return;
+            if (this._checkCollision(raycastResult2)) return;
 
-            if (this.camera.radius >= distanceToHead && this.camera.radius <= avatarOtherSide) {
+            if (
+                this.camera.radius >= distanceToHead &&
+                this.camera.radius <= avatarOtherSide
+            ) {
                 // widen the camera radius to prevent clipping through avatar body
-                const fixedRadius = lerp(this.camera.radius, avatarOtherSide + 0.1, 0.3);
+                const fixedRadius = lerp(
+                    this.camera.radius,
+                    avatarOtherSide + 0.1,
+                    0.3
+                );
                 this.camera.radius = fixedRadius;
             }
             this._hitWall = false;
             return;
         }
 
-        checkCollision(raycastResult);
+        this._checkCollision(raycastResult);
+    }
+
+    private _checkCollision(result: PhysicsRaycastResult): boolean {
+        if (!result.hasHit || !result.body) {
+            this._hitWall = false;
+            return false;
+        }
+
+        this._hitWall = true;
+
+        // prevent clipping through objects
+        this.camera.radius = lerp(
+            this.camera.radius,
+            Vector3.Distance(
+                result.hitPointWorld,
+                this.customHeadNode.absolutePosition
+            ) - 0.03,
+            0.5
+        );
+        this._cameraShortened = true;
+
+        return true;
     }
 
     /**
@@ -1159,7 +1281,7 @@ class AvatarController {
         }
 
         if (
-            this._cameraMode === 'firstPerson' ||
+            this._cameraMode === "firstPerson" ||
             !this._cameraShortened ||
             this._hitWall ||
             this._dontZoomOut
@@ -1184,7 +1306,9 @@ class AvatarController {
 
         const raycastResult = physicsEngine.raycast(
             this.camera.globalPosition,
-            this.camera.globalPosition.subtract(this.camera.getForwardRay(0.1).direction.normalize()),
+            this.camera.globalPosition.subtract(
+                this.camera.getForwardRay(0.1).direction.normalize()
+            ),
             {
                 collideWith: PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT,
             }
@@ -1202,35 +1326,44 @@ class AvatarController {
         let directionOffset = 0;
 
         switch (true) {
-            case this.movementKeys['KeyW'] || this.movementKeys['ArrowUp']:
+            case this.movementKeys["KeyW"] || this.movementKeys["ArrowUp"]: {
                 switch (true) {
-                    case this.movementKeys['KeyD'] || this.movementKeys['ArrowRight']:
+                    case this.movementKeys["KeyD"] || this.movementKeys["ArrowRight"]: {
                         directionOffset = -Math.PI * 0.25 - Math.PI * 0.5;
                         break;
-                    case this.movementKeys['KeyA'] || this.movementKeys['ArrowLeft']:
+                    }
+                    case this.movementKeys["KeyA"] || this.movementKeys["ArrowLeft"]: {
                         directionOffset = Math.PI * 0.25 + Math.PI * 0.5;
                         break;
-                    default:
+                    }
+                    default: {
                         directionOffset = Math.PI;
                         break;
+                    }
                 }
                 break;
-            case this.movementKeys['KeyS'] || this.movementKeys['ArrowDown']:
+            }
+            case this.movementKeys["KeyS"] || this.movementKeys["ArrowDown"]: {
                 switch (true) {
-                    case this.movementKeys['KeyD'] || this.movementKeys['ArrowRight']:
+                    case this.movementKeys["KeyD"] || this.movementKeys["ArrowRight"]: {
                         directionOffset = -Math.PI * 0.25;
                         break;
-                    case this.movementKeys['KeyA'] || this.movementKeys['ArrowLeft']:
+                    }
+                    case this.movementKeys["KeyA"] || this.movementKeys["ArrowLeft"]: {
                         directionOffset = Math.PI * 0.25;
                         break;
+                    }
                 }
                 break;
-            case this.movementKeys['KeyD'] || this.movementKeys['ArrowRight']:
+            }
+            case this.movementKeys["KeyD"] || this.movementKeys["ArrowRight"]: {
                 directionOffset = -Math.PI * 0.5;
                 break;
-            case this.movementKeys['KeyA'] || this.movementKeys['ArrowLeft']:
+            }
+            case this.movementKeys["KeyA"] || this.movementKeys["ArrowLeft"]: {
                 directionOffset = Math.PI * 0.5;
                 break;
+            }
         }
 
         return directionOffset;
@@ -1335,11 +1468,9 @@ class AvatarController {
             // add Y offset so the camera also moves down when crouches down
             this.oldCameraPosition.y += this.avatar.headHeight * 0.5;
         } else if (!this.avatar.isCrouching) {
-            if (this.avatar.isRunning) {
-                this._moveSpeed = AvatarController.RUN_SPEED;
-            } else {
-                this._moveSpeed = AvatarController.WALK_SPEED;
-            }
+            this._moveSpeed = this.avatar.isRunning
+                ? AvatarController.RUN_SPEED
+                : AvatarController.WALK_SPEED;
             this.avatar.toggleCrouchCapsuleBody(false);
 
             // remove Y offset so the camera also moves up when stands up
@@ -1376,7 +1507,10 @@ class AvatarController {
         this.stop();
         this.keyboardPressObserver.remove();
         this.customHeadNode.dispose();
-        this.scene.getEngine().getRenderingCanvas()!.removeEventListener("blur", this.stopAllMovements.bind(this));
+        this.scene
+            .getEngine()
+            .getRenderingCanvas()!
+            .removeEventListener("blur", this.stopAllMovements);
     }
 }
 

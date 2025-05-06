@@ -8,7 +8,6 @@ import { clientSettings } from 'clientSettings';
 
 import type { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
-import type { Nullable } from '@babylonjs/core/types';
 
 class AvatarInteraction {
     avatar: Avatar;
@@ -17,12 +16,12 @@ class AvatarInteraction {
 
     // for consensual multi-user interactions
     waitingForOther: boolean = false;
-    otherUserDetectionMesh: Nullable<Mesh> = null;
+    otherUserDetectionMesh?: Mesh
 
-    continuousPhase: Nullable<0 | 1 | 2> = null;
-    toIdleAnimation: Nullable<AnimationGroup> = null;
+    continuousPhase?: 0 | 1 | 2
+    toIdleAnimation?: AnimationGroup
 
-    private _storedAnimToResume: Nullable<AnimationGroup> = null;
+    private _storedAnimToResume?: AnimationGroup
 
     constructor(avatar: Avatar, name: string, type: AvatarInteractionType) {
         this.avatar = avatar;
@@ -33,13 +32,13 @@ class AvatarInteraction {
     play(onAnimationEndCallback?: () => void): void {
         let hasAnim = false;
         switch (this.type) {
-            case 'multi':
+            case 'multi': {
                 for (const [key, value] of Object.entries(this.avatar.animations)) {
                     if (key.toLowerCase().includes(this.name.toLowerCase())) {
                         // value.onAnimationGroupEndObservable.addOnce(() => {
                         //     if (this._storedAnimToResume) {
                         //         this.avatar.playAnimation(this._storedAnimToResume.name, true);
-                        //         this._storedAnimToResume = null;
+                        //         this._storedAnimToResume = undefined;
                         //     }
                         //     onAnimationEndCallback?.();
                         // });
@@ -71,6 +70,7 @@ class AvatarInteraction {
                     }
                 }
                 break;
+            }
             case 'continuous': {
                 for (const [key] of Object.entries(this.avatar.animations)) {
                     if (key.toLowerCase().includes(this.name.toLowerCase())) {
@@ -98,7 +98,7 @@ class AvatarInteraction {
                                 }
                                 if (this._storedAnimToResume) {
                                     this.avatar.playAnimation(this._storedAnimToResume.name, true);
-                                    this._storedAnimToResume = null;
+                                    this._storedAnimToResume = undefined;
                                 }
                             });
                             // loop.onAnimationGroupPlayObservable.addOnce(() => {
@@ -119,13 +119,13 @@ class AvatarInteraction {
                 }
                 break;
             }
-            default:
+            default: {
                 for (const [key, value] of Object.entries(this.avatar.animations)) {
                     if (key.toLowerCase().includes(this.name.toLowerCase())) {
                         value.onAnimationGroupEndObservable.addOnce(() => {
                             if (this._storedAnimToResume) {
                                 this.avatar.playAnimation(this._storedAnimToResume.name, true);
-                                this._storedAnimToResume = null;
+                                this._storedAnimToResume = undefined;
                             }
                             onAnimationEndCallback?.();
                         });
@@ -134,12 +134,14 @@ class AvatarInteraction {
                         switch (this.type) {
                             case 'single':
                             case 'hitting':
-                            case 'gethit':
+                            case 'gethit': {
                                 this.avatar.playAnimation(value.name, false);
                                 break;
-                            case 'loop':
+                            }
+                            case 'loop': {
                                 this.avatar.playAnimation(value.name, true);
                                 break;
+                            }
                         }
 
                         hasAnim = true;
@@ -147,6 +149,7 @@ class AvatarInteraction {
                     }
                 }
                 break;
+            }
         }
 
         if (!hasAnim) {
@@ -159,11 +162,11 @@ class AvatarInteraction {
         if (!this.continuousPhase || this.continuousPhase < 1) return;
 
         if (this.toIdleAnimation) {
-            this.continuousPhase = null;
+            this.continuousPhase = undefined;
             this.toIdleAnimation.onAnimationGroupEndObservable.addOnce(() => {
                 if (this._storedAnimToResume) {
                     this.avatar.playAnimation(this._storedAnimToResume.name, true);
-                    this._storedAnimToResume = null;
+                    this._storedAnimToResume = undefined;
                 }
                 onAnimationEndCallback?.();
             });
@@ -172,11 +175,11 @@ class AvatarInteraction {
     }
 
     dispose(): void {
-        Object.values(this.avatar.animations).forEach(anim => {
+        for (const anim of Object.values(this.avatar.animations)) {
             anim.onAnimationGroupEndObservable.clear();
-        });
+        }
         this.otherUserDetectionMesh?.dispose(false, true);
-        this._storedAnimToResume = null;
+        this._storedAnimToResume = undefined;
         if (this.avatar.capsuleBody) {
             this.avatar.capsuleBody.disableSync = false;
         }

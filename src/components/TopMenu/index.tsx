@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
-import { useState, type MouseEvent } from "react";
+import { useState, type FC, type MouseEvent } from "react";
 
 import HomeIcon from "@mui/icons-material/Home";
 import { Box, Menu, MenuItem, Toolbar } from "@mui/material";
@@ -18,12 +18,12 @@ import {
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
-const TopMenu = () => {
+const TopMenu: FC = () => {
     const router = useRouter();
     const pathName = usePathname();
 
     const [openIframe, setOpenIframe] = useState(false);
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement>();
 
     const avatar = useAvatarStore((state) => state.avatar);
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
@@ -34,7 +34,7 @@ const TopMenu = () => {
     };
 
     const handleDropdownClose = () => {
-        setAnchorEl(null);
+        setAnchorEl(undefined);
     };
 
     const switchAvatar = (avatarId: string) => {
@@ -48,6 +48,7 @@ const TopMenu = () => {
     };
 
     if (isViewportFill || isFullscreen) {
+        // eslint-disable-next-line unicorn/no-null
         return null; // Don't show the menu in fullscreen or viewport fill mode
     }
 
@@ -87,13 +88,13 @@ const TopMenu = () => {
                             variant="contained"
                             color="secondary"
                             onClick={() => {
-                                const res = window
+                                const res = globalThis
                                     .prompt(
                                         "Enter avatar URL here",
                                         "https://models.readyplayer.me/67fe6f7713b3fb7e8aa0328c.glb"
                                     )
                                     ?.trim()
-                                    .replace(/\s+/g, "");
+                                    .replaceAll(/\s+/g, "");
 
                                 if (res) {
                                     avatar?.changeAvatar(res);

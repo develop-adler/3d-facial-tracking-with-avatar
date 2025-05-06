@@ -24,7 +24,7 @@ export const LiveKitPage: FC = () => {
 
     return (
         <>
-            <JoinRoomModal open={roomNameAndUsername === null} onSubmit={handleFormSubmit} />
+            <JoinRoomModal open={!roomNameAndUsername} onSubmit={handleFormSubmit} />
             {roomNameAndUsername && (
                 <RoomPage roomName={roomNameAndUsername.room} name={roomNameAndUsername.name} />
             )}

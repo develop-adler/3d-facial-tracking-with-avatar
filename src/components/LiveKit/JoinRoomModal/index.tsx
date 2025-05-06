@@ -60,7 +60,7 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
             <Fade in={open}>
                 <Box
                     component="form"
-                    acceptCharset="UTF-8"
+                    acceptCharset="utf8"
                     // autoComplete="off"
                     sx={{
                         position: "absolute",

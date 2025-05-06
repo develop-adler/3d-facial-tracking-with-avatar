@@ -42,7 +42,7 @@ export const MultiplayerPage: FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return isDisconnected ? null : (
+    return !isDisconnected && (
         <div data-lk-theme="default">
             <Multiplayer3D room={room} />
             {/* Controls for user */}

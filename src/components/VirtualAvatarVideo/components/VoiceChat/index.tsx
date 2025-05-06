@@ -93,6 +93,18 @@ const micStatus = {
     processingStopping: false,
 };
 
+const createFakeReverbBuffer = (ctx: AudioContext) => {
+    const length = ctx.sampleRate * 1.5;
+    const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+        const channel = impulse.getChannelData(c);
+        for (let i = 0; i < length; i++) {
+            channel[i] = (Math.random() * 2 - 1) * (1 - i / length);
+        }
+    }
+    return impulse;
+};
+
 class AudioContextWithId {
     id: string;
     audioContext: AudioContext;
@@ -114,9 +126,9 @@ class AudioContextWithId {
 }
 
 export const VoiceChat: FC = () => {
-    const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+    const [audioStream, setAudioStream] = useState<MediaStream>();
     const [isFetchingStream, setIsFetchingStream] = useState(true);
-    const [micFetchError, setMicFetchError] = useState<string | null>(null);
+    const [micFetchError, setMicFetchError] = useState<string>();
     const [isPTTHeld, setIsPTTHeld] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [ttsText, setTtsText] = useState("");
@@ -129,17 +141,17 @@ export const VoiceChat: FC = () => {
     const [trebleGain, setTrebleGain] = useState(0);
     const [reverbWet, setReverbWet] = useState(0.3);
 
-    const audioCtxRef = useRef<AudioContextWithId>(null);
-    const analyserRef = useRef<AnalyserNode>(null);
-    const sourceRef = useRef<MediaStreamAudioSourceNode>(null);
+    const audioCtxRef = useRef<AudioContextWithId>(undefined);
+    const analyserRef = useRef<AnalyserNode>(undefined);
+    const sourceRef = useRef<MediaStreamAudioSourceNode>(undefined);
     const animationFrameRef = useRef<number>(0);
-    const gainNodeRef = useRef<GainNode>(null);
-    const pitchShifterRef = useRef<AudioParam>(null);
-    const distortionRef = useRef<WaveShaperNode>(null);
-    const bassEQRef = useRef<BiquadFilterNode>(null);
-    const midEQRef = useRef<BiquadFilterNode>(null);
-    const trebleEQRef = useRef<BiquadFilterNode>(null);
-    const reverbRef = useRef<ConvolverNode>(null);
+    const gainNodeRef = useRef<GainNode>(undefined);
+    const pitchShifterRef = useRef<AudioParam>(undefined);
+    const distortionRef = useRef<WaveShaperNode>(undefined);
+    const bassEQRef = useRef<BiquadFilterNode>(undefined);
+    const midEQRef = useRef<BiquadFilterNode>(undefined);
+    const trebleEQRef = useRef<BiquadFilterNode>(undefined);
+    const reverbRef = useRef<ConvolverNode>(undefined);
 
     // Mic chain:
     // Mic → Pitch → Distortion
@@ -159,7 +171,7 @@ export const VoiceChat: FC = () => {
         );
         const pitchParam = pitchShifter.parameters.get("pitchFactor");
         pitchParam!.value = micPitchFactor;
-        pitchShifterRef.current = pitchParam ?? null;
+        pitchShifterRef.current = pitchParam;
 
         // Add FX nodes
         const distortion = audioCtx.createWaveShaper();
@@ -241,14 +253,14 @@ export const VoiceChat: FC = () => {
         micStatus.audioContextClosing = true;
 
         audioCtxRef.current?.dispose();
-        audioCtxRef.current = null;
-        gainNodeRef.current = null;
-        distortionRef.current = null;
-        bassEQRef.current = null;
-        midEQRef.current = null;
-        trebleEQRef.current = null;
-        reverbRef.current = null;
-        pitchShifterRef.current = null;
+        audioCtxRef.current = undefined;
+        gainNodeRef.current = undefined;
+        distortionRef.current = undefined;
+        bassEQRef.current = undefined;
+        midEQRef.current = undefined;
+        trebleEQRef.current = undefined;
+        reverbRef.current = undefined;
+        pitchShifterRef.current = undefined;
 
         micStatus.audioContextClosing = false;
         micStatus.audioContextClosed = true;
@@ -256,7 +268,7 @@ export const VoiceChat: FC = () => {
 
     const stopMicProcessing = async () => {
         sourceRef.current?.disconnect();
-        sourceRef.current = null;
+        sourceRef.current = undefined;
         cancelAnimationFrame(animationFrameRef.current);
         setIsSpeaking(false);
         await closeAudioContext();
@@ -268,18 +280,6 @@ export const VoiceChat: FC = () => {
         utterance.pitch = ttsPitchFactor;
         utterance.rate = 1.1;
         speechSynthesis.speak(utterance);
-    };
-
-    const createFakeReverbBuffer = (ctx: AudioContext) => {
-        const length = ctx.sampleRate * 1.5;
-        const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
-        for (let c = 0; c < 2; c++) {
-            const channel = impulse.getChannelData(c);
-            for (let i = 0; i < length; i++) {
-                channel[i] = (Math.random() * 2 - 1) * (1 - i / length);
-            }
-        }
-        return impulse;
     };
 
     const applyPreset = (preset: VoicePreset) => {
@@ -294,7 +294,7 @@ export const VoiceChat: FC = () => {
     };
 
     const setNodeValue = (
-        node: GainNode | AudioParam | BiquadFilterNode | null,
+        node: GainNode | AudioParam | BiquadFilterNode | undefined,
         value: number,
         audioCtx?: AudioContext | null
     ) => {
@@ -318,7 +318,7 @@ export const VoiceChat: FC = () => {
     useEffect(() => {
         if (distortionRef.current) {
             const k = distortionAmount;
-            const n_samples = 44100;
+            const n_samples = 44_100;
             const curve = new Float32Array(n_samples);
             const deg = Math.PI / 180;
             for (let i = 0; i < n_samples; ++i) {
@@ -382,12 +382,12 @@ export const VoiceChat: FC = () => {
             }
         };
 
-        window.addEventListener("keydown", handleKeyDown);
-        window.addEventListener("keyup", handleKeyUp);
+        globalThis.addEventListener("keydown", handleKeyDown);
+        globalThis.addEventListener("keyup", handleKeyUp);
         return () => {
             stopMicProcessing();
-            window.removeEventListener("keydown", handleKeyDown);
-            window.removeEventListener("keyup", handleKeyUp);
+            globalThis.removeEventListener("keydown", handleKeyDown);
+            globalThis.removeEventListener("keyup", handleKeyUp);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPTTHeld]);
@@ -395,15 +395,15 @@ export const VoiceChat: FC = () => {
     useEffect(() => {
         const fetchStream = async () => {
             setIsFetchingStream(true);
-            setMicFetchError(null);
+            setMicFetchError(undefined);
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
                 });
                 setAudioStream(stream);
-            } catch (err) {
-                console.error("Mic access failed:", err);
+            } catch (error) {
+                console.error("Mic access failed:", error);
                 setMicFetchError(
                     "Unable to access microphone. Please allow permission."
                 );
@@ -480,9 +480,9 @@ export const VoiceChat: FC = () => {
             >
                 {isPTTHeld || isSpeaking
                     ? "Speaking"
-                    : isPTTHeld && !isSpeaking
+                    : (isPTTHeld && !isSpeaking
                         ? "Listening..."
-                        : "Idle"}
+                        : "Idle")}
             </Box>
 
             {/* Preset Buttons */}

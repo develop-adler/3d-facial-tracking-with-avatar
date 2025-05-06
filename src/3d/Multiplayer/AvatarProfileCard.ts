@@ -8,7 +8,6 @@ import { isMobile } from '@/utils/browserUtils';
 
 import type { Observer } from '@babylonjs/core/Misc/observable';
 import type { Scene } from '@babylonjs/core/scene';
-import type { Nullable } from '@babylonjs/core/types';
 
 const PROFILE_CARD_SIZE = {
     pc: { width: 0.64, height: 0.436 }, // 100%
@@ -19,7 +18,7 @@ class AvatarProfileCard {
     readonly avatar: Avatar;
     readonly participant: Participant;
     readonly htmlMesh: HtmlMesh;
-    htmlElement: Nullable<HTMLElement> = null;
+    htmlElement?: HTMLElement;
     readonly sceneRenderObserver: Observer<Scene>;
     isDisplayed: boolean = false;
     tooCloseToCamera: boolean = false;
@@ -75,19 +74,17 @@ class AvatarProfileCard {
 
         return htmlMesh;
     }
-    attachToElement(display: boolean = true): Nullable<HTMLElement> {
+    attachToElement(display: boolean = true): HTMLElement | undefined {
         // retrieve the React component and set HTML content of html mesh
-        const div = document.getElementById(`multiplay_profile_${this.participant.sid}`);
-        let clonedElem: Nullable<HTMLElement> = null;
-
+        const div = document.querySelector(`#multiplay_profile_${this.participant.sid}`);
         if (!div) {
             eventBus.emitWithEvent('multiplayer:avatarProfileCardSync', this.participant);
-            return null;
+            return;
         }
 
         // clone the React component to prevent React from crashing when
         // removing or doing anything with it from Javascript side
-        clonedElem = div.cloneNode(true) as HTMLElement;
+        const clonedElem = div.cloneNode(true) as HTMLElement;
         clonedElem.id = `multiplay_profile_${this.participant.sid}_clone`;
         clonedElem.style.display = display ? 'flex' : 'none';
         clonedElem.style.userSelect = 'none';
@@ -96,7 +93,7 @@ class AvatarProfileCard {
         // if so, add onclick event listener to it (because cloning elems removes event listeners for some reason...)
         // NOTE: this is a janky solution, need to find a better way to do this in the future...
         let followIcon, unfollowText, dmIcon, closeIcon;
-        for (const child of clonedElem.getElementsByTagName('*')) {
+        for (const child of clonedElem.querySelectorAll('*')) {
             if (child.className.startsWith('multiplay_profile_follow_icon')) {
                 followIcon = child;
             } else if (child.className.startsWith('multiplay_profile_unfollow_text')) {
@@ -108,7 +105,7 @@ class AvatarProfileCard {
             }
         }
 
-        if ((!followIcon && !unfollowText) || !dmIcon || !closeIcon) return null;
+        if ((!followIcon && !unfollowText) || !dmIcon || !closeIcon) return;
 
         // add onclick event listener, use observer to trigger update on 2D side
         followIcon?.addEventListener('click', () => {
@@ -159,7 +156,7 @@ class AvatarProfileCard {
         }
         this.sceneRenderObserver.remove();
         this.htmlElement?.remove();
-        this.htmlElement = null;
+        this.htmlElement = undefined;
         this.htmlMesh.material?.dispose();
         this.htmlMesh.dispose();
     }

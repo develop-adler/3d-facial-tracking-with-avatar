@@ -12,16 +12,12 @@ import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 
 registerBuiltInLoaders();
 
-const SafeCanvas = (() => {
-    if (typeof document !== 'undefined') {
-        return document.createElement('canvas');
-    } else {
-        // Minimal fake canvas object to avoid SSR crash
-        return {
-            getContext: () => null,
-        } as unknown as HTMLCanvasElement;
-    }
-})();
+const SafeCanvas = (() => 
+    typeof document === 'undefined' ? 
+    {
+        getContext: () => {},
+    } as unknown as HTMLCanvasElement :
+    document.createElement('canvas'))();
 
 export class CoreEngine {
     private static instance: CoreEngine;
@@ -132,7 +128,7 @@ export class CoreEngine {
     }
 
     insertCanvasToDOM(container: HTMLElement) {
-        container.appendChild(this.canvas);
+        container.append(this.canvas);
         // call resize to fix the canvas size
         this.resize();
     }

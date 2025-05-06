@@ -103,8 +103,8 @@ export const CustomControlBar = () => {
                                 cursor: "not-allowed",
                             }}
                             disabled={true}
-                            onClick={() => undefined}
-                            onChange={() => undefined}
+                            onClick={() => {}}
+                            onChange={() => {}}
                         >
                             <CameraDisabledIcon />
                             Camera

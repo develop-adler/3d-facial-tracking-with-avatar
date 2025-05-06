@@ -36,8 +36,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "eslint": "^9.26.0",
     "eslint-config-next": "15.3.0",
+    "eslint-plugin-unicorn": "^59.0.1",
     "react-scan": "^0.3.3",
     "typescript": "^5"
   }

@@ -159,11 +159,17 @@ class MultiplayerScene {
             MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
 
         // remove camera limitations
+        // eslint-disable-next-line unicorn/no-null
         camera.lowerBetaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         camera.upperBetaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         camera.lowerAlphaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         camera.upperAlphaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         camera.lowerRadiusLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         camera.upperRadiusLimit = null;
 
         camera.fov = 0.8;
@@ -212,7 +218,9 @@ class MultiplayerScene {
         this.camera.upperBetaLimit = AVATAR_PARAMS.CAMERA_BETA_UPPER_LIMIT_AVATAR; // looking up (divided by higher value = lower angle)
 
         // remove horizontal rotation limitation
+        // eslint-disable-next-line unicorn/no-null
         this.camera.lowerAlphaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.upperAlphaLimit = null;
     }
 
@@ -227,11 +235,17 @@ class MultiplayerScene {
             MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
 
         // remove limitations
+        // eslint-disable-next-line unicorn/no-null
         this.camera.lowerBetaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.upperBetaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.lowerAlphaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.upperAlphaLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.lowerRadiusLimit = null;
+        // eslint-disable-next-line unicorn/no-null
         this.camera.upperRadiusLimit = null;
 
         this.camera.setPosition(new Vector3(5, 5, 5));
@@ -245,7 +259,7 @@ class MultiplayerScene {
     }
 
     dispose() {
-        this.coreEngine.engine.stopRenderLoop(this._renderScene.bind(this));
+        this.coreEngine.engine.stopRenderLoop(this._renderScene);
     }
 }
 

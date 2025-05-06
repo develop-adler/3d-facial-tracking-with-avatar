@@ -20,7 +20,7 @@ export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
         width: "100%",
         height: "100%",
         userSelect: "none",
-        zIndex: $isForRoom ? 0 : -999999,
+        zIndex: $isForRoom ? 0 : -999_999,
         visibility: $isForRoom ? "hidden" : "visible", 
         // don't interfere with current DOM elements
         position: $isForRoom ? 'fixed' : 'static',

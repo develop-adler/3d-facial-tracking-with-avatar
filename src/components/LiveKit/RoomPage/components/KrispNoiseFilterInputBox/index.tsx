@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
 
 import { useKrispNoiseFilter } from "@livekit/components-react/krisp";
 import { useLocalParticipant } from "@livekit/components-react";
@@ -11,7 +11,7 @@ import { LocalAudioTrack, Track } from "livekit-client";
 
 import { COLOR } from "constant";
 
-export const KrispNoiseFilterInputBox = () => {
+export const KrispNoiseFilterInputBox: FC = () => {
     const { microphoneTrack } = useLocalParticipant();
     const { isNoiseFilterEnabled, isNoiseFilterPending, setNoiseFilterEnabled } =
         useKrispNoiseFilter();
@@ -67,6 +67,7 @@ export const KrispNoiseFilterInputBox = () => {
         };
     }, []);
 
+    // eslint-disable-next-line unicorn/no-null
     if (!isKrispSupported) return null;
 
     return (

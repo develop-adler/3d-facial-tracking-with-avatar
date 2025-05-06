@@ -16,6 +16,7 @@ const LoadingBar: FC<Props> = ({ isRoomPage }) => {
         (state) => state.loadingPercentage
     );
 
+    // eslint-disable-next-line unicorn/no-null
     if (!isLoading) return null;
 
     return (

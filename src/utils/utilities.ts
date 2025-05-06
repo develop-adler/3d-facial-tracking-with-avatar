@@ -30,6 +30,6 @@ export const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value));
 
 export const isValidRPMAvatarId = (id: string): boolean => {
-  const objectIdRegex = /^[a-f0-9]{24}$/;
+  const objectIdRegex = /^[\da-f]{24}$/;
   return objectIdRegex.test(id);
 };

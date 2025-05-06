@@ -18,7 +18,7 @@ export default function RoomLayout({
 
     useEffect(() => {
         room.on("disconnected", () => {
-            setRoomNameAndUsername(null);
+            setRoomNameAndUsername();
         });
         return () => {
             // disconnect when navigating away from /room route

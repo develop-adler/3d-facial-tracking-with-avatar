@@ -36,9 +36,9 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
                 if (data.token && clientSettings.LIVEKIT_URL) {
                     await room.connect(clientSettings.LIVEKIT_URL, data.token);
                 }
-            } catch (e) {
-                setRoomNameAndUsername(null);
-                console.error(e);
+            } catch (error) {
+                setRoomNameAndUsername();
+                console.error(error);
             }
         })();
 

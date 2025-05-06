@@ -6,7 +6,13 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import { FaceDetector } from "@/utils/FaceDetector";
 import { HandDetector } from "@/utils/HandDetector";
-import { clamp, hasGetUserMedia, lerp, normalize, normalizeToRange } from "@/utils/utilities";
+import {
+  clamp,
+  hasGetUserMedia,
+  lerp,
+  normalize,
+  normalizeToRange,
+} from "@/utils/utilities";
 
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
@@ -50,20 +56,106 @@ const mapLandmarkToWorld = (
   );
 };
 
-export const VideoChat: FC = () => {
-  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(
-    null
+const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
+  if (!avatar.morphTargetManager) return;
+
+  for (const blendShape of blendShapes) {
+    const value = blendShape.score;
+    const target = avatar.morphTargetManager.getTargetByName(
+      blendShape.categoryName
+    );
+    if (!target) continue;
+
+    let val = value;
+
+    // Enhance blink sensitivity
+    if (target.name.includes("eyeBlink")) {
+      val = clamp(normalize(value, 0, 0.75), 0, 1);
+    }
+
+    // lerp for to make facial features not twitchy
+    const current = target.influence ?? 0;
+    const smoothed = lerp(current, val > 0.1 ? val : 0, 0.3);
+    target.influence = smoothed;
+  }
+};
+
+const syncHeadRotation = (
+  avatar: Avatar,
+  faceRotation: Quaternion,
+  mirrored: boolean = false
+) => {
+  const headBoneNode = avatar.bones
+    ?.find((bone) => bone.name === "Head")
+    ?.getTransformNode();
+  if (!headBoneNode) return;
+
+  const rotation = new Quaternion(
+    mirrored ? -faceRotation.x : faceRotation.x,
+    faceRotation.y,
+    faceRotation.z,
+    // maintain quaternion unit rotation direction when mirrored
+    mirrored ? -faceRotation.w : faceRotation.w
   );
+
+  // Fix head looking down more than intended
+  const euler = rotation.toEulerAngles();
+  euler.x -= Math.PI * 0.1;
+  const correctedRotation = Quaternion.FromEulerAngles(
+    euler.x,
+    euler.y,
+    euler.z
+  );
+
+  headBoneNode.rotationQuaternion = Quaternion.Slerp(
+    headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
+    correctedRotation,
+    0.3
+  );
+
+  const spine2Node = avatar.bones
+    ?.find((bone) => bone.name === "Spine1")
+    ?.getTransformNode();
+  if (!spine2Node) return;
+
+  // slightly rotate the spine with the head
+  const spineRotation = Quaternion.FromEulerAngles(
+    0, // forward backward
+    correctedRotation.y * 0.8, // rotate left right horizontally
+    correctedRotation.z * 0.85 // rotate left right vertically
+  );
+  spine2Node.rotationQuaternion = Quaternion.Slerp(
+    spine2Node.rotationQuaternion ?? Quaternion.Identity(),
+    spineRotation,
+    0.3
+  );
+};
+
+const syncHeadPosition = (avatar: Avatar, faceMatrix: Matrix) => {
+  const faceMatrixPosition = faceMatrix.getTranslation();
+
+  // fix distance of avatar from 3D camera's position
+  const headPosition = faceMatrixPosition.multiplyByFloats(-0.02, 0.008, 1);
+  headPosition.z = normalizeToRange(faceMatrixPosition.z, -60, -10, -0.8, 0.2);
+
+  if (avatar.container) {
+    const lerped = Vector3.Lerp(
+      avatar.container.meshes[0].position,
+      headPosition,
+      0.25
+    );
+    avatar.container.meshes[0].position = lerped;
+  }
+};
+
+export const VideoChat: FC = () => {
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement>();
   const [isStreamReady, setIsStreamReady] = useState<boolean>(false);
 
   const faceDetectorRef = useRef<FaceDetector>(null);
   const handDetectorRef = useRef<HandDetector>(null);
-  const detectFaceInterval = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
-  const detectHandInterval = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const detectFaceInterval = useRef<ReturnType<typeof setInterval>>(undefined);
+  const detectHandInterval = useRef<ReturnType<typeof setInterval>>(undefined);
   const headMatrix = useRef<Matrix>(Matrix.Identity());
 
   const avatar = useAvatarStore((state) => state.avatar);
@@ -73,7 +165,7 @@ export const VideoChat: FC = () => {
 
     if (detectFaceInterval.current) {
       clearInterval(detectFaceInterval.current);
-      detectFaceInterval.current = null;
+      detectFaceInterval.current = undefined;
     }
 
     detectFaceInterval.current = setInterval(async () => {
@@ -87,7 +179,7 @@ export const VideoChat: FC = () => {
 
     if (detectHandInterval.current) {
       clearInterval(detectHandInterval.current);
-      detectHandInterval.current = null;
+      detectHandInterval.current = undefined;
     }
     detectHandInterval.current = setInterval(async () => {
       detectHand();
@@ -116,8 +208,8 @@ export const VideoChat: FC = () => {
   const detectHand = async () => {
     const result = await handDetectorRef.current?.detect();
     if (!result || result.handedness.length === 0) {
-      const canvas = document.getElementById(
-        "hand-canvas"
+      const canvas = document.querySelector(
+        "#hand-canvas"
       ) as HTMLCanvasElement | null;
       if (canvas) {
         const cxt = canvas.getContext("2d");
@@ -127,8 +219,8 @@ export const VideoChat: FC = () => {
     }
 
     // draw 2D hands from landmarks
-    const canvas = document.getElementById(
-      "hand-canvas"
+    const canvas = document.querySelector(
+      "#hand-canvas"
     ) as HTMLCanvasElement | null;
     if (canvas) {
       const cxt = canvas.getContext("2d");
@@ -167,7 +259,9 @@ export const VideoChat: FC = () => {
       );
       rightWristWorldPos.z *= -1; // flip z axis
       console.log("rightWristWorldPos", rightWristWorldPos);
-      avatar.boneIKTargets.right.target.setAbsolutePosition(rightWristWorldPos.scale(5));
+      avatar.boneIKTargets.right.target.setAbsolutePosition(
+        rightWristWorldPos.scale(5)
+      );
     }
     if (leftIdx > -1) {
       const hand = result.landmarks[leftIdx];
@@ -181,108 +275,14 @@ export const VideoChat: FC = () => {
       );
       leftWristWorldPos.z *= -1; // flip z axis
       console.log("leftWristWorldPos", leftWristWorldPos);
-      avatar.boneIKTargets.left.target.setAbsolutePosition(leftWristWorldPos.scale(5));
+      avatar.boneIKTargets.left.target.setAbsolutePosition(
+        leftWristWorldPos.scale(5)
+      );
     }
 
     // update bone ik
     avatar.boneIKControllers.left?.update();
     avatar.boneIKControllers.right?.update();
-  };
-
-  const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
-    if (!avatar.morphTargetManager) return;
-
-    for (const blendShape of blendShapes) {
-      const value = blendShape.score;
-      const target = avatar.morphTargetManager.getTargetByName(
-        blendShape.categoryName
-      );
-      if (!target) continue;
-
-      let val = value;
-
-      // Enhance blink sensitivity
-      if (target.name.includes("eyeBlink")) {
-        val = clamp(normalize(value, 0, 0.75), 0, 1);
-      }
-
-      // lerp for to make facial features not twitchy
-      const current = target.influence ?? 0;
-      const smoothed = lerp(current, val > 0.1 ? val : 0, 0.3);
-      target.influence = smoothed;
-    }
-  };
-
-  const syncHeadRotation = (
-    avatar: Avatar,
-    faceRotation: Quaternion,
-    mirrored: boolean = false
-  ) => {
-    const headBoneNode = avatar.bones
-      ?.find((bone) => bone.name === "Head")
-      ?.getTransformNode();
-    if (!headBoneNode) return;
-
-    const rotation = new Quaternion(
-      mirrored ? -faceRotation.x : faceRotation.x,
-      faceRotation.y,
-      faceRotation.z,
-      // maintain quaternion unit rotation direction when mirrored
-      mirrored ? -faceRotation.w : faceRotation.w
-    );
-
-    // Fix head looking down more than intended
-    const euler = rotation.toEulerAngles();
-    euler.x -= Math.PI * 0.1;
-    const correctedRotation = Quaternion.FromEulerAngles(
-      euler.x,
-      euler.y,
-      euler.z
-    );
-
-    headBoneNode.rotationQuaternion = Quaternion.Slerp(
-      headBoneNode.rotationQuaternion ?? Quaternion.Identity(),
-      correctedRotation,
-      0.3
-    );
-
-    const spine2Node = avatar.bones
-      ?.find((bone) => bone.name === "Spine1")
-      ?.getTransformNode();
-    if (!spine2Node) return;
-
-    // slightly rotate the spine with the head
-    const spineRotation = Quaternion.FromEulerAngles(
-      0, // forward backward
-      correctedRotation.y * 0.8, // rotate left right horizontally
-      correctedRotation.z * 0.85 // rotate left right vertically
-    );
-    spine2Node.rotationQuaternion = Quaternion.Slerp(
-      spine2Node.rotationQuaternion ?? Quaternion.Identity(),
-      spineRotation,
-      0.3
-    );
-  };
-
-  const syncHeadPosition = (avatar: Avatar, faceMatrix: Matrix) => {
-    const faceMatrixPosition = faceMatrix.getTranslation();
-
-    // fix distance of avatar from 3D camera's position
-    const headPosition = faceMatrixPosition.multiplyByFloats(
-      -0.02,
-      0.008,
-      1
-    );
-    headPosition.z = normalizeToRange(faceMatrixPosition.z, -60, -10, -0.8, 0.2);
-
-    if (avatar.container) {
-      const lerped = Vector3.Lerp(
-        avatar.container.meshes[0].position,
-        headPosition,
-        0.25
-      );
-      avatar.container.meshes[0].position = lerped;
-    }
   };
 
   const getUserVideoStream = async (video: HTMLVideoElement) => {
@@ -336,5 +336,6 @@ export const VideoChat: FC = () => {
     };
   }, []);
 
+  // eslint-disable-next-line unicorn/no-null
   return null;
 };

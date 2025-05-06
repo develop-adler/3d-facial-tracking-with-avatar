@@ -8,7 +8,7 @@ import {
 let handLandmarkerRunningMode: "IMAGE" | "VIDEO" = "VIDEO";
 
 export class HandDetector {
-    handLandmarker: HandLandmarker | null = null;
+    handLandmarker?: HandLandmarker;
     readonly video: HTMLVideoElement;
 
     constructor(video: HTMLVideoElement) {
@@ -62,13 +62,14 @@ export class HandDetector {
             );
             return results;
         }
+        // eslint-disable-next-line unicorn/no-null
         return null;
     }
 
     dispose() {
         if (this.handLandmarker) {
             this.handLandmarker.close();
-            this.handLandmarker = null;
+            this.handLandmarker = undefined;
         }
     }
 }

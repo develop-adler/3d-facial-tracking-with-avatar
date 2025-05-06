@@ -34,7 +34,7 @@ const RPM_AVATAR_PARAMS = `
     &useQuantizeMeshOptCompression=true
     &textureAtlas=1024
     &textureFormat=webp
-`.replace(/\s+/g, "");
+`.replaceAll(/\s+/g, "");
 
 const DEFAULT_AVATAR_ID = "67fe6f7713b3fb7e8aa0328c";
 
@@ -97,8 +97,8 @@ export class Avatar {
                         compileMaterials: true,
                     },
                 },
-                onProgress: (e) => {
-                    const percentage = Math.floor((e.loaded / e.total) * 100);
+                onProgress: (progress) => {
+                    const percentage = Math.floor((progress.loaded / progress.total) * 100);
                     useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
                 },
             }
@@ -192,11 +192,11 @@ export class Avatar {
 
     async changeAvatar(url: string) {
         if (this._isLoadingAvatar) {
-            let interval: NodeJS.Timeout | null = null;
+            let interval: globalThis.NodeJS.Timeout;
             await new Promise<void>((resolve) => {
                 interval = setInterval(() => {
                     if (!this._isLoadingAvatar) {
-                        clearInterval(interval!);
+                        clearInterval(interval);
                         resolve();
                     }
                 }, 50);
@@ -206,7 +206,7 @@ export class Avatar {
         // extract id from url
         const id = url.split("/").pop()?.split(".")[0];
         if (!id || !isValidRPMAvatarId(id)) {
-            window.alert("Invalid avatar URL");
+            globalThis.alert("Invalid avatar URL");
             return;
         }
         if (this.currentAvatarId === id) return;

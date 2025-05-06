@@ -13,7 +13,7 @@ export const waitForConditionAndExecute = <T>(
     callback?: () => T,
     errorCallback?: () => void,
     intervalTime: number = 4,
-    timeoutTime: number = 30000,
+    timeoutTime: number = 30_000,
     errorMessage?: string
 ): Promise<T | undefined> => {
     return new Promise((resolve, reject) => {
@@ -28,19 +28,19 @@ export const waitForConditionAndExecute = <T>(
 
         // let checkAmount = 0;
         // let timeSinceStart = 0;
-        let checkInterval: ReturnType<typeof setInterval> | null;
-        let timeout: NodeJS.Timeout | null;
+        let checkInterval: ReturnType<typeof setInterval> | undefined;
+        let timeout: globalThis.NodeJS.Timeout | undefined;
         checkInterval = setInterval(() => {
             // timeSinceStart += intervalTime;
             // checkAmount++;
             if (condition()) {
                 if (timeout) {
                     clearTimeout(timeout);
-                    timeout = null;
+                    timeout = undefined;
                 }
                 if (checkInterval) {
                     clearInterval(checkInterval);
-                    checkInterval = null;
+                    checkInterval = undefined;
                 }
                 // console.log(
                 //     `Condition: ${condition.toString()} is true after`,
@@ -54,10 +54,11 @@ export const waitForConditionAndExecute = <T>(
         }, intervalTime);
         timeout = setTimeout(() => {
             if (checkInterval) clearInterval(checkInterval);
-            timeout = null;
+            timeout = undefined;
             errorCallback?.();
             if (errorMessage) reject(new Error(errorMessage));
             // console.log('Condition', condition.toString(), 'timed out');
+            // eslint-disable-next-line unicorn/no-useless-undefined
             resolve(undefined);
         }, timeoutTime);
     });
@@ -78,4 +79,4 @@ export const lerp = (start: number, end: number, amount: number): number => {
  * Generate a random id
  * @returns {string} Random id
  */
-export const generateRandomId = (): string => Math.random().toString(36).substring(2, 9);
+export const generateRandomId = (): string => Math.random().toString(36).slice(2, 9);

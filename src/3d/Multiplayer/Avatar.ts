@@ -51,22 +51,21 @@ import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import type { Scene } from "@babylonjs/core/scene";
-import type { Nullable } from "@babylonjs/core/types";
 
 type AnimationsRecord = Record<string, AnimationGroup>;
 
 export type AvatarPhysicsShapes = {
   male: {
-    normal: Nullable<PhysicsShapeCapsule>;
-    short: Nullable<PhysicsShapeCapsule>;
+    normal: PhysicsShapeCapsule;
+    short: PhysicsShapeCapsule;
   };
   female: {
-    normal: Nullable<PhysicsShapeCapsule>;
-    short: Nullable<PhysicsShapeCapsule>;
+    normal: PhysicsShapeCapsule;
+    short: PhysicsShapeCapsule;
   };
   other: {
-    normal: Nullable<PhysicsShapeCapsule>;
-    short: Nullable<PhysicsShapeCapsule>;
+    normal: PhysicsShapeCapsule;
+    short: PhysicsShapeCapsule;
   };
 };
 
@@ -98,24 +97,24 @@ class Avatar {
   readonly avatarUrl: string;
   readonly isSelf: boolean;
 
-  private _profile: Nullable<AvatarProfile> = null;
-  private _multiplayProfile: Nullable<AvatarProfileCard> = null;
+  private _profile?: AvatarProfile;
+  private _multiplayProfile?: AvatarProfileCard;
   private _otherAvatars: Array<Avatar> = [];
   private _isCreatingProfileCard: boolean = false;
   private _clickedToOpenProfileCard: boolean = false;
 
   private readonly _root: TransformNode;
-  private _container: Nullable<AssetContainer> = null;
-  private _morphTargetManager: Nullable<MorphTargetManager> = null;
-  private _rootMesh: Nullable<AbstractMesh> = null;
+  private _container?: AssetContainer;
+  private _morphTargetManager?: MorphTargetManager;
+  private _rootMesh?: AbstractMesh;
   private _meshes: Array<AbstractMesh> = [];
-  private _skeleton: Nullable<Skeleton> = null;
+  private _skeleton?: Skeleton;
   private _animations: Record<string, AnimationGroup> = {};
-  private _boneLookController: Nullable<BoneLookController> = null;
-  currentBoneLookControllerTarget: Nullable<Vector3> = null;
+  private _boneLookController?: BoneLookController;
+  currentBoneLookControllerTarget?: Vector3;
 
-  private _capsuleBody: Nullable<PhysicsBody> = null;
-  private _capsuleBodyNode: Nullable<TransformNode> = null;
+  private _capsuleBody?: PhysicsBody;
+  private _capsuleBodyNode?: TransformNode;
   readonly avatarBodyShapeFull: PhysicsShapeContainer;
   readonly avatarBodyShapeCrouch: PhysicsShapeSphere;
   private readonly _physicsSyncingObservers: Array<Observer<Scene>> = [];
@@ -124,12 +123,12 @@ class Avatar {
   readonly avatarBodyShapeFullForChecks: PhysicsShapeContainer;
 
   private _height: number = 0;
-  private _capsuleCopyObserver: Nullable<Observer<Scene>> = null;
+  private _capsuleCopyObserver?: Observer<Scene>;
 
   // for physics debugging
   // private readonly physicsViewer: PhysicsViewer;
 
-  playingAnimation: Nullable<AnimationGroup> = null;
+  playingAnimation?: AnimationGroup;
   isPlayingAnimationLooping: boolean = true;
   isMoving: boolean = false;
   isRunning: boolean = false;
@@ -141,16 +140,16 @@ class Avatar {
   isControlledByUser: boolean = false;
   private _isCameraMoved: boolean = false;
   private _isPointerUpEnabled: boolean = true;
-  private _pointerUpCooldown: Nullable<NodeJS.Timeout> = null;
+  private _pointerUpCooldown?: globalThis.NodeJS.Timeout;
 
-  avatarScenePickObserver: Nullable<Observer<PointerInfo>> = null;
-  private _fallSceneObserver: Nullable<Observer<Scene>> = null;
+  avatarScenePickObserver?: Observer<PointerInfo>;
+  private _fallSceneObserver?: Observer<Scene>;
   private _isCapsuleBodyColliding: boolean = false;
-  private avatarFallTimeout: Nullable<NodeJS.Timeout> = null;
+  private avatarFallTimeout?: globalThis.NodeJS.Timeout;
   avatarFallTimeoutTimer: number = 3500;
-  avatarFallTimeoutCallback: Nullable<(avatar: this) => void> = null;
+  avatarFallTimeoutCallback?: (avatar: this) => void;
 
-  interaction: Nullable<AvatarInteraction> = null;
+  interaction?: AvatarInteraction;
   isAnimationsReady: boolean = false;
   isReady: boolean = false;
 
@@ -229,34 +228,34 @@ class Avatar {
   get root(): TransformNode {
     return this._root;
   }
-  get container(): Nullable<AssetContainer> {
+  get container(): AssetContainer | undefined {
     return this._container;
   }
-  get morphTargetManager(): Nullable<MorphTargetManager> {
+  get morphTargetManager(): MorphTargetManager | undefined {
     return this._morphTargetManager;
   }
-  get rootMesh(): Nullable<AbstractMesh> {
+  get rootMesh(): AbstractMesh | undefined {
     return this._rootMesh;
   }
   get meshes(): Array<AbstractMesh> {
     return this._meshes;
   }
-  get skeleton(): Nullable<Skeleton> {
+  get skeleton(): Skeleton | undefined {
     return this._skeleton;
   }
   get animations(): AnimationsRecord {
     return this._animations;
   }
-  get boneLookController(): Nullable<BoneLookController> {
+  get boneLookController(): BoneLookController | undefined {
     return this._boneLookController;
   }
-  get capsuleBody(): Nullable<PhysicsBody> {
+  get capsuleBody(): PhysicsBody | undefined {
     return this._capsuleBody;
   }
   get physicsBodies(): Array<PhysicsBody> {
     return this._physicsBodies;
   }
-  get profile(): Nullable<AvatarProfile> {
+  get profile(): AvatarProfile | undefined {
     return this._profile;
   }
   get height(): number {
@@ -355,11 +354,11 @@ class Avatar {
     // otherwise, the entire avatar will be black
     if (!this.scene.environmentTexture) {
       await waitForConditionAndExecute(
-        () => this.scene.environmentTexture !== null,
+        () => !!this.scene.environmentTexture,
         undefined,
         undefined,
         undefined,
-        10000
+        10_000
       );
       await new Promise<void>((resolve) => {
         (this.scene.environmentTexture as CubeTexture).onLoadObservable.addOnce(
@@ -413,7 +412,7 @@ class Avatar {
       if (i === 0) {
         mesh.parent = this._root; // assign root as parent
         mesh.isPickable = false;
-        mesh.layerMask = 1 << 0; // visible on layer 0
+        mesh.layerMask = Math.trunc(1); // visible on layer 0
         return;
       }
 
@@ -425,7 +424,7 @@ class Avatar {
       mesh.receiveShadows = true;
       mesh.material?.freeze();
       mesh.isPickable = true;
-      mesh.layerMask = 1 << 0; // visible on layer 0
+      mesh.layerMask = Math.trunc(1); // visible on layer 0
 
       // skip frustum culling check if is own avatar
       if (this.participant && this.isSelf) {
@@ -525,10 +524,11 @@ class Avatar {
 
           switch (pointerInfo.event.type) {
             case "mousedown":
-            case "pointerdown":
+            case "pointerdown": {
               this._isCameraMoved = false;
               start = performance.now();
               break;
+            }
             case "mouseup":
             case "pointerup": {
               // don't pick mesh if mousedown is held for more than 300ms
@@ -606,7 +606,7 @@ class Avatar {
                   this._clickedToOpenProfileCard
                 ) {
                   waitForConditionAndExecute(
-                    () => this._multiplayProfile !== null,
+                    () => !!this._multiplayProfile,
                     () => {
                       this._multiplayProfile?.show();
                     },
@@ -755,6 +755,7 @@ class Avatar {
   // }
 
   private async _preloadAnimationResources() {
+    // eslint-disable-next-line unicorn/no-array-for-each
     AVATAR_ANIMATIONS.forEach(async (animName) => {
       const name =
         this.gender === "male"
@@ -786,6 +787,7 @@ class Avatar {
             const boneIndex = skeleton.getBoneIndexByName(target.name);
 
             // return null if not found
+            // eslint-disable-next-line unicorn/no-null
             if (boneIndex === -1) return null;
 
             // retarget animation to this avatar's skeleton
@@ -803,9 +805,9 @@ class Avatar {
         if (!importedAnimation) return;
 
         // stop animation to prevent it from playing and loop infinitely
-        importedAnimation.targetedAnimations.forEach((ta) => {
+        for (const ta of importedAnimation.targetedAnimations) {
           this.scene.stopAnimation(ta.target, ta.animation.name);
-        });
+        }
         // importedAnimation.stop(true); // for some reason this doesn't work at all
         importedAnimation.enableBlending = true;
         importedAnimation.blendingSpeed = 0.05;
@@ -816,7 +818,7 @@ class Avatar {
       })
     );
 
-    this.playingAnimation = null;
+    this.playingAnimation = undefined;
     this.isAnimationsReady = true;
     eventBus.emit(`avatar:animationsReady:${this.participant.sid}`, this);
   }
@@ -851,8 +853,7 @@ class Avatar {
         this.scene
       );
     }
-    if (position) this._capsuleBodyNode.position = position;
-    else this._capsuleBodyNode.position = Vector3.Zero();
+    this._capsuleBodyNode.position = position ?? Vector3.Zero();
 
     const body = new PhysicsBody(
       this._capsuleBodyNode,
@@ -873,9 +874,10 @@ class Avatar {
     body.getCollisionObservable().add((collisionEvent) => {
       switch (collisionEvent.type) {
         case "COLLISION_STARTED":
-        case "COLLISION_CONTINUED":
+        case "COLLISION_CONTINUED": {
           this._isCapsuleBodyColliding = true;
           break;
+        }
       }
     });
     body.getCollisionEndedObservable().add(() => {
@@ -905,7 +907,7 @@ class Avatar {
         // clear timeout if avatar is not falling or is colliding with something
         if (this.avatarFallTimeout) {
           clearTimeout(this.avatarFallTimeout);
-          this.avatarFallTimeout = null;
+          this.avatarFallTimeout = undefined;
         }
       }
     });
@@ -1294,14 +1296,14 @@ class Avatar {
     body.setCollisionCallbackEnabled(true);
     body.setCollisionEndedCallbackEnabled(true);
 
-    let isGroundedTimeout: Nullable<NodeJS.Timeout> = null;
+    let isGroundedTimeout: globalThis.NodeJS.Timeout | undefined;
     body.getCollisionObservable().add((collisionEvent) => {
       switch (collisionEvent.type) {
         case "COLLISION_STARTED":
-        case "COLLISION_CONTINUED":
+        case "COLLISION_CONTINUED": {
           if (isGroundedTimeout) {
             clearTimeout(isGroundedTimeout);
-            isGroundedTimeout = null;
+            isGroundedTimeout = undefined;
           }
           // this means character is landing
           if (!this.isGrounded) {
@@ -1309,15 +1311,16 @@ class Avatar {
           }
           this.isGrounded = true;
           break;
+        }
       }
     });
     body.getCollisionEndedObservable().add(() => {
       if (isGroundedTimeout) {
         clearTimeout(isGroundedTimeout);
-        isGroundedTimeout = null;
+        isGroundedTimeout = undefined;
       }
       isGroundedTimeout = setTimeout(() => {
-        isGroundedTimeout = null;
+        isGroundedTimeout = undefined;
         this.isGrounded = false;
       }, 1000 / 24);
     });
@@ -1358,12 +1361,12 @@ class Avatar {
   async updateName(name: string): Promise<void> {
     this.participant.name = name;
     this._profile?.dispose();
-    const AvatarProfile = (await import("./AvatarProfile")).default;
+    const { default: AvatarProfile } = await import("./AvatarProfile");
     this._profile = new AvatarProfile(this);
   }
 
   clearAllMeshes(): void {
-    this._meshes.forEach((mesh) => mesh.dispose(false, true));
+    for (const mesh of this._meshes) mesh.dispose(false, true);
     this._meshes = [];
   }
 
@@ -1427,7 +1430,7 @@ class Avatar {
     this.interaction = new AvatarInteraction(this, name, type);
     this.interaction.play(() => {
       this.interaction?.dispose();
-      this.interaction = null;
+      this.interaction = undefined;
     });
 
     this.isControlledByUser = true;
@@ -1452,7 +1455,7 @@ class Avatar {
   setPosition(position: Vector3): void {
     // no physics body or physics engine, just set root position
     const physicsEngine = this.scene.getPhysicsEngine();
-    if (this._capsuleBody === null || !physicsEngine) {
+    if (!this._capsuleBody || !physicsEngine) {
       this._root.position = position;
       return;
     }
@@ -1486,7 +1489,7 @@ class Avatar {
 
   show(affectPhysicsBody: boolean = false): void {
     this._profile?.show();
-    this._meshes.forEach((mesh) => mesh.setEnabled(true));
+    for (const mesh of this._meshes) mesh.setEnabled(true);
     if (affectPhysicsBody && this._capsuleBody) {
       const plugin = this.scene
         .getPhysicsEngine()!
@@ -1504,7 +1507,7 @@ class Avatar {
 
   hide(affectPhysicsBody: boolean = false): void {
     this._profile?.hide();
-    this._meshes.forEach((mesh) => mesh.setEnabled(false));
+    for (const mesh of this._meshes) mesh.setEnabled(false);
     if (affectPhysicsBody && this._capsuleBody) {
       const plugin = this.scene
         .getPhysicsEngine()!
@@ -1588,13 +1591,14 @@ class Avatar {
       case !this.playingAnimation:
       case !this.isGrounded:
       case this.isCrouching && this.isMoving:
-      case this.interaction?.type === "gethit":
+      case this.interaction?.type === "gethit": {
         // - no animation is playing, no need to update bone look controller
         // - head looks up too much when in the air due to animation
         // - the head spins when avatar moves while crouching
         // - head glitches when avatar's get-hit animation is playing
-        this.currentBoneLookControllerTarget = null;
+        this.currentBoneLookControllerTarget = undefined;
         return;
+      }
     }
 
     this.currentBoneLookControllerTarget = target;
@@ -1611,32 +1615,33 @@ class Avatar {
     this._profile?.dispose();
 
     this._fallSceneObserver?.remove();
-    this._fallSceneObserver = null;
+    this._fallSceneObserver = undefined;
 
-    Object.values(this._animations).forEach((animGroup) => animGroup.dispose());
+    for (const animGroup of Object.values(this._animations)) animGroup.dispose();
     this._animations = {};
 
     this._skeleton?.dispose();
-    this._skeleton = null;
+    this._skeleton = undefined;
 
-    this._meshes.forEach((mesh) => {
+    for (const mesh of this._meshes) {
+      // eslint-disable-next-line unicorn/no-null
       mesh.parent = null;
       mesh.dispose();
-    });
+    }
     this._meshes = [];
 
     this._rootMesh?.dispose(false, true);
-    this._rootMesh = null;
+    this._rootMesh = undefined;
     this._root?.dispose(false, true);
 
     // remove observers
-    this._physicsSyncingObservers.forEach((observer) => observer.remove());
+    for (const observer of this._physicsSyncingObservers) observer.remove();
     this._capsuleCopyObserver?.remove();
-    this._capsuleCopyObserver = null;
+    this._capsuleCopyObserver = undefined;;
 
     // dispose physics bodies
-    this._capsuleBody = null;
-    this._physicsBodies.forEach((body) => body.dispose());
+    this._capsuleBody = undefined;
+    for (const body of this._physicsBodies) body.dispose();
 
     this.scene.blockfreeActiveMeshesAndRenderingGroups = false;
   }

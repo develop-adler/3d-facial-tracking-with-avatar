@@ -26,13 +26,14 @@ export const CanvasPublisher: FC<Props> = ({ room }) => {
             });
         };
 
-        if (room.state !== ConnectionState.Connected) {
-            room.once("connected", () => publishVideoTrack());
-        } else {
+        if (room.state === ConnectionState.Connected) {
             publishVideoTrack();
+        } else {
+            room.once("connected", () => publishVideoTrack());
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coreScene]);
 
+    // eslint-disable-next-line unicorn/no-null
     return null;
 };

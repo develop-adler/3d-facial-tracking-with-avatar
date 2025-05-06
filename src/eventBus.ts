@@ -1,10 +1,7 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 type EventNames =
     | 'havok:ready'
-    | 'nakama:ready'
-    | 'user:set'
-    | 'avatarModelInfo:set'
     | 'multiplayer:avatarProfileCardShow'
     | 'multiplayer:avatarProfileCardHide'
     | 'multiplayer:avatarProfileCardUnmount'
@@ -16,8 +13,6 @@ type EventNames =
     | 'multiplayer:fetchAuthenticatedMultiplayerUsers'
     | 'multiplayer:fetchMultiplayUsers'
     | 'multiplayer:fetchMultiplayMessage'
-    | 'multiplayer:userJoinLeaveBroadcast'
-    | 'multiplayer:userLeft'
     | 'avatar:set'
     | 'avatar:capsuleBodyCreated'
     | 'avatar:animationsReady'
@@ -61,6 +56,8 @@ export type SpaceEvent = {
     studioRoom?: Extra;
 }
 
+// TODO: update this to use EventTarget instead of EventEmitter
+// eslint-disable-next-line unicorn/prefer-event-target
 class EventBus extends EventEmitter {
     /**
      * Emit an event with delegation mechanism.

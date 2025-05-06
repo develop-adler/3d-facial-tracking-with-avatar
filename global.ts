@@ -5,7 +5,7 @@ export function updateGlobalTimestamp(newTimestamp: number) {
     globalTimestamp = newTimestamp;
 }
 
-export let mediaStreamFrom3DCanvas: MediaStream | null = null;
-export function updateMediaStream(newStream: MediaStream | null) {
+export let mediaStreamFrom3DCanvas: MediaStream | undefined;
+export function updateMediaStream(newStream?: MediaStream) {
     mediaStreamFrom3DCanvas = newStream;
 }

@@ -11,6 +11,23 @@ import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { Scene } from "@babylonjs/core/scene";
 
+const extractMorphTargetInfluences = (
+    manager?: MorphTargetManager | null
+): Record<string, number> => {
+    if (!manager) return {};
+
+    const result: Record<string, number> = {};
+
+    for (let i = 0; i < manager.numTargets; i++) {
+        const target = manager.getTarget(i);
+        if (target?.name) {
+            result[target.name] = target.influence;
+        }
+    }
+
+    return result;
+};
+
 class RoomManager {
     readonly multiplayerScene: MultiplayerScene;
     readonly room: Room;
@@ -34,7 +51,7 @@ class RoomManager {
                 &textureSizeLimit=1024
                 &textureAtlas=1024
                 &textureFormat=webp
-            `.replace(/\s+/g, ""),
+            `.replaceAll(/\s+/g, ""),
             "male",
             true
         );
@@ -51,32 +68,32 @@ class RoomManager {
 
     private _loadRoomUsers() {
         // load all other users in the room
-        this.room.remoteParticipants.values().forEach((participant) => {
+        for (const participant of this.room.remoteParticipants.values()) {
             this._loadRemoteParticipantAvatar(participant);
-        });
+        }
 
-        const initAvatar = () => {
-            this.localAvatar.loadAvatar();
+        if (this.multiplayerScene.isPhysicsEnabled) {
+            this.initAvatar();
+        } else {
+            eventBus.once(`space:scenePhysicsEnabled:${this.room.name}`, () =>
+                this.initAvatar()
+            );
+        }
+    }
 
-            if (this.multiplayerScene.atom.isPhysicsGenerated) {
+    private initAvatar() {
+        this.localAvatar.loadAvatar();
+
+        if (this.multiplayerScene.atom.isPhysicsGenerated) {
+            this.localAvatar?.loadPhysicsBodies();
+            this.multiplayerScene.setCameraToAvatar();
+            this.avatarController?.start();
+        } else {
+            eventBus.once(`space:physicsReady:${this.room.name}`, () => {
                 this.localAvatar?.loadPhysicsBodies();
                 this.multiplayerScene.setCameraToAvatar();
                 this.avatarController?.start();
-            } else {
-                eventBus.once(`space:physicsReady:${this.room.name}`, () => {
-                    this.localAvatar?.loadPhysicsBodies();
-                    this.multiplayerScene.setCameraToAvatar();
-                    this.avatarController?.start();
-                });
-            }
-        };
-
-        if (this.multiplayerScene.isPhysicsEnabled) {
-            initAvatar();
-        } else {
-            eventBus.once(`space:scenePhysicsEnabled:${this.room.name}`, () =>
-                initAvatar()
-            );
+            });
         }
     }
 
@@ -98,60 +115,12 @@ class RoomManager {
         });
 
         // Register new RPC functions that will update each other's avatars in the 3D space
-        this.room.registerRpcMethod(
-            "syncAvatar",
-            async (data: RpcInvocationData) => {
-                const {
-                    id,
-                    position,
-                    rotation,
-                    animation,
-                    isAnimationLooping,
-                    isCrouching,
-                    isMoving,
-                    isGrounded,
-                    lookTarget,
-                    morphTargets,
-                } = JSON.parse(data.payload) as SyncState;
-
-                for (const [participant, avatar] of this.remoteAvatars) {
-                    if (participant.sid === id) {
-                        avatar.isMoving = isMoving;
-                        avatar.isGrounded = isGrounded;
-                        avatar.setPosition(Vector3.FromArray(position));
-                        avatar.setRotationQuaternion(Quaternion.FromArray(rotation));
-                        avatar.playAnimation(animation, isAnimationLooping);
-                        avatar.toggleCrouchCapsuleBody(isCrouching);
-                        if (avatar.morphTargetManager) {
-                            for (const [name, weight] of Object.entries(morphTargets)) {
-                                const target = avatar.morphTargetManager.getTargetByName(name);
-                                if (target) target.influence = weight;
-                            }
-                        }
-                        if (lookTarget) avatar.update(Vector3.FromArray(lookTarget));
-                    }
-                }
-
-                return "ok";
-            }
-        );
-
-        const extractMorphTargetInfluences = (
-            manager?: MorphTargetManager | null
-        ): Record<string, number> => {
-            if (!manager) return {};
-
-            const result: Record<string, number> = {};
-
-            for (let i = 0; i < manager.numTargets; i++) {
-                const target = manager.getTarget(i);
-                if (target?.name) {
-                    result[target.name] = target.influence;
-                }
-            }
-
-            return result;
-        };
+        try {
+            this.room.unregisterRpcMethod("syncAvatar");
+            this.room.registerRpcMethod("syncAvatar", this._syncAvatarState.bind(this));
+        } catch {
+            // empty
+        }
 
         this.syncAvatarObserver =
             this.multiplayerScene.scene.onBeforeRenderObservable.add(async () => {
@@ -199,8 +168,7 @@ class RoomManager {
                             position: selfPosition.asArray(),
                             rotation: selfRotation.asArray(),
                             lookTarget:
-                                this.localAvatar.currentBoneLookControllerTarget?.asArray() ??
-                                null,
+                                this.localAvatar.currentBoneLookControllerTarget?.asArray(),
                             animation:
                                 this.localAvatar.playingAnimation?.name ??
                                 (this.localAvatar.gender === "male" ? "Male" : "Female") +
@@ -236,6 +204,41 @@ class RoomManager {
             avatar.dispose();
             this.remoteAvatars.delete(participant);
         }
+    }
+
+    private async _syncAvatarState(data: RpcInvocationData) {
+        const {
+            id,
+            position,
+            rotation,
+            animation,
+            isAnimationLooping,
+            isCrouching,
+            isMoving,
+            isGrounded,
+            lookTarget,
+            morphTargets,
+        } = JSON.parse(data.payload) as SyncState;
+
+        for (const [participant, avatar] of this.remoteAvatars) {
+            if (participant.sid === id) {
+                avatar.isMoving = isMoving;
+                avatar.isGrounded = isGrounded;
+                avatar.setPosition(Vector3.FromArray(position));
+                avatar.setRotationQuaternion(Quaternion.FromArray(rotation));
+                avatar.playAnimation(animation, isAnimationLooping);
+                avatar.toggleCrouchCapsuleBody(isCrouching);
+                if (avatar.morphTargetManager) {
+                    for (const [name, weight] of Object.entries(morphTargets)) {
+                        const target = avatar.morphTargetManager.getTargetByName(name);
+                        if (target) target.influence = weight;
+                    }
+                }
+                if (lookTarget) avatar.update(Vector3.FromArray(lookTarget));
+            }
+        }
+
+        return "ok";
     }
 
     dispose() {

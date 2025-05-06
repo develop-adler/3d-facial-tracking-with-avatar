@@ -10,5 +10,5 @@ export type SyncState = {
     isMoving: boolean;
     isGrounded: boolean;
     morphTargets: Record<string, number>;
-    lookTarget?: ObjectTransform | null;
+    lookTarget?: ObjectTransform;
 };

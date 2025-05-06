@@ -23,8 +23,8 @@ export const AvatarScene: FC = () => {
     const videoDevices = useMediaDevices({ kind: "videoinput" });
 
     const bjsCanvasContainer = useRef<HTMLDivElement>(null); // For 3D scene
-    const avatarRef = useRef<Avatar>(null);
-    const scene3DRef = useRef<Scene3D>(null);
+    const avatarRef = useRef<Avatar>(undefined);
+    const scene3DRef = useRef<Scene3D>(undefined);
 
     const coreEngine = useEngineStore((state) => state.coreEngine);
     const setScene = useSceneStore((state) => state.setScene);
@@ -66,7 +66,7 @@ export const AvatarScene: FC = () => {
         const container = bjsCanvasContainer.current;
 
         const { coreEngine } = create3DScene(container);
-        window.addEventListener("resize", coreEngine.resize.bind(coreEngine));
+        globalThis.addEventListener("resize", coreEngine.resize.bind(coreEngine));
         container.addEventListener("resize", coreEngine.resize.bind(coreEngine));
 
         // Create MediaStream to pass to LiveKit
@@ -75,10 +75,10 @@ export const AvatarScene: FC = () => {
         }
 
         return () => {
-            window.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
-            container.removeEventListener("resize", coreEngine.resize.bind(coreEngine));
+            globalThis.removeEventListener("resize", coreEngine.resize);
+            container.removeEventListener("resize", coreEngine.resize);
             mediaStreamFrom3DCanvas?.getVideoTracks().forEach(track => track.stop());
-            updateMediaStream(null);
+            updateMediaStream();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoDevices]);

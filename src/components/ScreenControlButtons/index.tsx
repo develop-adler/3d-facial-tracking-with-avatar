@@ -20,14 +20,14 @@ export const ScreenControlButtons: FC = () => {
     );
 
     const handleFullscreenToggle = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-            setViewportFill(true);
-            setFullscreen(true);
-        } else {
+        if (document.fullscreenElement) {
             document.exitFullscreen();
             setViewportFill(false);
             setFullscreen(false);
+        } else {
+            document.documentElement.requestFullscreen();
+            setViewportFill(true);
+            setFullscreen(true);
         }
     };
 

@@ -8,7 +8,7 @@ import {
 let faceLandmarkerRunningMode: "IMAGE" | "VIDEO" = "VIDEO";
 
 export class FaceDetector {
-    faceLandmarker: FaceLandmarker | null = null;
+    faceLandmarker?: FaceLandmarker;
     readonly video: HTMLVideoElement;
 
     constructor(video: HTMLVideoElement) {
@@ -64,13 +64,14 @@ export class FaceDetector {
             );
             return results;
         }
+        // eslint-disable-next-line unicorn/no-null
         return null;
     }
 
     dispose() {
         if (this.faceLandmarker) {
             this.faceLandmarker.close();
-            this.faceLandmarker = null;
+            this.faceLandmarker = undefined;
         }
     }
 }

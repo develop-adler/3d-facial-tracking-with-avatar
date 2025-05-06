@@ -3,7 +3,7 @@ import { Room as LiveKitRoom } from "livekit-client";
 export class Room {
     private static instance: LiveKitRoom;
 
-    private constructor() { }
+    private constructor() {}
 
     public static getInstance() {
         Room.instance ??= new LiveKitRoom({
