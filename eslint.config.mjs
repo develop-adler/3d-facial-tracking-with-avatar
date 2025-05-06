@@ -1,6 +1,6 @@
 // eslint-disable-next-line unicorn/import-style
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import { FlatCompat } from "@eslint/eslintrc";
 
@@ -22,6 +22,7 @@ const eslintConfig = [
       "unicorn/better-regex": "warn",
       "unicorn/empty-brace-spaces": "warn",
       "unicorn/filename-case": "off",
+      "unicorn/prefer-node-protocol": "off",
       "unicorn/prevent-abbreviations": "off",
       "unicorn/no-lonely-if": "off",
       "unicorn/no-array-for-each": "warn",

@@ -85,12 +85,12 @@ class RoomManager {
         this.localAvatar.loadAvatar();
 
         if (this.multiplayerScene.atom.isPhysicsGenerated) {
-            this.localAvatar?.loadPhysicsBodies();
+            this.localAvatar.loadPhysicsBodies();
             this.multiplayerScene.setCameraToAvatar();
             this.avatarController?.start();
         } else {
             eventBus.once(`space:physicsReady:${this.room.name}`, () => {
-                this.localAvatar?.loadPhysicsBodies();
+                this.localAvatar.loadPhysicsBodies();
                 this.multiplayerScene.setCameraToAvatar();
                 this.avatarController?.start();
             });
