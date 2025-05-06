@@ -1,12 +1,27 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, type FC } from "react";
-
-import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
-import Multiplayer3D from "@/components/LiveKit/MultiplayerPage/components/Multiplayer3D";
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { ConnectionState } from "livekit-client";
+
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
+
+const Multiplayer3D = dynamic(
+    () => import("@/components/LiveKit/MultiplayerPage/components/Multiplayer3D"),
+    {
+        ssr: false,
+    }
+);
+const CustomControlBar = dynamic(
+    () =>
+        import("@/components/LiveKit/RoomPage/components/CustomControlBar").then(
+            (mod) => mod.CustomControlBar
+        ),
+    {
+        ssr: false,
+    }
+);
 
 export const MultiplayerPage: FC = () => {
     const router = useRouter();
@@ -34,4 +49,4 @@ export const MultiplayerPage: FC = () => {
             <CustomControlBar />
         </div>
     );
-}
+};
