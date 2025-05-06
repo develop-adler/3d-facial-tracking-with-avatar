@@ -55,6 +55,8 @@ export class CoreEngine {
         if (typeof document === 'undefined') {
             this.canvas = SafeCanvas;
             this.engine = new NullEngine();
+            this.engine.dispose();
+            return;
         }
 
         this.canvas = document.createElement("canvas");
