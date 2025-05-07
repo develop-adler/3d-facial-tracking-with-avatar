@@ -1,7 +1,7 @@
 import type { ObjectQuaternion, ObjectTransform } from "@/apis/entities";
 
 export type SyncState = {
-    id: string;
+    sid: string;
     position: ObjectTransform;
     rotation: ObjectQuaternion;
     animation: string;

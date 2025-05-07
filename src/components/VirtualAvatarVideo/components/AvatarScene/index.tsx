@@ -66,8 +66,6 @@ export const AvatarScene: FC = () => {
         const container = bjsCanvasContainer.current;
 
         const { coreEngine } = create3DScene(container);
-        globalThis.addEventListener("resize", coreEngine.resize.bind(coreEngine));
-        container.addEventListener("resize", coreEngine.resize.bind(coreEngine));
 
         // Create MediaStream to pass to LiveKit
         if (pathName === "/room") {
@@ -75,8 +73,6 @@ export const AvatarScene: FC = () => {
         }
 
         return () => {
-            globalThis.removeEventListener("resize", coreEngine.resize);
-            container.removeEventListener("resize", coreEngine.resize);
             mediaStreamFrom3DCanvas?.getVideoTracks().forEach(track => track.stop());
             updateMediaStream();
         };

@@ -61,8 +61,10 @@ export class CoreEngine {
         this.canvas.style.outline = "none";
         this.canvas.style.border = "none";
 
-        this.engine = this._createEngine(this.canvas);
+        globalThis.addEventListener("resize", this.resize.bind(this));
+        this.canvas.addEventListener("resize", this.resize.bind(this));
 
+        this.engine = this._createEngine(this.canvas);
     }
 
     static getInstance(): CoreEngine {
