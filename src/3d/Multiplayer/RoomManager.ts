@@ -131,14 +131,8 @@ class RoomManager {
                 }
             });
 
-        // // get FPS from data received time
-        // let lastTime = 0;
-        // let fps = 0;
-        // Receive data from other participants
-        this.room.on(
-            RoomEvent.DataReceived,
-            this._syncSelfAvatarOnRemote.bind(this)
-        );
+        // Receive sync state data from other participants
+        this.room.on(RoomEvent.DataReceived, this._syncRemoteAvatars.bind(this));
     }
 
     private _loadRemoteParticipantAvatar(participant: Participant) {
@@ -161,7 +155,7 @@ class RoomManager {
         }
     }
 
-    private _syncSelfAvatarOnRemote(payload: Uint8Array<ArrayBufferLike>) {
+    private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
         const decoder = new TextDecoder();
         const syncData = JSON.parse(decoder.decode(payload));
         if (syncData.id === this.room.localParticipant.sid) {
@@ -223,7 +217,7 @@ class RoomManager {
     }
 
     dispose() {
-        this.room.off(RoomEvent.DataReceived, this._syncSelfAvatarOnRemote);
+        this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
         this.syncAvatarObserver?.remove();
         this.syncAvatarObserver = undefined;
     }

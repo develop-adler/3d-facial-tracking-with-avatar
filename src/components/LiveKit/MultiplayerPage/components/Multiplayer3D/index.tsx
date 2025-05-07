@@ -5,8 +5,8 @@ import type { Room } from "livekit-client";
 import { Multiplayer3DContainer } from "./styles";
 
 import MultiplayerScene from "@/3d/Multiplayer/MultiplayerScene";
-import { useEngineStore } from "@/stores/useEngineStore";
 import RoomManager from "@/3d/Multiplayer/RoomManager";
+import { useEngineStore } from "@/stores/useEngineStore";
 
 type Props = {
     room: Room;
