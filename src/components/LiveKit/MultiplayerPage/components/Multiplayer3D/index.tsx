@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FC } from "react";
+import { useEffect, useRef, type FC } from "react";
 
 import type { Room } from "livekit-client";
 
@@ -14,25 +14,22 @@ type Props = {
 
 const Multiplayer3D: FC<Props> = ({ room }) => {
     const coreEngine = useEngineStore((state) => state.coreEngine);
-    const [multiplayScene] = useState<MultiplayerScene>(
-        new MultiplayerScene(room, coreEngine)
-    );
-    const [roomManager] = useState<RoomManager>(
-        new RoomManager(room, multiplayScene)
-    );
 
     const canvasContainer = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!canvasContainer.current) return;
+        const multiplayerScene = new MultiplayerScene(room, coreEngine);
         coreEngine.insertCanvasToDOM(canvasContainer.current);
-        // Dispose of the scene when the component unmounts
+
+        const roomManager = new RoomManager(room, multiplayerScene);
+
         return () => {
-            multiplayScene.dispose();
             roomManager.dispose();
+            multiplayerScene.dispose();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [multiplayScene]);
+    }, []);
 
     return <Multiplayer3DContainer ref={canvasContainer} />;
 };

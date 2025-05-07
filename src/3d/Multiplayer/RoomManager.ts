@@ -1,5 +1,5 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { Participant, Room, RpcInvocationData } from "livekit-client";
+import { RoomEvent, type Participant, type Room } from "livekit-client";
 
 import Avatar from "@/3d/Multiplayer/Avatar";
 import type { SyncState } from "@/3d/Multiplayer/MultiplayerEvents";
@@ -114,76 +114,31 @@ class RoomManager {
             this.remoteAvatars.get(participant)?.updateName(name);
         });
 
-        // Register new RPC functions that will update each other's avatars in the 3D space
-        try {
-            this.room.unregisterRpcMethod("syncAvatar");
-            this.room.registerRpcMethod("syncAvatar", this._syncAvatarState.bind(this));
-        } catch {
-            // empty
-        }
+        const encoder = new TextEncoder();
 
+        // send our avatar state to all participants in the room
         this.syncAvatarObserver =
             this.multiplayerScene.scene.onBeforeRenderObservable.add(async () => {
-                // send RPC function to all participants to sync our avatar on their side
-                // try {
-                //     const selfPosition = this.localAvatar.getPosition(true);
-                //     const selfRotation = this.localAvatar.getRotationQuaternion(true);
-
-                //     const response = await this.room.localParticipant.performRpc({
-                //         destinationIdentity: "*",
-                //         method: "syncAvatar",
-                //         payload: JSON.stringify({
-                //             id: this.room.localParticipant.sid,
-                //             position: selfPosition.asArray(),
-                //             rotation: selfRotation.asArray(),
-                //             lookTarget:
-                //                 this.localAvatar.currentBoneLookControllerTarget?.asArray() ??
-                //                 null,
-                //             animation:
-                //                 this.localAvatar.playingAnimation?.name ??
-                //                 (this.localAvatar.gender === "male" ? "Male" : "Female") +
-                //                 "Idle",
-                //             isAnimationLooping: this.localAvatar.isPlayingAnimationLooping,
-                //             isCrouching: this.localAvatar.isCrouching,
-                //             isMoving: this.localAvatar.isMoving,
-                //             isGrounded: this.localAvatar.isGrounded,
-                //             morphTargets: extractMorphTargetInfluences(
-                //                 this.localAvatar.morphTargetManager
-                //             ),
-                //         }),
-                //     });
-                //     console.log("RPC response:", response);
-                // } catch (error) {
-                //     console.error("RPC call failed:", error);
-                // }
-                this.remoteAvatars.keys().forEach(async (participant) => {
-                    const selfPosition = this.localAvatar.getPosition(true);
-                    const selfRotation = this.localAvatar.getRotationQuaternion(true);
-
-                    this.room.localParticipant.performRpc({
-                        destinationIdentity: participant.identity,
-                        method: "syncAvatar",
-                        payload: JSON.stringify({
-                            id: this.room.localParticipant.sid,
-                            position: selfPosition.asArray(),
-                            rotation: selfRotation.asArray(),
-                            lookTarget:
-                                this.localAvatar.currentBoneLookControllerTarget?.asArray(),
-                            animation:
-                                this.localAvatar.playingAnimation?.name ??
-                                (this.localAvatar.gender === "male" ? "Male" : "Female") +
-                                "Idle",
-                            isAnimationLooping: this.localAvatar.isPlayingAnimationLooping,
-                            isCrouching: this.localAvatar.isCrouching,
-                            isMoving: this.localAvatar.isMoving,
-                            isGrounded: this.localAvatar.isGrounded,
-                            morphTargets: extractMorphTargetInfluences(
-                                this.localAvatar.morphTargetManager
-                            ),
-                        }),
+                // publish data takes in a Uint8Array, so we need to convert it
+                const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
+                try {
+                    this.room.localParticipant.publishData(data, {
+                        reliable: true,
+                        destinationIdentities: [],
                     });
-                });
+                } catch {
+                    // empty
+                }
             });
+
+        // // get FPS from data received time
+        // let lastTime = 0;
+        // let fps = 0;
+        // Receive data from other participants
+        this.room.on(
+            RoomEvent.DataReceived,
+            this._syncSelfAvatarOnRemote.bind(this)
+        );
     }
 
     private _loadRemoteParticipantAvatar(participant: Participant) {
@@ -206,9 +161,37 @@ class RoomManager {
         }
     }
 
-    private async _syncAvatarState(data: RpcInvocationData) {
+    private _syncSelfAvatarOnRemote(payload: Uint8Array<ArrayBufferLike>) {
+        const decoder = new TextDecoder();
+        const syncData = JSON.parse(decoder.decode(payload));
+        if (syncData.id === this.room.localParticipant.sid) {
+            return;
+        }
+        this._syncAvatarState(syncData);
+    }
+
+    private _getSelfAvatarState(): SyncState {
+        return {
+            sid: this.room.localParticipant.sid,
+            position: this.localAvatar.getPosition(true).asArray(),
+            rotation: this.localAvatar.getRotationQuaternion(true).asArray(),
+            lookTarget: this.localAvatar.currentBoneLookControllerTarget?.asArray(),
+            animation:
+                this.localAvatar.playingAnimation?.name ??
+                (this.localAvatar.gender === "male" ? "Male" : "Female") + "Idle",
+            isAnimationLooping: this.localAvatar.isPlayingAnimationLooping,
+            isCrouching: this.localAvatar.isCrouching,
+            isMoving: this.localAvatar.isMoving,
+            isGrounded: this.localAvatar.isGrounded,
+            morphTargets: extractMorphTargetInfluences(
+                this.localAvatar.morphTargetManager
+            ),
+        };
+    }
+
+    private async _syncAvatarState(syncData: SyncState) {
         const {
-            id,
+            sid,
             position,
             rotation,
             animation,
@@ -218,10 +201,10 @@ class RoomManager {
             isGrounded,
             lookTarget,
             morphTargets,
-        } = JSON.parse(data.payload) as SyncState;
+        } = syncData;
 
         for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.sid === id) {
+            if (participant.sid === sid) {
                 avatar.isMoving = isMoving;
                 avatar.isGrounded = isGrounded;
                 avatar.setPosition(Vector3.FromArray(position));
@@ -237,12 +220,12 @@ class RoomManager {
                 if (lookTarget) avatar.update(Vector3.FromArray(lookTarget));
             }
         }
-
-        return "ok";
     }
 
     dispose() {
-        this.room.unregisterRpcMethod("syncAvatar");
+        this.room.off(RoomEvent.DataReceived, this._syncSelfAvatarOnRemote);
+        this.syncAvatarObserver?.remove();
+        this.syncAvatarObserver = undefined;
     }
 }
 
