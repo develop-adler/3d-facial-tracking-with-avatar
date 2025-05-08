@@ -1,7 +1,7 @@
 import { create } from "zustand";
-
-import type { Avatar } from "@/3d/VideoChat/Avatar";
 import { persist } from "zustand/middleware";
+
+import type Avatar from "@/3d/avatar/Avatar";
 
 type AvatarStore = {
   avatarId?: string;

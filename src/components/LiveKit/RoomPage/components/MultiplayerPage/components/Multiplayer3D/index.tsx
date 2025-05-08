@@ -4,9 +4,10 @@ import type { Room } from "livekit-client";
 
 import { Multiplayer3DContainer } from "./styles";
 
-import MultiplayerScene from "@/3d/Multiplayer/MultiplayerScene";
-import RoomManager from "@/3d/Multiplayer/RoomManager";
+import CoreScene from "@/3d/core/CoreScene";
+import RoomManager from "@/3d/multiplayer/RoomManager";
 import { useEngineStore } from "@/stores/useEngineStore";
+import { useSceneStore } from "@/stores/useSceneStore";
 
 type Props = {
     room: Room;
@@ -14,19 +15,29 @@ type Props = {
 
 const Multiplayer3D: FC<Props> = ({ room }) => {
     const coreEngine = useEngineStore((state) => state.coreEngine);
+    const setScene = useSceneStore((state) => state.setScene);
 
     const canvasContainer = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!canvasContainer.current) return;
-        const multiplayerScene = new MultiplayerScene(room, coreEngine);
         coreEngine.insertCanvasToDOM(canvasContainer.current);
 
-        const roomManager = new RoomManager(room, multiplayerScene);
+        let currentCoreScene = useSceneStore.getState().coreScene;
+        if (!currentCoreScene) {
+            currentCoreScene = new CoreScene(room, coreEngine);
+            setScene(currentCoreScene);
+        }
+        currentCoreScene.switchToMultiplayer();
+        currentCoreScene.atom.load();
+        const roomManager = new RoomManager(room, currentCoreScene);
 
         return () => {
             roomManager.dispose();
-            multiplayerScene.dispose();
+            //dispose atom without disposing skybox
+            currentCoreScene.atom.dispose(false);
+            currentCoreScene.switchToVideoChat();
+            coreEngine.removeCanvasFromDOM(canvasContainer.current);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

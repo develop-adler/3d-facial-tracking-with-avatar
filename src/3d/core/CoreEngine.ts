@@ -1,23 +1,24 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { DracoCompression } from "@babylonjs/core/Meshes/Compression/dracoCompression";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
 
-import type { SpaceLoadingPerformance } from "@/apis/entities";
+import type { SpaceLoadingPerformance } from "@/models/3d";
 import eventBus from "@/eventBus";
 
 import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 
 registerBuiltInLoaders();
 
-const SafeCanvas = (() => 
-    typeof document === 'undefined' ? 
-    {
-        getContext: () => {},
-    } as unknown as HTMLCanvasElement :
-    document.createElement('canvas'))();
+const SafeCanvas = (() =>
+    typeof document === 'undefined' ?
+        {
+            getContext: () => { },
+        } as unknown as HTMLCanvasElement :
+        document.createElement('canvas'))();
 
 export class CoreEngine {
     private static instance: CoreEngine;
@@ -35,7 +36,7 @@ export class CoreEngine {
             space_scene_created: -1,
             space_avatar_set: -1,
             space_avatar_controller_ready: -1,
-            space_initialized: performance.now(),
+            space_initialized: -1,
             space_environment_map_ready: -1,
             space_physics_ready: -1,
             space_avatar_ready: -1,
@@ -133,6 +134,12 @@ export class CoreEngine {
         container.append(this.canvas);
         // call resize to fix the canvas size
         this.resize();
+        console.log("Canvas inserted to DOM", container);
+    }
+
+    removeCanvasFromDOM(container?: HTMLElement | null) {
+        (container ?? this.canvas.parentElement)?.removeChild(this.canvas);
+        console.log("Canvas removed from DOM", this.canvas);
     }
 
     resize() {

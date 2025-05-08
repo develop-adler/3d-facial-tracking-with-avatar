@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { CoreEngine } from "@/3d/CoreEngine";
+import { CoreEngine } from "@/3d/core/CoreEngine";
 
 type EngineStore = {
   coreEngine: CoreEngine;

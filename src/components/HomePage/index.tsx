@@ -1,13 +1,16 @@
 "use client";
 
-import { VirtualAvatarVideo } from "@/components/VirtualAvatarVideo";
-import { ScreenControlButtons } from "../ScreenControlButtons";
+import { AvatarScene } from "@/components/AvatarScene";
+import { AvatarFacialTracking } from "@/components/AvatarFacialTracking";
+// import { VoiceChat } from "@/components/VirtualAvatarVideo/components/VoiceChat";
+import { ScreenControlButtons } from "@/components/ScreenControlButtons";
 
 const Page = () => {
   return (
     <>
       <ScreenControlButtons />
-      <VirtualAvatarVideo />
+      <AvatarScene />
+      <AvatarFacialTracking />
     </>
   );
 }

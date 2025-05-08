@@ -3,6 +3,7 @@ import "@babylonjs/core/Engines/Extensions/engine.query"; // for occlusion queri
 import "@babylonjs/core/Rendering/boundingBoxRenderer"; // for occlusion queries
 // import '@babylonjs/core/Meshes/thinInstanceMesh'; // for PhysicsViewer
 // import { Animation } from "@babylonjs/core/Animations/animation";
+import { BoneIKController } from "@babylonjs/core/Bones/boneIKController";
 import { BoneLookController } from "@babylonjs/core/Bones/boneLookController";
 // import { PhysicsViewer } from '@babylonjs/core/Debug/physicsViewer';
 import {
@@ -16,22 +17,26 @@ import {
   PhysicsShapeBox,
   PhysicsShapeCapsule,
   PhysicsShapeContainer,
-  PhysicsShapeCylinder,
   PhysicsShapeSphere,
 } from "@babylonjs/core/Physics/v2/physicsShape";
 import type { Participant } from "livekit-client";
 
-import type AvatarProfile from "@/3d/Multiplayer/AvatarProfile";
-import type AvatarProfileCard from "@/3d/Multiplayer/AvatarProfileCard";
-import AvatarInteraction from "@/3d/Multiplayer/AvatarInteraction";
+import type AvatarProfile from "@/3d/avatar/AvatarProfile";
+import type AvatarProfileCard from "@/3d/avatar/AvatarProfileCard";
+import AvatarInteraction from "@/3d/avatar/AvatarInteraction";
+import type CoreScene from "@/3d/core/CoreScene";
 import type {
   AvatarGender,
   AvatarInteractionType,
   ObjectQuaternion,
   ObjectTransform,
-} from "@/apis/entities";
+} from "@/models/3d";
 import eventBus from "@/eventBus";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
+import CreateAvatarPhysicsShape from "@/utils/CreateAvatarPhysicsShape";
 import { waitForConditionAndExecute } from "@/utils/functionUtils";
+import { isValidRPMAvatarId } from "@/utils/utilities";
 
 import { clientSettings } from "clientSettings";
 import {
@@ -45,7 +50,6 @@ import type { AnimationGroup } from "@babylonjs/core/Animations/animationGroup";
 import type { Bone } from "@babylonjs/core/Bones/bone";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton";
 import type { PointerInfo } from "@babylonjs/core/Events/pointerEvents";
-import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
@@ -57,16 +61,21 @@ type AnimationsRecord = Record<string, AnimationGroup>;
 export type AvatarPhysicsShapes = {
   male: {
     normal: PhysicsShapeCapsule;
-    short: PhysicsShapeCapsule;
+    crouch: PhysicsShapeCapsule;
   };
   female: {
     normal: PhysicsShapeCapsule;
-    short: PhysicsShapeCapsule;
+    crouch: PhysicsShapeCapsule;
   };
   other: {
     normal: PhysicsShapeCapsule;
-    short: PhysicsShapeCapsule;
+    crouch: PhysicsShapeCapsule;
   };
+};
+
+type HandBoneIKControllers = {
+  left?: BoneIKController;
+  right?: BoneIKController;
 };
 
 export const AVATAR_ANIMATIONS = [
@@ -90,21 +99,48 @@ export const AVATAR_ANIMATIONS = [
   "SitToIdle",
 ];
 
+const RPM_AVATAR_PARAMS = `
+    morphTargets=
+        browDownLeft,browDownRight,browInnerUp,browOuterUpLeft,browOuterUpRight,
+        cheekPuff,cheekSquintLeft,cheekSquintRight,
+        eyeBlinkLeft,eyeBlinkRight,
+        eyeLookDownLeft,eyeLookDownRight,eyeLookInLeft,eyeLookInRight,eyeLookOutLeft,
+        eyeLookOutRight,eyeLookUpLeft,eyeLookUpRight,
+        eyeSquintLeft,eyeSquintRight,eyeWideLeft,eyeWideRight,
+        jawForward,jawLeft,jawOpen,jawRight,
+        mouthClose,
+        mouthDimpleLeft,mouthDimpleRight,
+        mouthFrownLeft,mouthFrownRight,
+        mouthFunnel,mouthLeft,mouthRight,mouthLowerDownLeft,mouthLowerDownRight,
+        mouthPressLeft,mouthPressRight,mouthPucker,mouthRollLower,mouthRollUpper,
+        mouthShrugLower,mouthShrugUpper,mouthSmileLeft,mouthSmileRight,
+        mouthStretchLeft,mouthStretchRight,mouthUpperUpLeft,mouthUpperUpRight,
+        noseSneerLeft,
+        noseSneerRight
+    &useDracoMeshCompression=true
+    &useQuantizeMeshOptCompression=true
+    &textureAtlas=1024
+    &textureFormat=webp
+`.replaceAll(/\s+/g, "");
+
+const DEFAULT_AVATAR_ID = "67fe6f7713b3fb7e8aa0328c";
+
 class Avatar {
+  readonly coreScene: CoreScene;
   readonly scene: Scene;
   readonly participant: Participant;
-  readonly gender: AvatarGender;
-  readonly avatarUrl: string;
+  gender: AvatarGender;
   readonly isSelf: boolean;
+  readonly headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
 
   private _profile?: AvatarProfile;
   private _multiplayProfile?: AvatarProfileCard;
-  private _otherAvatars: Array<Avatar> = [];
   private _isCreatingProfileCard: boolean = false;
   private _clickedToOpenProfileCard: boolean = false;
 
-  private readonly _root: TransformNode;
+  readonly root: TransformNode;
   private _container?: AssetContainer;
+  private _bones?: Bone[];
   private _morphTargetManager?: MorphTargetManager;
   private _rootMesh?: AbstractMesh;
   private _meshes: Array<AbstractMesh> = [];
@@ -113,14 +149,28 @@ class Avatar {
   private _boneLookController?: BoneLookController;
   currentBoneLookControllerTarget?: Vector3;
 
+  readonly boneIKTargets: {
+    left: {
+      pole: TransformNode;
+      target: TransformNode;
+    };
+    right: {
+      pole: TransformNode;
+      target: TransformNode;
+    };
+  };
+  private _boneIKControllers: HandBoneIKControllers;
+
+  avatarBodyShapeFull?: PhysicsShapeContainer;
+  avatarBodyShapeCrouch?: PhysicsShapeSphere;
   private _capsuleBody?: PhysicsBody;
   private _capsuleBodyNode?: TransformNode;
-  readonly avatarBodyShapeFull: PhysicsShapeContainer;
-  readonly avatarBodyShapeCrouch: PhysicsShapeSphere;
-  private readonly _physicsSyncingObservers: Array<Observer<Scene>> = [];
-  private readonly _hitBoxBodies: Array<PhysicsBody> = [];
-  private readonly _physicsBodies: Array<PhysicsBody> = [];
-  readonly avatarBodyShapeFullForChecks: PhysicsShapeContainer;
+  private _physicsSyncingObservers: Array<Observer<Scene>> = [];
+  private _hitBoxBodies: Array<PhysicsBody> = [];
+  private _physicsBodies: Array<PhysicsBody> = [];
+
+  // for teleportation shape cast checking
+  avatarBodyShapeFullForChecks?: PhysicsShapeContainer;
 
   private _height: number = 0;
   private _capsuleCopyObserver?: Observer<Scene>;
@@ -128,6 +178,8 @@ class Avatar {
   // for physics debugging
   // private readonly physicsViewer: PhysicsViewer;
 
+  currentAvatarId: string = "";
+  isLoadingAvatar: boolean = false;
   playingAnimation?: AnimationGroup;
   isPlayingAnimationLooping: boolean = true;
   isMoving: boolean = false;
@@ -153,70 +205,56 @@ class Avatar {
   isAnimationsReady: boolean = false;
   isReady: boolean = false;
 
-  private readonly _headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
 
   constructor(
-    scene: Scene,
+    coreScene: CoreScene,
     participant: Participant,
-    avatarUrl: string,
     gender: AvatarGender,
     isSelf: boolean = false,
     physicsShapes?: {
       normal: PhysicsShapeCapsule;
-      short: PhysicsShapeCapsule;
+      crouch: PhysicsShapeCapsule;
     },
     position?: Vector3 | ObjectTransform,
     rotation?: Quaternion | ObjectQuaternion
   ) {
-    this.scene = scene;
+    this.coreScene = coreScene;
+    this.scene = coreScene.scene;
     this.gender = gender;
     this.participant = participant;
-    this.avatarUrl = avatarUrl;
     this.isSelf = isSelf;
 
     if (this.gender === "female")
-      this._headHeight = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_FEMALE;
+      this.headHeight = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_FEMALE;
 
     this._preloadAnimationResources();
 
     const tNodeName = "avatarRootNode_" + participant.sid;
-    this._root = new TransformNode(tNodeName, this.scene);
+    this.root = new TransformNode(tNodeName, this.scene);
 
     if (position) {
-      if (position instanceof Vector3) this._root.position = position.clone();
+      if (position instanceof Vector3) this.root.position = position.clone();
       else if (Array.isArray(position))
-        this._root.position = Vector3.FromArray(position);
+        this.root.position = Vector3.FromArray(position);
     }
     if (rotation) {
       if (rotation instanceof Quaternion)
-        this._root.rotationQuaternion = rotation.clone();
+        this.root.rotationQuaternion = rotation.clone();
       else if (Array.isArray(rotation))
-        this._root.rotationQuaternion = Quaternion.FromArray(rotation);
+        this.root.rotationQuaternion = Quaternion.FromArray(rotation);
     }
 
-    if (physicsShapes) {
-      this.avatarBodyShapeFull = physicsShapes.normal;
-      this.avatarBodyShapeCrouch = physicsShapes.short;
-    } else {
-      this.avatarBodyShapeFull = Avatar.CreatePhysicsShape(
-        this.scene,
-        gender,
-        false
-      );
-      this.avatarBodyShapeCrouch = Avatar.CreatePhysicsShape(
-        this.scene,
-        gender,
-        true
-      );
-    }
-
-    this.avatarBodyShapeFullForChecks = Avatar.CreatePhysicsShape(
-      this.scene,
-      gender,
-      false
-    );
-    this.avatarBodyShapeFullForChecks.filterCollideMask =
-      PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT;
+    this._boneIKControllers = {};
+    this.boneIKTargets = {
+      left: {
+        pole: new TransformNode("leftHandPoleTarget", this.scene),
+        target: new TransformNode("leftHandTarget", this.scene),
+      },
+      right: {
+        pole: new TransformNode("rightHandPoleTarget", this.scene),
+        target: new TransformNode("rightHandTarget", this.scene),
+      },
+    };
 
     // for physics debugging
     // this.physicsViewer = new PhysicsViewer(scene);
@@ -225,17 +263,11 @@ class Avatar {
   // get highlightLayer(): HighlightLayer | undefined {
   //   return this.post?.atom3DObjects?.highlightLayer;
   // }
-  get root(): TransformNode {
-    return this._root;
-  }
   get container(): AssetContainer | undefined {
     return this._container;
   }
   get morphTargetManager(): MorphTargetManager | undefined {
     return this._morphTargetManager;
-  }
-  get rootMesh(): AbstractMesh | undefined {
-    return this._rootMesh;
   }
   get meshes(): Array<AbstractMesh> {
     return this._meshes;
@@ -243,12 +275,19 @@ class Avatar {
   get skeleton(): Skeleton | undefined {
     return this._skeleton;
   }
+  get bones(): Bone[] | undefined {
+    return this._bones;
+  }
   get animations(): AnimationsRecord {
     return this._animations;
   }
   get boneLookController(): BoneLookController | undefined {
     return this._boneLookController;
   }
+  get boneIKControllers(): HandBoneIKControllers {
+    return this._boneIKControllers;
+  }
+
   get capsuleBody(): PhysicsBody | undefined {
     return this._capsuleBody;
   }
@@ -261,134 +300,29 @@ class Avatar {
   get height(): number {
     return this._height;
   }
-  get headHeight(): number {
-    return this._headHeight;
-  }
-  get otherAvatars(): Array<Avatar> {
-    return this._otherAvatars;
-  }
   get isCapsuleBodyColliding(): boolean {
     return this._isCapsuleBodyColliding;
-  }
-
-  static CreatePhysicsShape(
-    scene: Scene,
-    gender: AvatarGender,
-    isShort: boolean = false
-  ): PhysicsShapeContainer | PhysicsShapeSphere {
-    const capsuleHeight =
-      gender === "male" || gender === "other"
-        ? AVATAR_PARAMS.CAPSULE_HEIGHT_MALE
-        : AVATAR_PARAMS.CAPSULE_HEIGHT_FEMALE;
-
-    if (isShort) {
-      // sphere shape for crouching (may need to update to box shape in the future)
-      const shape = new PhysicsShapeSphere(
-        new Vector3(0, AVATAR_PARAMS.CAPSULE_RADIUS * 2.5, 0),
-        AVATAR_PARAMS.CAPSULE_RADIUS * 2.5,
-        scene
-      );
-      shape.material = { friction: 0.4, restitution: 0 };
-      shape.filterMembershipMask =
-        PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
-      shape.filterCollideMask =
-        PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
-        PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |
-        PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER;
-      return shape;
-    }
-
-    const parentShape = new PhysicsShapeContainer(scene);
-
-    const capsuleShape = new PhysicsShapeCapsule(
-      new Vector3(0, AVATAR_PARAMS.CAPSULE_RADIUS, 0),
-      new Vector3(0, capsuleHeight - AVATAR_PARAMS.CAPSULE_RADIUS, 0),
-      AVATAR_PARAMS.CAPSULE_RADIUS,
-      scene
-    );
-    capsuleShape.material = { friction: 0.4, restitution: 0 };
-    capsuleShape.filterMembershipMask =
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
-    capsuleShape.filterCollideMask =
-      PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER;
-
-    const cylinderShape = new PhysicsShapeCylinder(
-      new Vector3(0, AVATAR_PARAMS.CAPSULE_RADIUS * 0.5, 0),
-      new Vector3(0, (capsuleHeight - AVATAR_PARAMS.CAPSULE_RADIUS) * 1.15, 0),
-      AVATAR_PARAMS.CAPSULE_RADIUS * 1.1,
-      scene
-    );
-    cylinderShape.material = { friction: 0, restitution: 0 };
-    cylinderShape.filterMembershipMask =
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
-    cylinderShape.filterCollideMask =
-      PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |
-      PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER;
-
-    parentShape.addChild(capsuleShape);
-    parentShape.addChild(cylinderShape);
-
-    return parentShape;
-  }
-
-  setOtherAvatars(avatars: Array<Avatar>) {
-    this._otherAvatars = avatars;
   }
 
   /**
    * Load avatar from avatar id
    */
-  async loadAvatar(): Promise<this> {
+  async loadAvatar(
+    id: string = useAvatarStore.getState().avatarId ?? DEFAULT_AVATAR_ID,
+    gender: AvatarGender = "male",
+    isVideoChat: boolean = false
+  ): Promise<this> {
+    if (this.isLoadingAvatar || this.currentAvatarId === id) return this;
+
+    this.gender = gender;
+
     this.scene.blockMaterialDirtyMechanism = true;
 
-    // const lods = [
-    //   this.avatarModelInfo.lowQualityUrl,
-    //   this.avatarModelInfo.mediumQualityUrl,
-    //   this.avatarModelInfo.highQualityUrl,
-    // ];
-
-    // wait until scene environment map is loaded then load avatar
-    // otherwise, the entire avatar will be black
-    if (!this.scene.environmentTexture) {
-      await waitForConditionAndExecute(
-        () => !!this.scene.environmentTexture,
-        undefined,
-        undefined,
-        undefined,
-        10_000
-      );
-      await new Promise<void>((resolve) => {
-        (this.scene.environmentTexture as CubeTexture).onLoadObservable.addOnce(
-          () => {
-            if (clientSettings.DEBUG) {
-              console.log(
-                "Scene environment map is loaded observable, loading avatar model..."
-              );
-            }
-            resolve();
-          }
-        );
-      });
-    } else if (this.scene.environmentTexture.isReady() === false) {
-      await new Promise<void>((resolve) => {
-        (this.scene.environmentTexture as CubeTexture).onLoadObservable.addOnce(
-          () => {
-            if (clientSettings.DEBUG) {
-              console.log(
-                "Scene environment map is loaded observable, loading avatar model..."
-              );
-            }
-            resolve();
-          }
-        );
-      });
-    }
+    this.isLoadingAvatar = true;
+    useAvatarLoadingStore.getState().setStartLoading();
 
     const container = await loadAssetContainerAsync(
-      this.avatarUrl,
+      `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS,
       this.scene,
       {
         pluginExtension: ".glb",
@@ -397,22 +331,44 @@ class Avatar {
             compileMaterials: true,
           },
         },
+        onProgress: (progress) => {
+          const percentage = Math.floor(
+            (progress.loaded / progress.total) * 100
+          );
+          useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
+        },
       }
     );
+
+    // remove existing avatar model
+    if (this._container) {
+      // eslint-disable-next-line unicorn/no-null
+      if (this._rootMesh) this._rootMesh.parent = null; // remove root mesh parent
+      this._container.dispose();
+    }
+
     this._container = container;
+    useAvatarLoadingStore.getState().setNotLoading();
     container.addAllToScene();
+
+    this.currentAvatarId = id;
+    useAvatarStore.getState().setAvatarId(id);
 
     this._rootMesh = container.meshes[0];
     this._meshes = container.meshes.slice(1);
     this._skeleton = container.skeletons[0];
-    this._morphTargetManager = container.morphTargetManagers[0];
+    this._bones = container.skeletons[0].bones;
+
+    if (container.morphTargetManagers.length > 0) {
+      this._morphTargetManager = container.morphTargetManagers[0];
+    }
 
     container.meshes.forEach((mesh, i) => {
       // is root mesh, skip
       if (i === 0) {
-        mesh.parent = this._root; // assign root as parent
+        mesh.parent = this.root; // assign root as parent
         mesh.isPickable = false;
-        mesh.layerMask = Math.trunc(1); // visible on layer 0
+        mesh.layerMask = Math.trunc(1); // visible on layer 1
         return;
       }
 
@@ -424,7 +380,7 @@ class Avatar {
       mesh.receiveShadows = true;
       mesh.material?.freeze();
       mesh.isPickable = true;
-      mesh.layerMask = Math.trunc(1); // visible on layer 0
+      mesh.layerMask = Math.trunc(1); // visible on layer 1
 
       // skip frustum culling check if is own avatar
       if (this.participant && this.isSelf) {
@@ -436,6 +392,13 @@ class Avatar {
         mesh.isOccluded = false; // don't make object occluded by default
       }
     });
+
+    this.isLoadingAvatar = false;
+    eventBus.emit(`avatar:modelLoaded:${this.participant.sid}`, container);
+
+    // change head node parent and camera target
+    const headNode = this.scene.getTransformNodeByName("customHeadNode");
+    if (headNode) headNode.parent = this.root;
 
     // if (this.post) {
     //   const pickingList = [...this.post.gpuPickerPickingList, ...this._meshes.map(mesh => mesh.getChildMeshes()).flat()];
@@ -451,11 +414,6 @@ class Avatar {
     //     console.log(`avatar ${this.participant.sid} is occluded`);
     //   }
     // });
-
-    this._showAvatarInfo();
-
-    // show profile if exists
-    this._profile?.show();
 
     this.scene.blockMaterialDirtyMechanism = false;
 
@@ -491,13 +449,6 @@ class Avatar {
     // so the anims have bone target assigned
     this._loadAnimations(container.skeletons[0]);
 
-    // this._rootMesh.getChildMeshes().forEach(mesh => {
-    //   if (this.highlightLayer) {
-    //     this.highlightLayer.removeMesh(mesh as Mesh);
-    //     this.highlightLayer.addExcludedMesh(mesh as Mesh);
-    //   }
-    // });
-
     if (this.isAnimationsReady === true) {
       this.isReady = true;
       eventBus.emit(`avatar:ready:${this.participant.sid}`, this);
@@ -507,6 +458,79 @@ class Avatar {
         eventBus.emit(`avatar:ready:${this.participant.sid}`, this);
       });
     }
+
+    // update camera position and target to face the avatar's eyes
+    if (isVideoChat) {
+      const leftEyeTNode = this._skeleton.bones
+        .find((bone) => bone.name === "LeftEye")
+        ?.getTransformNode();
+      const rightEyeTNode = this._skeleton.bones
+        .find((bone) => bone.name === "RightEye")
+        ?.getTransformNode();
+
+      if (leftEyeTNode && rightEyeTNode) {
+        const pointBetweenEyes = new Vector3(
+          (leftEyeTNode.absolutePosition.x +
+            rightEyeTNode.absolutePosition.x) /
+          2,
+          (leftEyeTNode.absolutePosition.y +
+            rightEyeTNode.absolutePosition.y) /
+          2,
+          (leftEyeTNode.absolutePosition.z +
+            rightEyeTNode.absolutePosition.z) /
+          2
+        );
+
+        this.coreScene.camera.setPosition(pointBetweenEyes);
+        this.coreScene.camera.setTarget(pointBetweenEyes);
+      }
+
+      // parent pole target meshes to avatar mesh so that it
+      // moves relative to the avatar
+      this.boneIKTargets.left.target.parent = container.meshes[0];
+      this.boneIKTargets.right.target.parent = container.meshes[0];
+      this.boneIKTargets.left.pole.parent = container.meshes[0];
+      this.boneIKTargets.right.pole.parent = container.meshes[0];
+
+      const bones = container.skeletons[0].bones;
+
+      this._boneIKControllers.left = new BoneIKController(
+        container.meshes[0],
+        bones.find((bone) => bone.name === "LeftHand")!,
+        {
+          targetMesh: this.boneIKTargets.left.target,
+          // poleTargetBone: bones.find(bone => bone.name === "LeftShoulder"), // orient bending based on this bone
+          // poleTargetMesh: this.boneIKTargets.left.pole,
+          // poleAngle: 0,
+          // bendAxis: Vector3.Right(),      // usually 'Right' for arms
+          slerpAmount: 0.3,
+        }
+      );
+      this._boneIKControllers.right = new BoneIKController(
+        container.meshes[0],
+        bones.find((bone) => bone.name === "RightHand")!,
+        {
+          targetMesh: this.boneIKTargets.right.target,
+          poleTargetBone: bones.find((bone) => bone.name === "RightForeArm"), // orient bending based on this bone
+          poleTargetMesh: this.boneIKTargets.right.pole,
+          // poleAngle: 0,
+          // bendAxis: Vector3.Right(),      // usually 'Right' for arms
+          slerpAmount: 0.3,
+        }
+      );
+
+      // this.boneIKUpdateObserver = this.scene.onBeforeRenderObservable.add(() => {
+      //     this._boneIKControllers.left?.update();
+      //     this._boneIKControllers.right?.update();
+      // });
+    }
+
+    // this._rootMesh.getChildMeshes().forEach(mesh => {
+    //   if (this.highlightLayer) {
+    //     this.highlightLayer.removeMesh(mesh as Mesh);
+    //     this.highlightLayer.addExcludedMesh(mesh as Mesh);
+    //   }
+    // });
 
     // only enable click-to-open-profile-card event for other avatars
     if (!this.isSelf) {
@@ -592,7 +616,7 @@ class Avatar {
                 if (this._multiplayProfile) {
                   this._multiplayProfile.show();
                 } else if (!this._isCreatingProfileCard && !this.isSelf) {
-                  import("@/3d/Multiplayer/AvatarProfileCard").then(
+                  import("@/3d/avatar/AvatarProfileCard").then(
                     ({ default: AvatarProfileCard }) => {
                       this._multiplayProfile = new AvatarProfileCard(
                         this,
@@ -669,6 +693,29 @@ class Avatar {
     // })();
 
     return this;
+  }
+
+  async changeAvatar(url: string) {
+    if (this.isLoadingAvatar) {
+      let interval: globalThis.NodeJS.Timeout;
+      await new Promise<void>((resolve) => {
+        interval = setInterval(() => {
+          if (!this.isLoadingAvatar) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 50);
+      });
+    }
+
+    // extract id from url
+    const id = url.split("/").pop()?.split(".")[0];
+    if (!id || !isValidRPMAvatarId(id)) {
+      globalThis.alert("Invalid avatar URL");
+      return;
+    }
+    if (this.currentAvatarId === id) return;
+    return this.loadAvatar(id);
   }
 
   // private _handleMorpTargets(mesh: AbstractMesh): void {
@@ -829,7 +876,7 @@ class Avatar {
 
     // capsule body always has to be generated after the physics bodies
     // otherwise the physics bodies' position will not be correct
-    this._capsuleBody = this._generateCapsuleBody(this._root.position);
+    this._capsuleBody = this._generateCapsuleBody(this.root.absolutePosition);
 
     this._createGroundCheckBody();
 
@@ -842,6 +889,33 @@ class Avatar {
   }
 
   private _generateCapsuleBody(position?: Vector3): PhysicsBody {
+    const { avatarPhysicsShapes } = this.coreScene;
+
+    avatarPhysicsShapes[this.gender].normal ??= CreateAvatarPhysicsShape(
+      this.scene,
+      this.gender,
+      false
+    );
+
+    avatarPhysicsShapes[this.gender].crouch ??= CreateAvatarPhysicsShape(
+      this.scene,
+      this.gender,
+      true
+    );
+
+    this.avatarBodyShapeFull = avatarPhysicsShapes[this.gender].normal!;
+    this.avatarBodyShapeCrouch = avatarPhysicsShapes[this.gender].crouch!;
+
+    if (!this.avatarBodyShapeFullForChecks) {
+      this.avatarBodyShapeFullForChecks = CreateAvatarPhysicsShape(
+        this.scene,
+        this.gender,
+        false
+      );
+      this.avatarBodyShapeFullForChecks.filterCollideMask =
+        PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT;
+    }
+
     const capsuleHeight =
       this.gender === "male"
         ? AVATAR_PARAMS.CAPSULE_HEIGHT_MALE
@@ -853,7 +927,7 @@ class Avatar {
         this.scene
       );
     }
-    this._capsuleBodyNode.position = position ?? Vector3.Zero();
+    this._capsuleBodyNode.setAbsolutePosition(position ?? Vector3.Zero());
 
     const body = new PhysicsBody(
       this._capsuleBodyNode,
@@ -889,7 +963,7 @@ class Avatar {
     this._capsuleCopyObserver?.remove();
     this._capsuleCopyObserver = this.scene.onAfterPhysicsObservable.add(() => {
       if (!this._capsuleBodyNode) return;
-      this._root.setAbsolutePosition(this._capsuleBodyNode.absolutePosition);
+      this.root.setAbsolutePosition(this._capsuleBodyNode.absolutePosition);
     });
 
     eventBus.emit(`avatar:capsuleBodyCreated:${this.participant.sid}`, body);
@@ -938,7 +1012,7 @@ class Avatar {
         bone.name + "_node_" + this.participant.sid,
         this.scene
       );
-      bodyNode.position = bone.getAbsolutePosition(this.rootMesh);
+      bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
 
       const sphereShape = new PhysicsShapeSphere(
         positionOffset,
@@ -973,7 +1047,7 @@ class Avatar {
           this.scene.onAfterPhysicsObservable.add(() => {
             (plugin as HavokPlugin)._hknp.HP_Body_SetPosition(
               body._pluginData.hpBodyId,
-              bone.getAbsolutePosition(this.rootMesh).asArray()
+              bone.getAbsolutePosition(this._rootMesh).asArray()
             );
           })
         );
@@ -994,7 +1068,7 @@ class Avatar {
         bone.name + "_node_" + this.participant.sid,
         this.scene
       );
-      bodyNode.position = bone.getAbsolutePosition(this.rootMesh);
+      bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
 
       const boxShape = new PhysicsShapeBox(
         offset,
@@ -1043,21 +1117,21 @@ class Avatar {
                     "RightToeBase"
                   )
                 ) {
-                  const sid = collision.collidedAgainst.transformNode.name
-                    .split("_")
-                    .at(-1);
-
-                  for (const avatar of this._otherAvatars) {
-                    // if avatar is not already getting hit, play head flinch animation
-                    if (
-                      avatar.participant.sid === sid &&
-                      avatar.interaction?.type === "hitting" &&
-                      this.interaction?.type !== "gethit"
-                    ) {
-                      this.playInteraction("HeadFlinch", "gethit");
-                      break;
-                    }
-                  }
+                  // TODO: handle flinching interaction better
+                  // const sid = collision.collidedAgainst.transformNode.name
+                  //   .split("_")
+                  //   .at(-1);
+                  // for (const avatar of this._otherAvatars) {
+                  //   // if avatar is not already getting hit, play head flinch animation
+                  //   if (
+                  //     avatar.participant.sid === sid &&
+                  //     avatar.interaction?.type === "hitting" &&
+                  //     this.interaction?.type !== "gethit"
+                  //   ) {
+                  //     this.playInteraction("HeadFlinch", "gethit");
+                  //     break;
+                  //   }
+                  // }
                 }
               }
             });
@@ -1084,22 +1158,22 @@ class Avatar {
                     "RightToeBase"
                   )
                 ) {
-                  const sid = collision.collidedAgainst.transformNode.name
-                    .split("_")
-                    .at(-1);
-
-                  for (const avatar of this._otherAvatars) {
-                    // if avatar is not already getting hit, play chest flinch animation
-                    // and prevent having another flinch if already getting hit
-                    if (
-                      avatar.participant.name === sid &&
-                      avatar.interaction?.type === "hitting" &&
-                      this.interaction?.type !== "gethit"
-                    ) {
-                      this.playInteraction("ChestFlinch", "gethit");
-                      break;
-                    }
-                  }
+                  // TODO: handle flinching interaction better
+                  // const sid = collision.collidedAgainst.transformNode.name
+                  //   .split("_")
+                  //   .at(-1);
+                  // for (const avatar of this._otherAvatars) {
+                  //   // if avatar is not already getting hit, play chest flinch animation
+                  //   // and prevent having another flinch if already getting hit
+                  //   if (
+                  //     avatar.participant.name === sid &&
+                  //     avatar.interaction?.type === "hitting" &&
+                  //     this.interaction?.type !== "gethit"
+                  //   ) {
+                  //     this.playInteraction("ChestFlinch", "gethit");
+                  //     break;
+                  //   }
+                  // }
                 }
               }
             });
@@ -1115,7 +1189,7 @@ class Avatar {
           this.scene.onAfterPhysicsObservable.add(() => {
             (plugin as HavokPlugin)._hknp.HP_Body_SetPosition(
               body._pluginData.hpBodyId,
-              bone.getAbsolutePosition(this.rootMesh).asArray()
+              bone.getAbsolutePosition(this._rootMesh).asArray()
             );
             (plugin as HavokPlugin)._hknp.HP_Body_SetOrientation(
               body._pluginData.hpBodyId,
@@ -1343,19 +1417,41 @@ class Avatar {
     // this.physicsViewer.showBody(body);
   }
 
-  private _showAvatarInfo(): void {
-    import("./AvatarProfile").then(({ default: AvatarProfile }) => {
-      this._profile = new AvatarProfile(this);
-    });
+  disposePhysicsBodies(): void {
+    for (const observer of this._physicsSyncingObservers) observer.remove();
+    this._physicsSyncingObservers = [];
+    this._capsuleCopyObserver?.remove();
+    this._capsuleCopyObserver = undefined;
+    this._capsuleBody = undefined;
+    for (const body of this._physicsBodies) body.dispose();
+    this._physicsBodies = [];
+    this._hitBoxBodies = [];
+  }
+
+  showAvatarInfo(): void {
+    if (!this._profile) {
+      import("./AvatarProfile").then(({ default: AvatarProfile }) => {
+        this._profile = new AvatarProfile(this);
+      });
+    }
 
     // if is own user, don't create profile card
-    if (this.isSelf) return;
+    if (this.isSelf || this._multiplayProfile) return;
 
     this._isCreatingProfileCard = true;
     import("./AvatarProfileCard").then(({ default: AvatarProfileCard }) => {
       this._multiplayProfile = new AvatarProfileCard(this, this.participant);
       this._isCreatingProfileCard = false;
     });
+  }
+
+  disposeAvatarInfo(): void {
+    this._profile?.dispose();
+    this._profile = undefined;
+    this._multiplayProfile?.dispose();
+    this._multiplayProfile = undefined;
+    this._isCreatingProfileCard = false;
+    this._clickedToOpenProfileCard = false;
   }
 
   async updateName(name: string): Promise<void> {
@@ -1393,6 +1489,15 @@ class Avatar {
       )
         return;
 
+
+      // remove head bone from animation
+      this._animations[animationName].targetedAnimations.splice(
+        this._animations[animationName].targetedAnimations.findIndex(
+          (ta) => ta.target.name === "Head"
+        ),
+        1
+      );
+
       this.playingAnimation?.stop();
       this.playingAnimation = this._animations[animationName];
       this.isPlayingAnimationLooping = loop;
@@ -1406,6 +1511,14 @@ class Avatar {
       // }
     } else {
       if (this.playingAnimation === animation) return;
+
+      // remove head bone from animation
+      animation.targetedAnimations.splice(
+        animation.targetedAnimations.findIndex(
+          (ta) => ta.target.name === "Head"
+        ),
+        1
+      );
 
       this.playingAnimation?.stop();
       this.playingAnimation = animation;
@@ -1426,6 +1539,12 @@ class Avatar {
     }
   }
 
+  stopAllAnimations(): void {
+    this.playingAnimation?.stop(true);
+    this.playingAnimation = undefined;
+    this.isPlayingAnimationLooping = false;
+  }
+
   playInteraction(name: string, type: AvatarInteractionType): void {
     this.interaction = new AvatarInteraction(this, name, type);
     this.interaction.play(() => {
@@ -1442,21 +1561,20 @@ class Avatar {
   }
 
   getPosition(global?: boolean): Vector3 {
-    return global ? this._root.absolutePosition : this._root.position;
+    return global ? this.root.absolutePosition : this.root.position;
   }
 
   getRotationQuaternion(global?: boolean): Quaternion {
     return global
-      ? this._root.absoluteRotationQuaternion
-      : this._root.rotationQuaternion ??
-      this._root.rotation.toQuaternion();
+      ? this.root.absoluteRotationQuaternion
+      : this.root.rotationQuaternion ?? this.root.rotation.toQuaternion();
   }
 
   setPosition(position: Vector3): void {
     // no physics body or physics engine, just set root position
     const physicsEngine = this.scene.getPhysicsEngine();
     if (!this._capsuleBody || !physicsEngine) {
-      this._root.position = position;
+      this.root.position = position;
       return;
     }
 
@@ -1475,7 +1593,7 @@ class Avatar {
   }
 
   setRotationQuaternion(quaternion: Quaternion): void {
-    this._root.rotationQuaternion = quaternion;
+    this.root.rotationQuaternion = quaternion;
 
     const physicsEngine = this.scene.getPhysicsEngine();
     if (!this._capsuleBody || !physicsEngine) return;
@@ -1538,6 +1656,15 @@ class Avatar {
 
     if (isCrouch) {
       this._capsuleBody.disableSync = true;
+      if (!this.avatarBodyShapeCrouch) {
+        const { avatarPhysicsShapes } = this.coreScene;
+        avatarPhysicsShapes[this.gender].crouch ??= CreateAvatarPhysicsShape(
+          this.scene,
+          this.gender,
+          true
+        );
+        this.avatarBodyShapeCrouch = avatarPhysicsShapes[this.gender].crouch!;
+      }
       this._capsuleBody.shape = this.avatarBodyShapeCrouch;
       this.scene.onAfterPhysicsObservable.addOnce(() => {
         if (this._capsuleBody) this._capsuleBody.disableSync = false;
@@ -1547,6 +1674,16 @@ class Avatar {
       });
     } else {
       this._capsuleBody.disableSync = true;
+      if (!this.avatarBodyShapeFull) {
+        const { avatarPhysicsShapes } = this.coreScene;
+
+        avatarPhysicsShapes[this.gender].normal ??= CreateAvatarPhysicsShape(
+          this.scene,
+          this.gender,
+          false
+        );
+        this.avatarBodyShapeFull = avatarPhysicsShapes[this.gender].normal!;
+      }
       this._capsuleBody.shape = this.avatarBodyShapeFull;
       this.scene.onAfterPhysicsObservable.addOnce(() => {
         if (this._capsuleBody) this._capsuleBody.disableSync = false;
@@ -1584,13 +1721,15 @@ class Avatar {
     this._boneLookController.maxPitch = maxPitch;
   }
 
-  update(target: Vector3): void {
+  update(target?: Vector3): void {
     // cases to not update bone look controller
     switch (true) {
       case !this._boneLookController:
       case !this.playingAnimation:
       case !this.isGrounded:
       case this.isCrouching && this.isMoving:
+      case this.interaction?.type === "continuous":
+      case this.interaction?.type === "loop":
       case this.interaction?.type === "gethit": {
         // - no animation is playing, no need to update bone look controller
         // - head looks up too much when in the air due to animation
@@ -1601,8 +1740,16 @@ class Avatar {
       }
     }
 
-    this.currentBoneLookControllerTarget = target;
-    this._boneLookController.target = target;
+    if (target) {
+      this.currentBoneLookControllerTarget = target;
+      this._boneLookController.target = target;
+    } else if (this.currentBoneLookControllerTarget) {
+      this._boneLookController.target = Vector3.Lerp(
+        this._boneLookController.target,
+        this.currentBoneLookControllerTarget,
+        0.3
+      );
+    }
 
     // update the bone look controller
     this._boneLookController.update();
@@ -1611,13 +1758,19 @@ class Avatar {
   dispose(): void {
     this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
 
+    this._bones = undefined;
+    this._morphTargetManager = undefined;
+    this.currentAvatarId = "";
+    this.isLoadingAvatar = false;
+
     this._multiplayProfile?.dispose();
     this._profile?.dispose();
 
     this._fallSceneObserver?.remove();
     this._fallSceneObserver = undefined;
 
-    for (const animGroup of Object.values(this._animations)) animGroup.dispose();
+    for (const animGroup of Object.values(this._animations))
+      animGroup.dispose();
     this._animations = {};
 
     this._skeleton?.dispose();
@@ -1626,22 +1779,14 @@ class Avatar {
     for (const mesh of this._meshes) {
       // eslint-disable-next-line unicorn/no-null
       mesh.parent = null;
-      mesh.dispose();
     }
     this._meshes = [];
 
-    this._rootMesh?.dispose(false, true);
-    this._rootMesh = undefined;
-    this._root?.dispose(false, true);
+    this._container?.dispose();
+    this.root?.dispose(false, true);
 
-    // remove observers
-    for (const observer of this._physicsSyncingObservers) observer.remove();
-    this._capsuleCopyObserver?.remove();
-    this._capsuleCopyObserver = undefined;;
-
-    // dispose physics bodies
-    this._capsuleBody = undefined;
-    for (const body of this._physicsBodies) body.dispose();
+    // dispose physics stuff
+    this.disposePhysicsBodies();
 
     this.scene.blockfreeActiveMeshesAndRenderingGroups = false;
   }

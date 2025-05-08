@@ -1,4 +1,4 @@
-import type { AvatarInteractionType } from "@/apis/entities";
+import type { AvatarInteractionType } from "@/models/3d";
 
 export const COLOR = {
     white: "#FFFFFF",

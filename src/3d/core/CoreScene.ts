@@ -12,12 +12,12 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { Scene } from "@babylonjs/core/scene";
 
-import type { CoreEngine } from "@/3d/CoreEngine";
-import Atom from "@/3d/Multiplayer/Atom";
-import Avatar from "@/3d/Multiplayer/Avatar";
-import AvatarController from "@/3d/Multiplayer/AvatarController";
+import type { CoreEngine } from "@/3d/core/CoreEngine";
+import Atom from "@/3d/space/Atom";
 import eventBus from "@/eventBus";
+import type { AvatarPhysicsShapes } from "@/models/3d";
 import { isMobile } from "@/utils/browserUtils";
+import CreateAvatarPhysicsShape from "@/utils/CreateAvatarPhysicsShape";
 
 import {
     AVATAR_CONTROLLER_PARAMS,
@@ -33,26 +33,34 @@ import {
 import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 import type { Room } from "livekit-client";
 
-class MultiplayerScene {
+class CoreScene {
     readonly coreEngine: CoreEngine;
     readonly room: Room;
     readonly scene: Scene;
     readonly camera: ArcRotateCamera;
     readonly atom: Atom;
-    avatar?: Avatar;
-    avatarController?: AvatarController;
+    readonly avatarPhysicsShapes: AvatarPhysicsShapes;
 
     isPhysicsEnabled: boolean = false;
 
     constructor(room: Room, coreEngine: CoreEngine) {
         this.coreEngine = coreEngine;
         this.room = room;
+        this.avatarPhysicsShapes = {
+            male: {},
+            female: {},
+            other: {},
+        };
 
         this.scene = this._createBabylonScene();
         this.camera = this._createCamera(this.scene);
         this.atom = new Atom(this);
 
+        coreEngine.spaceLoadingData.space_initialized = performance.now();
+
         this.coreEngine.engine.runRenderLoop(this._renderScene.bind(this));
+
+        console.log("CoreScene created");
     }
 
     private _createBabylonScene(): Scene {
@@ -66,7 +74,7 @@ class MultiplayerScene {
         scene.autoClear = false; // Color buffer
         scene.autoClearDepthAndStencil = true; // Depth and stencil
 
-        // for avatar and gift occlusion culling
+        // disable buffer clearing for avatar and gift occlusion culling
         scene.setRenderingAutoClearDepthStencil(1, false, false, false);
         scene.setRenderingAutoClearDepthStencil(2, false, false, false);
 
@@ -82,6 +90,7 @@ class MultiplayerScene {
         scene.pointerUpPredicate = () => false;
         scene.constantlyUpdateMeshUnderPointer = false;
 
+        // disable unused features for better performance
         scene.audioEnabled = false;
         scene.collisionsEnabled = false;
         scene.fogEnabled = false;
@@ -123,6 +132,21 @@ class MultiplayerScene {
             performance.now() - this.coreEngine.spaceLoadingData.space_initialized;
 
         return scene;
+    }
+
+    private _createAvatarPhysicsShapes(): void {
+        const genders = ["male", "female", "other"] as const;
+        for (const gender of genders) {
+            const physicsShapes = this.avatarPhysicsShapes[gender];
+            if (!physicsShapes.normal) {
+                physicsShapes.normal = CreateAvatarPhysicsShape(this.scene, gender, false);
+                this.avatarPhysicsShapes[gender].normal = physicsShapes.normal;
+            }
+            if (!physicsShapes.crouch) {
+                physicsShapes.crouch = CreateAvatarPhysicsShape(this.scene, gender, true);
+                this.avatarPhysicsShapes[gender].crouch = physicsShapes.crouch;
+            }
+        }
     }
 
     private _createCamera(scene: Scene): ArcRotateCamera {
@@ -183,7 +207,23 @@ class MultiplayerScene {
 
         return camera;
     }
-    setCameraToAvatar(): void {
+
+    switchToMultiplayer(): void {
+        // always inside skybox
+        this.scene.autoClear = false;
+
+        this.setCameraToMultiplayer();
+
+        // create physics shapes for avatars in multiplayer
+        this._createAvatarPhysicsShapes();
+    }
+
+    switchToVideoChat(): void {
+        // skybox disabled
+        this.scene.autoClear = true;
+        this._setCameraToVideoChat();
+    }
+    setCameraToMultiplayer(): void {
         this.camera.maxZ = MULTIPLAYER_PARAMS.CAMERA_MAXZ;
 
         // disable panning
@@ -222,34 +262,24 @@ class MultiplayerScene {
         this.camera.lowerAlphaLimit = null;
         // eslint-disable-next-line unicorn/no-null
         this.camera.upperAlphaLimit = null;
+
+        this.camera.attachControl();
     }
 
     /**
      * set the camera's parameters to be preview-ready
      */
-    private _setCameraToPreview(): void {
-        // lower rotation sensitivity, higher value = less sensitive
-        this.camera.angularSensibilityX =
-            MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
-        this.camera.angularSensibilityY =
-            MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
+    private _setCameraToVideoChat(): void {
+        // limit zoom range
+        this.camera.lowerRadiusLimit = 0.5;
+        this.camera.upperRadiusLimit = 5;
 
-        // remove limitations
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.lowerBetaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.upperBetaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.lowerAlphaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.upperAlphaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.lowerRadiusLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        this.camera.upperRadiusLimit = null;
+        this.camera.fov = 0.7;
 
-        this.camera.setPosition(new Vector3(5, 5, 5));
-        this.camera.setTarget(new Vector3(0, 3, 0));
+        this.camera.detachControl();
+
+        this.camera.setPosition(new Vector3(0, 1.75, 0.7));
+        this.camera.setTarget(new Vector3(0, 1.7, 0));
     }
 
     private _renderScene(): void {
@@ -258,9 +288,14 @@ class MultiplayerScene {
         }
     }
 
-    dispose() {
+    stopSceneRenderLoop(): void {
         this.coreEngine.engine.stopRenderLoop(this._renderScene);
+    }
+
+    dispose() {
+        this.stopSceneRenderLoop();
+        this.scene.dispose();
     }
 }
 
-export default MultiplayerScene;
+export default CoreScene;

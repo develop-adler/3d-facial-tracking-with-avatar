@@ -13,7 +13,7 @@ import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import earcut from "earcut";
 
-import type Avatar from "@/3d/Multiplayer/Avatar";
+import type Avatar from "@/3d/avatar/Avatar";
 import { isAndroid } from "@/utils/browserUtils";
 import { generateRandomId } from "@/utils/functionUtils";
 

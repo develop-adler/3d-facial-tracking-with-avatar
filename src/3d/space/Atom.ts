@@ -9,7 +9,7 @@ import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import { PhysicsShape } from "@babylonjs/core/Physics/v2/physicsShape";
 import { Scene } from "@babylonjs/core/scene";
 
-import type MultiplayerScene from "@/3d/Multiplayer/MultiplayerScene";
+import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
 
 import { clientSettings } from "clientSettings";
@@ -20,71 +20,77 @@ import type { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEngine
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 class Atom {
-    readonly multiplayerScene: MultiplayerScene;
+    readonly coreScene: CoreScene;
     readonly scene: Scene;
     skybox?: Mesh;
 
     spaceContainer?: AssetContainer;
-    // will be set to true when physics of all objects is generated
+    isEnvMapReady: boolean = false; // set to true when env map is ready
+    // set to true when physics bodies of all objects are generated
     private _isPhysicsGenerated: boolean;
     isAllLODSLoaded: boolean;
     objectPhysicsShape: Map<string, PhysicsShape> = new Map();
+    spacePhysicsBodies: Array<PhysicsBody> = [];
 
-    constructor(multiplayerScene: MultiplayerScene) {
-        this.multiplayerScene = multiplayerScene;
-        this.scene = multiplayerScene.scene;
+    constructor(coreScene: CoreScene) {
+        this.coreScene = coreScene;
+        this.scene = coreScene.scene;
         this._isPhysicsGenerated = false;
         this.isAllLODSLoaded = false;
-
-        // need to load env map first otherwise materials will be black
-        this.loadHDRSkybox().then(async () => {
-            this.loadSpace();
-        });
     }
 
     get isPhysicsGenerated() {
         return this._isPhysicsGenerated;
     }
 
-    async loadHDRSkybox() {
-        const skybox = CreateBox("skybox", { size: 1000 }, this.scene);
-        skybox.isPickable = false;
-        skybox.infiniteDistance = true;
-        skybox.ignoreCameraMaxZ = true;
-        skybox.alwaysSelectAsActiveMesh = true;
-        skybox.doNotSyncBoundingInfo = true;
-        skybox.freezeWorldMatrix();
-        skybox.convertToUnIndexedMesh();
+    async load() {
+        // need to load env map first otherwise materials will be black
+        await this.loadHDRSkybox();
+        await this.loadSpace();
+    }
+
+    async loadHDRSkybox(intensity: number = 1, showSkybox: boolean = true) {
+        if (!this.skybox) {
+            this.skybox = CreateBox("skybox", { size: 1000 }, this.scene);
+            this.skybox.isPickable = false;
+            this.skybox.infiniteDistance = true;
+            this.skybox.ignoreCameraMaxZ = true;
+            this.skybox.alwaysSelectAsActiveMesh = true;
+            this.skybox.doNotSyncBoundingInfo = true;
+            this.skybox.freezeWorldMatrix();
+            this.skybox.convertToUnIndexedMesh();
+        }
+        this.skybox.setEnabled(showSkybox);
 
         // Skybox material
-        const hdrSkyboxMaterial = new StandardMaterial(
-            "hdrSkyBoxMaterial",
-            this.scene
-        );
-        hdrSkyboxMaterial.backFaceCulling = false;
-        // hdrSkyboxMaterial.microSurface = 1.0;
-        hdrSkyboxMaterial.disableLighting = true;
-        hdrSkyboxMaterial.twoSidedLighting = true;
-        skybox.material = hdrSkyboxMaterial;
+        let hdrSkyboxMaterial = this.skybox.material as StandardMaterial | null;
 
-        this.skybox = skybox;
-
-        const loadSkybox = (url: string) => {
-            const sceneEnvMapTexture = CubeTexture.CreateFromPrefilteredData(
-                url,
-                this.scene,
-                ".env",
-                false
+        if (!hdrSkyboxMaterial) {
+            hdrSkyboxMaterial = new StandardMaterial(
+                "hdrSkyBoxMaterial",
+                this.scene
             );
-            this.scene.environmentIntensity = 1;
-            this.scene.environmentTexture = sceneEnvMapTexture;
+            hdrSkyboxMaterial.backFaceCulling = false;
+            // hdrSkyboxMaterial.microSurface = 1.0;
+            hdrSkyboxMaterial.disableLighting = true;
+            hdrSkyboxMaterial.twoSidedLighting = true;
 
-            hdrSkyboxMaterial.reflectionTexture = sceneEnvMapTexture.clone();
-            hdrSkyboxMaterial.reflectionTexture.coordinatesMode = 5;
-            return sceneEnvMapTexture;
-        };
+            this.skybox.material = hdrSkyboxMaterial;
+        }
 
-        const sceneEnvMapTexture = loadSkybox("/static/skybox/resource_low.env");
+        this.scene.environmentTexture?.dispose();
+        const sceneEnvMapTexture = CubeTexture.CreateFromPrefilteredData(
+            "/static/skybox/resource_low.env",
+            this.scene,
+            ".env",
+            false
+        );
+        this.scene.environmentIntensity = intensity;
+        this.scene.environmentTexture = sceneEnvMapTexture;
+
+        hdrSkyboxMaterial.reflectionTexture?.dispose();
+        hdrSkyboxMaterial.reflectionTexture = sceneEnvMapTexture.clone();
+        hdrSkyboxMaterial.reflectionTexture.coordinatesMode = 5;
 
         const loadHighLODSkybox = async () => {
             const cubeTexture = CubeTexture.CreateFromPrefilteredData(
@@ -111,15 +117,17 @@ class Atom {
 
         return new Promise<void>((resolve) => {
             if (sceneEnvMapTexture.isReady()) {
+                this.isEnvMapReady = true;
                 eventBus.emit(
-                    `space:envMapReady:${this.multiplayerScene.room.name}`,
+                    `space:envMapReady:${this.coreScene.room.name}`,
                     this
                 );
                 resolve();
             } else {
                 sceneEnvMapTexture.onLoadObservable.addOnce(() => {
+                    this.isEnvMapReady = true;
                     eventBus.emit(
-                        `space:envMapReady:${this.multiplayerScene.room.name}`,
+                        `space:envMapReady:${this.coreScene.room.name}`,
                         this
                     );
                     resolve();
@@ -162,12 +170,12 @@ class Atom {
         this.scene.onAfterPhysicsObservable.addOnce(() => {
             this._isPhysicsGenerated = true;
             eventBus.emit(
-                `space:physicsReady:${this.multiplayerScene.room.name}`,
+                `space:physicsReady:${this.coreScene.room.name}`,
                 this
             );
-            this.multiplayerScene.coreEngine.spaceLoadingData.space_physics_ready =
+            this.coreScene.coreEngine.spaceLoadingData.space_physics_ready =
                 performance.now() -
-                this.multiplayerScene.coreEngine.spaceLoadingData.space_initialized;
+                this.coreScene.coreEngine.spaceLoadingData.space_initialized;
 
             if (clientSettings.DEBUG) {
                 console.log(
@@ -243,11 +251,24 @@ class Atom {
         body.setMassProperties({ mass: 0 });
         body.shape = shape;
 
+        this.spacePhysicsBodies.push(body);
+
         // for debugging
         // this.physicsViewer.showBody(body);
     }
 
-    dispose() {
+    dispose(disposeSkybox: boolean = true) {
+        if (disposeSkybox) this.skybox?.dispose(false, true);
+        for (const shape of this.objectPhysicsShape.values()) {
+            shape.dispose();
+        }
+        for (const body of this.spacePhysicsBodies) {
+            body.dispose();
+        }
+        this.objectPhysicsShape.clear();
+        this._isPhysicsGenerated = false;
+        this.isAllLODSLoaded = false;
+        this.isEnvMapReady = false;
         this.spaceContainer?.dispose();
     }
 }

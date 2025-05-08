@@ -1,7 +1,7 @@
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 
-import type Avatar from '@/3d/Multiplayer/Avatar';
-import type { AvatarInteractionType } from '@/apis/entities';
+import type Avatar from '@/3d/avatar/Avatar';
+import type { AvatarInteractionType } from '@/models/3d';
 // import { useGlobalModalStoreImmediate } from '@/stores/useGlobalModalStore';
 
 import { clientSettings } from 'clientSettings';

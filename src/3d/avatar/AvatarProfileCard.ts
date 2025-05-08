@@ -2,7 +2,7 @@ import { HtmlMesh } from "@babylonjs/addons/htmlMesh";
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Participant } from 'livekit-client';
 
-import type Avatar from '@/3d/Multiplayer/Avatar';
+import type Avatar from '@/3d/avatar/Avatar';
 import eventBus from '@/eventBus';
 import { isMobile } from '@/utils/browserUtils';
 

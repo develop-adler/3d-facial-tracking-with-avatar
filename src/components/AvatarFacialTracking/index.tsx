@@ -1,24 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, type FC } from "react";
+import { useCallback, useEffect, useRef, useState, type FC } from "react";
 
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
+import type Avatar from "@/3d/avatar/Avatar";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { drawConnectors, drawLandmarks } from "@/utils/draw_hands";
 import { FaceDetector } from "@/utils/FaceDetector";
 import { HandDetector } from "@/utils/HandDetector";
 import {
   clamp,
   hasGetUserMedia,
-  lerp,
+  // lerp,
   normalize,
   normalizeToRange,
 } from "@/utils/utilities";
 
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import type { Avatar } from "@/3d/VideoChat/Avatar";
-import { useAvatarStore } from "@/stores/useAvatarStore";
-import { drawConnectors, drawLandmarks } from "@/utils/draw_hands";
 import type { Category, NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 const getLeftRightHandIndices = (handedness: Category[][]) => {
@@ -60,35 +60,78 @@ const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
   if (!avatar.morphTargetManager) return;
 
   for (const blendShape of blendShapes) {
-    const value = blendShape.score;
     const target = avatar.morphTargetManager.getTargetByName(
       blendShape.categoryName
     );
     if (!target) continue;
 
+    const value = blendShape.score;
     let val = value;
 
     // Enhance blink sensitivity
     if (target.name.includes("eyeBlink")) {
-      val = clamp(normalize(value, 0, 0.75), 0, 1);
+      val = clamp(normalize(value, 0, 0.6), 0, 1);
     }
 
-    // lerp for to make facial features not twitchy
-    const current = target.influence ?? 0;
-    const smoothed = lerp(current, val > 0.1 ? val : 0, 0.3);
-    target.influence = smoothed;
+    target.influence = val;
+
+    // // lerp for to make facial features not twitchy
+    // target.influence = lerp(
+    //   target.influence ?? 0,
+    //   val > 0.1 ? val : 0,
+    //   0.3
+    // );
   }
 };
 
 const syncHeadRotation = (
   avatar: Avatar,
-  faceRotation: Quaternion,
-  mirrored: boolean = false
+  faceMatrix: Matrix,
+  isMultiplayer: boolean = false,
+  mirrored: boolean = false,
 ) => {
   const headBoneNode = avatar.bones
     ?.find((bone) => bone.name === "Head")
     ?.getTransformNode();
-  if (!headBoneNode) return;
+
+  if (!headBoneNode) {
+    console.warn("Head bone not found in avatar bones.");
+    return;
+  }
+
+  // TODO: match head rotation with user's face rotation in multiplayer (unstable right now)
+  // if (isMultiplayer) {
+  //   const userFacePosition = faceMatrix.getTranslation();
+  //   const userFaceForward = Vector3.TransformCoordinates(
+  //     Vector3.Forward(),
+  //     faceMatrix
+  //   );
+
+  //   const targetPositionOffset = userFaceForward.subtract(userFacePosition).scale(10);
+  //   const targetPosition = headBoneNode.absolutePosition
+  //   .add(avatar.root.forward.scale(0.5))
+  //   .add(targetPositionOffset);
+
+  //   // check if camera is behind avatar's back or in front of
+  //   // avatar's face to invert the target position
+  //   const cameraPosition = avatar.coreScene.camera.globalPosition;
+  //   const avatarForward = avatar.root.forward.normalize();
+  //   const toTarget = cameraPosition
+  //     .subtract(avatar.root.absolutePosition)
+  //     .normalize();
+  //   const dot = Vector3.Dot(avatarForward, toTarget);
+
+  //   // is behind avatar's back, invert target horizontal position
+  //   if (dot <= -0.1) {
+  //     targetPosition.x *= -1;
+  //   }
+
+  //   avatar.currentBoneLookControllerTarget = targetPosition;
+
+  //   return;
+  // }
+
+  const faceRotation = Quaternion.FromRotationMatrix(faceMatrix);
 
   const rotation = new Quaternion(
     mirrored ? -faceRotation.x : faceRotation.x,
@@ -148,64 +191,84 @@ const syncHeadPosition = (avatar: Avatar, faceMatrix: Matrix) => {
   }
 };
 
-export const VideoChat: FC = () => {
+type Props = {
+  isMultiplayer?: boolean;
+};
+
+export const AvatarFacialTracking: FC<Props> = ({ isMultiplayer = false }) => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement>();
   const [isStreamReady, setIsStreamReady] = useState<boolean>(false);
+
+  const avatar = useAvatarStore((state) => state.avatar);
 
   const faceDetectorRef = useRef<FaceDetector>(null);
   const handDetectorRef = useRef<HandDetector>(null);
   const detectFaceInterval = useRef<ReturnType<typeof setInterval>>(undefined);
   const detectHandInterval = useRef<ReturnType<typeof setInterval>>(undefined);
-  const headMatrix = useRef<Matrix>(Matrix.Identity());
+  // const isHeadReset = useRef<boolean>(false);
+  const isPositionReset = useRef<boolean>(false);
 
-  const avatar = useAvatarStore((state) => state.avatar);
-
-  const runFaceDetection = async () => {
-    if (!videoElement?.srcObject) return;
-
+  const runFaceDetection = () => {
     if (detectFaceInterval.current) {
       clearInterval(detectFaceInterval.current);
       detectFaceInterval.current = undefined;
     }
 
-    detectFaceInterval.current = setInterval(async () => {
+    detectFaceInterval.current = setInterval(() => {
       detectFace();
     }, 1000 / 60);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const runHandDetection = async () => {
-    if (!videoElement?.srcObject) return;
-
+  const runHandDetection = () => {
     if (detectHandInterval.current) {
       clearInterval(detectHandInterval.current);
       detectHandInterval.current = undefined;
     }
-    detectHandInterval.current = setInterval(async () => {
+    detectHandInterval.current = setInterval(() => {
       detectHand();
     }, 1000 / 60);
   };
 
   const detectFace = async () => {
+    if (!avatar) return;
+
     const result = await faceDetectorRef.current?.detect();
 
     if (!result || result.faceBlendshapes.length === 0) return;
 
-    if (avatar) {
-      // sync with avatar morph targets
-      const blendShapes = result.faceBlendshapes[0].categories;
-      syncMorphTargets(avatar, blendShapes);
+    const blendShapes = result.faceBlendshapes[0].categories;
+    syncMorphTargets(avatar, blendShapes);
 
-      // sync with RPM avatar
-      const matrixData = result.facialTransformationMatrixes[0].data;
-      const faceMatrix = Matrix.FromArray(matrixData);
-      headMatrix.current = faceMatrix;
-      syncHeadRotation(avatar, Quaternion.FromRotationMatrix(faceMatrix));
-      syncHeadPosition(avatar, faceMatrix);
+    const matrixData = result.facialTransformationMatrixes[0].data;
+    const faceMatrix = Matrix.FromArray(matrixData);
+    syncHeadRotation(avatar, faceMatrix, isMultiplayer);
+
+    // reset head rotation and avatar position for multiplayer
+    if (isMultiplayer) {
+      // if (!isHeadReset.current) {
+      //   const headBoneNode = avatar.bones
+      //     ?.find((bone) => bone.name === "Head")
+      //     ?.getTransformNode();
+
+      //   if (headBoneNode) {
+      //     headBoneNode.rotationQuaternion = Quaternion.Identity();
+      //     isHeadReset.current = true;
+      //   }
+      // }
+      if (!isPositionReset.current && avatar.container) {
+        avatar.container.meshes[0].position = Vector3.Zero();
+        isPositionReset.current = true;
+      }
+      return;
     }
+
+    syncHeadPosition(avatar, faceMatrix);
   };
 
   const detectHand = async () => {
+    if (!avatar) return;
+
     const result = await handDetectorRef.current?.detect();
     if (!result || result.handedness.length === 0) {
       const canvas = document.querySelector(
@@ -241,8 +304,6 @@ export const VideoChat: FC = () => {
         // drawHandSilhouette(cxt, landmarks, canvas.width, canvas.height);
       }
     }
-
-    if (!avatar) return;
 
     const [leftIdx, rightIdx] = getLeftRightHandIndices(result.handedness);
 
@@ -285,7 +346,7 @@ export const VideoChat: FC = () => {
     avatar.boneIKControllers.right?.update();
   };
 
-  const getUserVideoStream = async (video: HTMLVideoElement) => {
+  const getUserVideoStream = useCallback(async (video: HTMLVideoElement) => {
     if (!hasGetUserMedia()) throw new Error("No webcam access!");
 
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -299,38 +360,41 @@ export const VideoChat: FC = () => {
     setIsStreamReady(true);
 
     return stream;
-  };
+  }, []);
 
   useEffect(() => {
+    if (!videoElement?.srcObject) return;
+
     runFaceDetection();
     // runHandDetection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreamReady, avatar]);
+  }, [isMultiplayer, isStreamReady, avatar]);
 
   useEffect(() => {
-    const video = document.createElement("video");
+    const cameraVideoElem = document.createElement("video");
 
     // for testing only
-    // video.id = "webcam";
-    // video.style.position = "absolute";
-    // video.style.top = "1rem";
-    // video.style.right = "0";
-    // video.style.width = "auto";
-    // video.style.height = "25%";
-    // video.style.zIndex = "1000";
-    // video.style.transform = "scaleX(-1)"; // flip video for mirror effect
-    // video.style.pointerEvents = "none"; // disable pointer events
-    // document.body.appendChild(video);
+    // cameraVideoElem.id = "webcam";
+    // cameraVideoElem.style.position = "absolute";
+    // cameraVideoElem.style.top = "1rem";
+    // cameraVideoElem.style.right = "0";
+    // cameraVideoElem.style.width = "auto";
+    // cameraVideoElem.style.height = "25%";
+    // cameraVideoElem.style.zIndex = "1000";
+    // cameraVideoElem.style.transform = "scaleX(-1)"; // flip video for mirror effect
+    // cameraVideoElem.style.pointerEvents = "none"; // disable pointer events
+    // document.body.appendChild(cameraVideoElem);
 
-    setVideoElement(video);
-    getUserVideoStream(video);
+    setVideoElement(cameraVideoElem);
+    getUserVideoStream(cameraVideoElem);
 
-    faceDetectorRef.current ??= new FaceDetector(video);
+    faceDetectorRef.current ??= new FaceDetector(cameraVideoElem);
     faceDetectorRef.current.init();
-    handDetectorRef.current ??= new HandDetector(video);
+    handDetectorRef.current ??= new HandDetector(cameraVideoElem);
     handDetectorRef.current.init();
 
     return () => {
+      cameraVideoElem.remove();
       faceDetectorRef.current?.dispose();
       handDetectorRef.current?.dispose();
     };

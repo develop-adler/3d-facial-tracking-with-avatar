@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
-import { Scene3D } from '@/3d/VideoChat/Scene3D';
+import type CoreScene from '@/3d/core/CoreScene';
 
 type SceneStore = {
-    coreScene?: Scene3D;
-    setScene: (coreScene?: Scene3D) => void;
+    coreScene?: CoreScene;
+    setScene: (coreScene?: CoreScene) => void;
 };
 
 export const useSceneStore = create<SceneStore>((set) => ({

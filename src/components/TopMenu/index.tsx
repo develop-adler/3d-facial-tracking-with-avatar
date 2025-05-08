@@ -16,6 +16,7 @@ import {
 } from "./styles";
 
 import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 const TopMenu: FC = () => {
@@ -26,6 +27,7 @@ const TopMenu: FC = () => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement>();
 
     const avatar = useAvatarStore((state) => state.avatar);
+    const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
     const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
 
@@ -38,7 +40,7 @@ const TopMenu: FC = () => {
     };
 
     const switchAvatar = (avatarId: string) => {
-        avatar?.loadAvatar(avatarId);
+        avatar?.loadAvatar(avatarId, undefined, !isMultiplayer);
     };
 
     const pushRoute = (route: string) => {

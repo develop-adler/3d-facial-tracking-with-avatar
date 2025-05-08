@@ -1,11 +1,14 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { RoomEvent, type Participant, type Room } from "livekit-client";
 
-import Avatar from "@/3d/Multiplayer/Avatar";
-import type { SyncState } from "@/3d/Multiplayer/MultiplayerEvents";
-import AvatarController from "@/3d/Multiplayer/AvatarController";
-import type MultiplayerScene from "@/3d/Multiplayer/MultiplayerScene";
+import Avatar from "@/3d/avatar/Avatar";
+import type { SyncState } from "@/models/multiplayer";
+import AvatarController from "@/3d/avatar/AvatarController";
+import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+
+import { clientSettings } from "clientSettings";
 
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
@@ -29,96 +32,50 @@ const extractMorphTargetInfluences = (
 };
 
 class RoomManager {
-    readonly multiplayerScene: MultiplayerScene;
+    readonly coreScene: CoreScene;
     readonly room: Room;
     readonly localAvatar: Avatar;
+    readonly remoteAvatars: Map<Participant, Avatar>;
     readonly avatarController: AvatarController;
     syncAvatarObserver?: Observer<Scene>;
 
-    /** This map holds participant as key and avatar as value */
-    readonly remoteAvatars: Map<Participant, Avatar>;
-
-    constructor(room: Room, multiplayerScene: MultiplayerScene) {
+    constructor(room: Room, coreScene: CoreScene) {
         this.room = room;
-        this.multiplayerScene = multiplayerScene;
-        this.localAvatar = new Avatar(
-            multiplayerScene.scene,
+        this.coreScene = coreScene;
+
+        this.localAvatar = useAvatarStore.getState().avatar ?? new Avatar(
+            coreScene,
             this.room.localParticipant,
-            `https://models.readyplayer.me/67fe6f7713b3fb7e8aa0328c.glb?
-                useDracoMeshCompression=true
-                &useQuantizeMeshOptCompression=true
-                &meshLod=1
-                &textureSizeLimit=1024
-                &textureAtlas=1024
-                &textureFormat=webp
-            `.replaceAll(/\s+/g, ""),
             "male",
             true
         );
+        if (!useAvatarStore.getState().avatar) {
+            useAvatarStore.getState().setAvatar(this.localAvatar);
+        }
+
         this.avatarController = new AvatarController(
             this.localAvatar,
-            this.multiplayerScene.camera,
-            multiplayerScene.scene
+            this.coreScene.camera,
+            coreScene.scene
         );
         this.remoteAvatars = new Map<Participant, Avatar>();
 
         this._setupRoomEvents();
         this._loadRoomUsers();
-    }
 
-    private _loadRoomUsers() {
-        // load all other users in the room
-        for (const participant of this.room.remoteParticipants.values()) {
-            this._loadRemoteParticipantAvatar(participant);
-        }
-
-        if (this.multiplayerScene.isPhysicsEnabled) {
-            this.initAvatar();
-        } else {
-            eventBus.once(`space:scenePhysicsEnabled:${this.room.name}`, () =>
-                this.initAvatar()
-            );
-        }
-    }
-
-    private initAvatar() {
-        this.localAvatar.loadAvatar();
-
-        if (this.multiplayerScene.atom.isPhysicsGenerated) {
-            this.localAvatar.loadPhysicsBodies();
-            this.multiplayerScene.setCameraToAvatar();
-            this.avatarController?.start();
-        } else {
-            eventBus.once(`space:physicsReady:${this.room.name}`, () => {
-                this.localAvatar.loadPhysicsBodies();
-                this.multiplayerScene.setCameraToAvatar();
-                this.avatarController?.start();
-            });
-        }
+        if (clientSettings.DEBUG) console.log("RoomManager initialized", this.room.name);
     }
 
     private _setupRoomEvents() {
-        this.room.on("participantConnected", (participant) => {
-            if (participant.sid === this.room.localParticipant.sid) {
-                return;
-            }
-            this._loadRemoteParticipantAvatar(participant);
-        });
-        this.room.on("participantDisconnected", (participant) => {
-            if (participant.sid === this.room.localParticipant.sid) {
-                return;
-            }
-            this._removeRemoteParticipantAvatar(participant);
-        });
-        this.room.on("participantNameChanged", (name, participant) => {
-            this.remoteAvatars.get(participant)?.updateName(name);
-        });
+        this.room.on("participantConnected", this._loadRemoteParticipantAvatar.bind(this));
+        this.room.on("participantDisconnected", this._removeRemoteParticipantAvatar.bind(this));
+        this.room.on("participantNameChanged", this._updateRemoteParticipantName.bind(this));
 
         const encoder = new TextEncoder();
 
         // send our avatar state to all participants in the room
         this.syncAvatarObserver =
-            this.multiplayerScene.scene.onBeforeRenderObservable.add(async () => {
+            this.coreScene.scene.onBeforeRenderObservable.add(async () => {
                 // publish data takes in a Uint8Array, so we need to convert it
                 const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
                 try {
@@ -135,24 +92,75 @@ class RoomManager {
         this.room.on(RoomEvent.DataReceived, this._syncRemoteAvatars.bind(this));
     }
 
+    private _loadRoomUsers() {
+        if (this.coreScene.isPhysicsEnabled) {
+            this.initSelfAvatar();
+        } else {
+            eventBus.once(`space:scenePhysicsEnabled:${this.room.name}`, () =>
+                this.initSelfAvatar()
+            );
+        }
+
+        // load all other users in the room
+        for (const participant of this.room.remoteParticipants.values()) {
+            this._loadRemoteParticipantAvatar(participant);
+        }
+    }
+
+    private initSelfAvatar() {
+        // if not already loaded, load the avatar
+        if (!this.localAvatar.container) this.localAvatar.loadAvatar();
+        this.localAvatar.showAvatarInfo();
+
+        // eslint-disable-next-line unicorn/consistent-function-scoping
+        const setup = () => {
+            this.localAvatar.loadPhysicsBodies();
+            if (this.localAvatar.container) {
+                this.avatarController.start();
+            } else {
+                eventBus.once(`avatar:modelLoaded:${this.localAvatar.participant.sid}`, () => {
+                    this.avatarController.start();
+                })
+            }
+        };
+
+        if (this.coreScene.atom.isPhysicsGenerated) {
+            setup();
+        } else {
+            eventBus.once(`space:physicsReady:${this.room.name}`, () => {
+                setup();
+            });
+        }
+    }
+
     private _loadRemoteParticipantAvatar(participant: Participant) {
+        if (participant.sid === this.room.localParticipant.sid) {
+            return;
+        }
         const avatar = new Avatar(
-            this.multiplayerScene.scene,
+            this.coreScene,
             participant,
-            "https://models.readyplayer.me/67fe6f7713b3fb7e8aa0328c.glb?morphTargets=browDownLeft,browDownRight,browInnerUp,browOuterUpLeft,browOuterUpRight,cheekPuff,cheekSquintLeft,cheekSquintRight,eyeBlinkLeft,eyeBlinkRight,eyeLookDownLeft,eyeLookDownRight,eyeLookInLeft,eyeLookInRight,eyeLookOutLeft,eyeLookOutRight,eyeLookUpLeft,eyeLookUpRight,eyeSquintLeft,eyeSquintRight,eyeWideLeft,eyeWideRight,jawForward,jawLeft,jawOpen,jawRight,mouthClose,mouthDimpleLeft,mouthDimpleRight,mouthFrownLeft,mouthFrownRight,mouthFunnel,mouthLeft,mouthRight,mouthLowerDownLeft,mouthLowerDownRight,mouthPressLeft,mouthPressRight,mouthPucker,mouthRollLower,mouthRollUpper,mouthShrugLower,mouthShrugUpper,mouthSmileLeft,mouthSmileRight,mouthStretchLeft,mouthStretchRight,mouthUpperUpLeft,mouthUpperUpRight,noseSneerLeft,noseSneerRight&useDracoMeshCompression=true&useQuantizeMeshOptCompression=true&textureAtlas=1024&textureFormat=webp",
             "male",
             false
         );
         avatar.loadAvatar();
+        avatar.showAvatarInfo();
         this.remoteAvatars.set(participant, avatar);
     }
 
     private _removeRemoteParticipantAvatar(participant: Participant) {
+        if (participant.sid === this.room.localParticipant.sid) {
+            return;
+        }
         const avatar = this.remoteAvatars.get(participant);
         if (avatar) {
             avatar.dispose();
             this.remoteAvatars.delete(participant);
         }
+    }
+
+    private _updateRemoteParticipantName(name: string, participant: Participant) {
+        this.remoteAvatars.get(participant)?.updateName(name);
     }
 
     private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
@@ -217,9 +225,27 @@ class RoomManager {
     }
 
     dispose() {
-        this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
         this.syncAvatarObserver?.remove();
         this.syncAvatarObserver = undefined;
+
+        this.localAvatar.disposeAvatarInfo();
+        this.localAvatar.stopAllAnimations();
+        this.localAvatar.disposePhysicsBodies();
+        this.avatarController.dispose();
+
+        // reset local avatar position and rotation
+        this.localAvatar.setPosition(Vector3.Zero());
+        this.localAvatar.setRotationQuaternion(Quaternion.Identity());
+
+        for (const avatar of this.remoteAvatars.values()) avatar.dispose();
+        this.remoteAvatars.clear();
+
+        this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
+        this.room.off("participantConnected", this._loadRemoteParticipantAvatar);
+        this.room.off("participantDisconnected", this._removeRemoteParticipantAvatar);
+        this.room.off("participantNameChanged", this._updateRemoteParticipantName);
+
+        if (clientSettings.DEBUG) console.log("RoomManager disposed", this.room.name);
     }
 }
 

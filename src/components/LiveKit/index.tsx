@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { type FC } from "react";
 
-import type { RoomAndName } from "@/apis/entities";
+import type { RoomAndName } from "@/models/multiplayer";
 import { JoinRoomModal } from "@/components/LiveKit/JoinRoomModal";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supportsScreenSharing } from "@livekit/components-core";
 import {
@@ -12,12 +12,14 @@ import {
     TrackToggle,
     useLocalParticipant,
     usePersistentUserChoices,
+    useTrackToggle,
     // useTrackByName,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
 import { KrispNoiseFilterInputBox } from "@/components/LiveKit/RoomPage/components/KrispNoiseFilterInputBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector
@@ -28,22 +30,29 @@ export const CustomControlBar = () => {
     const { cameraTrack } = useLocalParticipant();
     const hasAvatarTrack = cameraTrack?.trackName === "avatar_video";
 
+    const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
+    const { toggle: toggleCamera, enabled } = useTrackToggle({
+        source: Track.Source.Camera,
+    });
+    const currentCameraEnabledState = useRef<boolean>(enabled);
+    const toggleChat = useChatToggleStore((state) => state.toggleChat);
+
     const {
         saveAudioInputEnabled,
         saveVideoInputEnabled,
         saveAudioInputDeviceId,
     } = usePersistentUserChoices({ preventSave: false });
 
-    const toggleChat = useChatToggleStore((state) => state.toggleChat);
-
     const microphoneOnChange = useCallback(
         (enabled: boolean, isUserInitiated: boolean) =>
+            // eslint-disable-next-line unicorn/no-null
             isUserInitiated ? saveAudioInputEnabled(enabled) : null,
         [saveAudioInputEnabled]
     );
 
     const cameraOnChange = useCallback(
         (enabled: boolean, isUserInitiated: boolean) =>
+            // eslint-disable-next-line unicorn/no-null
             isUserInitiated && hasAvatarTrack ? saveVideoInputEnabled(enabled) : null,
         [hasAvatarTrack, saveVideoInputEnabled]
     );
@@ -57,6 +66,17 @@ export const CustomControlBar = () => {
         },
         [setIsScreenShareEnabled]
     );
+
+    useEffect(() => {
+        if (isMultiplayer) toggleCamera(false);
+        else toggleCamera(currentCameraEnabledState.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isMultiplayer]);
+
+    useEffect(() => {
+        if (isMultiplayer) return;
+        currentCameraEnabledState.current = enabled;
+    }, [isMultiplayer, enabled]);
 
     return (
         <LayoutContextProvider>
@@ -89,8 +109,8 @@ export const CustomControlBar = () => {
                             onChange={cameraOnChange}
                             style={{
                                 // fix right side borders being right angled
-                                borderTopRightRadius: 'var(--lk-border-radius)',
-                                borderBottomRightRadius: 'var(--lk-border-radius)',
+                                borderTopRightRadius: "var(--lk-border-radius)",
+                                borderBottomRightRadius: "var(--lk-border-radius)",
                             }}
                         >
                             Camera

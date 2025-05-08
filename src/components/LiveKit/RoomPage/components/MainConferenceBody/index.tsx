@@ -4,7 +4,7 @@ import { ChatContainer } from "@/components/LiveKit/RoomPage/components/ChatCont
 import { VideoConferenceLayout } from "@/components/LiveKit/RoomPage/components/VideoConferenceLayout";
 
 import { FlexBox } from "./styles";
-import LoadingBar from "@/components/VirtualAvatarVideo/components/AvatarScene/components/LoadingBar";
+import LoadingBar from "@/components/AvatarScene/components/LoadingBar";
 
 export const MainConferenceBody = () => {
     return (

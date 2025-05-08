@@ -1,6 +1,10 @@
 export const hasGetUserMedia = (): boolean => {
   // Check if the browser has device access
-  return !!navigator.mediaDevices?.getUserMedia;
+  return (
+    navigator.mediaDevices &&
+    // check if has getUserMedia function
+    typeof navigator.mediaDevices.getUserMedia === "function"
+  );
 };
 
 /**

@@ -12,7 +12,7 @@ import {
     SubmitButton,
 } from "./styles";
 
-import type { RoomAndName } from "@/apis/entities";
+import type { RoomAndName } from "@/models/multiplayer";
 
 import { COLOR } from "constant";
 

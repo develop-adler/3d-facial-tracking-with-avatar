@@ -14,8 +14,8 @@ import { ShapeCastResult } from "@babylonjs/core/Physics/shapeCastResult";
 import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import { PhysicsShapeCylinder } from "@babylonjs/core/Physics/v2/physicsShape";
 
-import type Avatar from "@/3d/Multiplayer/Avatar";
-import { Vector2 } from "@/apis/entities";
+import type Avatar from "@/3d/avatar/Avatar";
+import { Vector2 } from "@/models/3d";
 import eventBus from "@/eventBus";
 // import { useGlobalModalStoreImmediate } from '@/stores/useGlobalModalStore';
 import { isMobile } from "@/utils/browserUtils";
@@ -171,8 +171,6 @@ class AvatarController {
         this.scene = scene;
         this._joystickAxes = joystickAxes ?? { x: 0, y: 0 };
         this.customHeadNode = new TransformNode("customHeadNode", scene, true);
-        this.customHeadNode.parent = this.avatar.root;
-        this.customHeadNode.position.y += this.avatar.headHeight;
 
         this._stairHeightCheckPhysicsShape = new PhysicsShapeCylinder(
             new Vector3(0, 0.125, 0),
@@ -280,6 +278,15 @@ class AvatarController {
         }
 
         // make camera follow avatar and target head
+        this.customHeadNode.setAbsolutePosition(
+            new Vector3(
+                this.avatar.root.absolutePosition.x,
+                this.avatar.root.absolutePosition.y + this.avatar.headHeight,
+                this.avatar.root.absolutePosition.z
+            )
+        );
+        this.customHeadNode.parent = this.avatar.root;
+
         this.camera.targetHost = this.customHeadNode;
 
         // update bounding info before every render but with reduced frequency
@@ -1054,6 +1061,9 @@ class AvatarController {
             return;
         }
 
+        // match head rotation with user's face rotation
+        // this.avatar.update();
+
         const cameraToUse = this._xrCamera ?? this.camera;
         // target is the point on the other side of the camera compare to the camera target
         const target = cameraToUse.globalPosition.add(
@@ -1064,7 +1074,7 @@ class AvatarController {
         );
 
         // this is here instead of within update() function because
-        // other avatars don't need to have this updated every frame
+        // remote avatars don't need to have this updated every frame
         this.avatar.handleHeadRotationForAnimations();
 
         // if target is behind avatar's back, don't update head rotation
