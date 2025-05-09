@@ -14,9 +14,11 @@ import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useSceneStore } from "@/stores/useSceneStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
+import { clientSettings } from "clientSettings";
 
 export const AvatarScene: FC = () => {
     const pathName = usePathname();
@@ -32,9 +34,11 @@ export const AvatarScene: FC = () => {
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
 
     useEffect(() => {
-        const canvasContainer = bjsCanvasContainer.current;
+        // to initialize the face tracker
+        const _faceTracker = useTrackingStore.getState().faceTracker;
         return () => {
-            coreEngine.removeCanvasFromDOM(canvasContainer);
+            coreEngine.removeCanvasFromDOM();
+            // faceTracker.dispose();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -67,18 +71,21 @@ export const AvatarScene: FC = () => {
             setAvatar(existingAvatar);
 
             currentCoreScene.atom.loadHDRSkybox(0.8, false).then(() => {
-                existingAvatar!.loadAvatar(undefined, undefined, true);
+                if (!existingAvatar!.container) {
+                    existingAvatar!.loadAvatar(undefined, undefined, true);
+                }
             });
         }
 
         // Create MediaStream to pass to LiveKit
         if (pathName === "/room") {
             updateMediaStream(coreEngine.canvas.captureStream(60));
+            if (clientSettings.DEBUG) console.log("Publishing 3D canvas as camera stream");
         }
 
         return () => {
             mediaStreamFrom3DCanvas
-                ?.getVideoTracks()
+                ?.getTracks()
                 .forEach((track) => track.stop());
             updateMediaStream();
         };

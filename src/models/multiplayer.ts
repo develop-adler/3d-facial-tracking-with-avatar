@@ -1,4 +1,4 @@
-import type { ObjectQuaternion, ObjectTransform } from "./3d";
+import type { AvatarGender, ObjectQuaternion, ObjectTransform } from "./3d";
 
 export type RoomAndName = {
     room: string;
@@ -16,4 +16,23 @@ export type SyncState = {
     isGrounded: boolean;
     morphTargets: Record<string, number>;
     lookTarget?: ObjectTransform;
+};
+
+export type AvatarChange = {
+    sid: string;
+    avatarId: string;
+    gender: AvatarGender;
+};
+
+export type AvatarAudioData = {
+    position: ObjectTransform;
+    // rotation: ObjectQuaternion;
+    // forward: ObjectTransform;
+    cameraPosition: ObjectTransform;
+    cameraRotation: ObjectTransform;
+    // cameraRotation: ObjectQuaternion;
+};
+
+export type RemoteAvatarAudioData = AvatarAudioData & {
+    sid: string;
 };

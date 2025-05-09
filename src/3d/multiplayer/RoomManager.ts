@@ -1,8 +1,13 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { RoomEvent, type Participant, type Room } from "livekit-client";
+import {
+    RoomEvent,
+    type Participant,
+    type Room,
+    type RpcInvocationData,
+} from "livekit-client";
 
 import Avatar from "@/3d/avatar/Avatar";
-import type { SyncState } from "@/models/multiplayer";
+import { AvatarChange, type SyncState } from "@/models/multiplayer";
 import AvatarController from "@/3d/avatar/AvatarController";
 import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
@@ -43,12 +48,9 @@ class RoomManager {
         this.room = room;
         this.coreScene = coreScene;
 
-        this.localAvatar = useAvatarStore.getState().avatar ?? new Avatar(
-            coreScene,
-            this.room.localParticipant,
-            "male",
-            true
-        );
+        this.localAvatar =
+            useAvatarStore.getState().avatar ??
+            new Avatar(coreScene, this.room.localParticipant, "male", true);
         if (!useAvatarStore.getState().avatar) {
             useAvatarStore.getState().setAvatar(this.localAvatar);
         }
@@ -63,19 +65,62 @@ class RoomManager {
         this._setupRoomEvents();
         this._loadRoomUsers();
 
-        if (clientSettings.DEBUG) console.log("RoomManager initialized", this.room.name);
+        if (clientSettings.DEBUG)
+            console.log("RoomManager initialized", this.room.name);
     }
 
     private _setupRoomEvents() {
-        this.room.on("participantConnected", this._loadRemoteParticipantAvatar.bind(this));
-        this.room.on("participantDisconnected", this._removeRemoteParticipantAvatar.bind(this));
-        this.room.on("participantNameChanged", this._updateRemoteParticipantName.bind(this));
+        this.room.on(
+            "participantConnected",
+            this._loadRemoteParticipantAvatar.bind(this)
+        );
+        this.room.on(
+            "participantDisconnected",
+            this._removeRemoteParticipantAvatar.bind(this)
+        );
+        this.room.on(
+            "participantNameChanged",
+            this._updateRemoteParticipantName.bind(this)
+        );
+
+        // register RPC method to sync when user changes avatar
+        try {
+            // unregister the method if it already exists to prevent error
+            this.room.unregisterRpcMethod("participantChangeAvatar");
+            this.room.registerRpcMethod(
+                "participantChangeAvatar",
+                this._changeRemoteParticipantAvatar.bind(this)
+            );
+        } catch {
+            // empty
+        }
+
+        eventBus.on(
+            "avatar:changeAvatar",
+            ({ sid, avatarId, gender }: AvatarChange) => {
+                console.log("change avatar");
+
+                if (sid !== this.room.localParticipant.sid) {
+                    return;
+                }
+                for (const participant of this.remoteAvatars.keys()) {
+                    this.room.localParticipant.performRpc({
+                        destinationIdentity: participant.identity,
+                        method: "participantChangeAvatar",
+                        payload: JSON.stringify({
+                            avatarId,
+                            gender,
+                        }),
+                    });
+                }
+            }
+        );
 
         const encoder = new TextEncoder();
 
         // send our avatar state to all participants in the room
-        this.syncAvatarObserver =
-            this.coreScene.scene.onBeforeRenderObservable.add(async () => {
+        this.syncAvatarObserver = this.coreScene.scene.onBeforeRenderObservable.add(
+            async () => {
                 // publish data takes in a Uint8Array, so we need to convert it
                 const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
                 try {
@@ -86,7 +131,8 @@ class RoomManager {
                 } catch {
                     // empty
                 }
-            });
+            }
+        );
 
         // Receive sync state data from other participants
         this.room.on(RoomEvent.DataReceived, this._syncRemoteAvatars.bind(this));
@@ -103,14 +149,30 @@ class RoomManager {
 
         // load all other users in the room
         for (const participant of this.room.remoteParticipants.values()) {
-            this._loadRemoteParticipantAvatar(participant);
+            this._loadRemoteParticipantAvatar(participant, false);
         }
+
+        useAvatarStore.getState().setRemoteAvatarAudioPositions(
+            [...this.remoteAvatars.values()].map((avatar) => ({
+                sid: avatar.participant.sid,
+                position: avatar.getPosition(true).asArray(),
+                // rotation: avatar.getRotationQuaternion(true).asArray(),
+                // forward: avatar.root.forward.asArray(),
+                cameraPosition: avatar.coreScene.camera.globalPosition.asArray(),
+                cameraRotation: avatar.coreScene.camera.rotation.asArray(),
+            }))
+        );
     }
 
     private initSelfAvatar() {
         // if not already loaded, load the avatar
-        if (!this.localAvatar.container) this.localAvatar.loadAvatar();
-        this.localAvatar.showAvatarInfo();
+        if (this.localAvatar.container) {
+            this.localAvatar.showAvatarInfo();
+        } else {
+            this.localAvatar.loadAvatar().then(() => {
+                this.localAvatar.showAvatarInfo();
+            });
+        }
 
         // eslint-disable-next-line unicorn/consistent-function-scoping
         const setup = () => {
@@ -118,9 +180,12 @@ class RoomManager {
             if (this.localAvatar.container) {
                 this.avatarController.start();
             } else {
-                eventBus.once(`avatar:modelLoaded:${this.localAvatar.participant.sid}`, () => {
-                    this.avatarController.start();
-                })
+                eventBus.once(
+                    `avatar:modelLoaded:${this.localAvatar.participant.sid}`,
+                    () => {
+                        this.avatarController.start();
+                    }
+                );
             }
         };
 
@@ -133,19 +198,31 @@ class RoomManager {
         }
     }
 
-    private _loadRemoteParticipantAvatar(participant: Participant) {
+    private _loadRemoteParticipantAvatar(
+        participant: Participant,
+        isEvent: boolean = true
+    ) {
         if (participant.sid === this.room.localParticipant.sid) {
             return;
         }
-        const avatar = new Avatar(
-            this.coreScene,
-            participant,
-            "male",
-            false
-        );
-        avatar.loadAvatar();
-        avatar.showAvatarInfo();
+        const avatar = new Avatar(this.coreScene, participant, "male", false);
+        avatar.loadAvatar().then(() => {
+            avatar.showAvatarInfo();
+        });
         this.remoteAvatars.set(participant, avatar);
+
+        if (isEvent) {
+            useAvatarStore.getState().setRemoteAvatarAudioPositions(
+                [...this.remoteAvatars.values()].map((avatar) => ({
+                    sid: avatar.participant.sid,
+                    position: avatar.getPosition(true).asArray(),
+                    // rotation: avatar.getRotationQuaternion(true).asArray(),
+                    // forward: avatar.root.forward.asArray(),
+                    cameraPosition: avatar.coreScene.camera.globalPosition.asArray(),
+                    cameraRotation: avatar.coreScene.camera.rotation.asArray(),
+                }))
+            );
+        }
     }
 
     private _removeRemoteParticipantAvatar(participant: Participant) {
@@ -161,6 +238,23 @@ class RoomManager {
 
     private _updateRemoteParticipantName(name: string, participant: Participant) {
         this.remoteAvatars.get(participant)?.updateName(name);
+    }
+
+    private async _changeRemoteParticipantAvatar(data: RpcInvocationData) {
+        console.log("update remote avatar", data.payload);
+        const changeData = JSON.parse(data.payload) as AvatarChange;
+
+        if (changeData.sid === this.room.localParticipant.sid) {
+            return "isLocalUser" as string;
+        }
+        const { sid, avatarId, gender } = changeData;
+        for (const [participant, avatar] of this.remoteAvatars) {
+            if (participant.sid === sid) {
+                avatar.loadAvatar(avatarId, gender);
+                break;
+            }
+        }
+        return "ok" as string;
     }
 
     private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
@@ -220,8 +314,21 @@ class RoomManager {
                     }
                 }
                 if (lookTarget) avatar.update(Vector3.FromArray(lookTarget));
+
+                break;
             }
         }
+        // update the avatar position for audio
+        useAvatarStore.getState().setRemoteAvatarAudioPositions(
+            [...this.remoteAvatars.values()].map((avatar) => ({
+                sid: avatar.participant.sid,
+                position: avatar.getPosition(true).asArray(),
+                // rotation: avatar.getRotationQuaternion(true).asArray(),
+                // forward: avatar.root.forward.asArray(),
+                cameraPosition: avatar.coreScene.camera.globalPosition.asArray(),
+                cameraRotation: avatar.coreScene.camera.rotation.asArray(),
+            }))
+        );
     }
 
     dispose() {
@@ -242,10 +349,15 @@ class RoomManager {
 
         this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
         this.room.off("participantConnected", this._loadRemoteParticipantAvatar);
-        this.room.off("participantDisconnected", this._removeRemoteParticipantAvatar);
+        this.room.off(
+            "participantDisconnected",
+            this._removeRemoteParticipantAvatar
+        );
         this.room.off("participantNameChanged", this._updateRemoteParticipantName);
+        this.room.unregisterRpcMethod("participantChangeAvatar");
 
-        if (clientSettings.DEBUG) console.log("RoomManager disposed", this.room.name);
+        if (clientSettings.DEBUG)
+            console.log("RoomManager disposed", this.room.name);
     }
 }
 

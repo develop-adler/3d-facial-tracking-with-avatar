@@ -25,13 +25,14 @@ import type AvatarProfile from "@/3d/avatar/AvatarProfile";
 import type AvatarProfileCard from "@/3d/avatar/AvatarProfileCard";
 import AvatarInteraction from "@/3d/avatar/AvatarInteraction";
 import type CoreScene from "@/3d/core/CoreScene";
+import eventBus from "@/eventBus";
 import type {
   AvatarGender,
   AvatarInteractionType,
   ObjectQuaternion,
   ObjectTransform,
 } from "@/models/3d";
-import eventBus from "@/eventBus";
+import type { AvatarChange } from "@/models/multiplayer";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
 import CreateAvatarPhysicsShape from "@/utils/CreateAvatarPhysicsShape";
@@ -148,6 +149,7 @@ class Avatar {
   private _animations: Record<string, AnimationGroup> = {};
   private _boneLookController?: BoneLookController;
   currentBoneLookControllerTarget?: Vector3;
+  dontSyncHeadWithUser: boolean = false;
 
   readonly boneIKTargets: {
     left: {
@@ -397,7 +399,7 @@ class Avatar {
     eventBus.emit(`avatar:modelLoaded:${this.participant.sid}`, container);
 
     // change head node parent and camera target
-    const headNode = this.scene.getTransformNodeByName("customHeadNode");
+    const headNode = this.scene.getTransformNodeByName(`customHeadNode_${this.participant.sid}`);
     if (headNode) headNode.parent = this.root;
 
     // if (this.post) {
@@ -715,6 +717,11 @@ class Avatar {
       return;
     }
     if (this.currentAvatarId === id) return;
+    eventBus.emit<AvatarChange>("avatar:changeAvatar", {
+      sid: this.participant.sid,
+      avatarId: id,
+      gender: "female",
+    });
     return this.loadAvatar(id);
   }
 
@@ -862,6 +869,22 @@ class Avatar {
         const animationName =
           this.gender.charAt(0).toUpperCase() + this.gender.slice(1) + animName;
         this._animations[animationName] = importedAnimation;
+
+        // remove head bone from all animations (this will allow head to be synced with user)
+        // importedAnimation.targetedAnimations.splice(
+        //   importedAnimation.targetedAnimations.findIndex(
+        //     (ta) => ta.target.name === "Head"
+        //   ),
+        //   1
+        // );
+        for (const ta of importedAnimation.targetedAnimations) {
+          if (ta.target.name === "Head") {
+            importedAnimation.targetedAnimations.splice(
+              importedAnimation.targetedAnimations.indexOf(ta),
+              1
+            );
+          }
+        }
       })
     );
 
@@ -1489,15 +1512,6 @@ class Avatar {
       )
         return;
 
-
-      // remove head bone from animation
-      this._animations[animationName].targetedAnimations.splice(
-        this._animations[animationName].targetedAnimations.findIndex(
-          (ta) => ta.target.name === "Head"
-        ),
-        1
-      );
-
       this.playingAnimation?.stop();
       this.playingAnimation = this._animations[animationName];
       this.isPlayingAnimationLooping = loop;
@@ -1511,14 +1525,6 @@ class Avatar {
       // }
     } else {
       if (this.playingAnimation === animation) return;
-
-      // remove head bone from animation
-      animation.targetedAnimations.splice(
-        animation.targetedAnimations.findIndex(
-          (ta) => ta.target.name === "Head"
-        ),
-        1
-      );
 
       this.playingAnimation?.stop();
       this.playingAnimation = animation;
@@ -1728,7 +1734,7 @@ class Avatar {
       case !this.playingAnimation:
       case !this.isGrounded:
       case this.isCrouching && this.isMoving:
-      case this.interaction?.type === "continuous":
+      case this.interaction?.type === "continuous" && this.interaction.continuousPhase !== 1:
       case this.interaction?.type === "loop":
       case this.interaction?.type === "gethit": {
         // - no animation is playing, no need to update bone look controller

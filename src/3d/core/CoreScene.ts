@@ -59,8 +59,6 @@ class CoreScene {
         coreEngine.spaceLoadingData.space_initialized = performance.now();
 
         this.coreEngine.engine.runRenderLoop(this._renderScene.bind(this));
-
-        console.log("CoreScene created");
     }
 
     private _createBabylonScene(): Scene {
@@ -212,6 +210,7 @@ class CoreScene {
         // always inside skybox
         this.scene.autoClear = false;
 
+        this.atom.skybox?.setEnabled(true);
         this.setCameraToMultiplayer();
 
         // create physics shapes for avatars in multiplayer
@@ -221,6 +220,7 @@ class CoreScene {
     switchToVideoChat(): void {
         // skybox disabled
         this.scene.autoClear = true;
+        this.atom.skybox?.setEnabled(false);
         this._setCameraToVideoChat();
     }
     setCameraToMultiplayer(): void {

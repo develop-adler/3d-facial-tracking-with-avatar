@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { FaceDetectorType } from '@/utils/FaceDetector';
+import type { FaceDetectorType } from '@/3d/tracking/FaceDetector';
 
 type FaceDetectorStore = {
   faceDetector?: FaceDetectorType;

@@ -39,6 +39,7 @@ import type { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycas
 import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import type { Scene } from "@babylonjs/core/scene";
 import type { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
+import { useAvatarStore } from "@/stores/useAvatarStore";
 
 type JoystickAxes = Vector2;
 type CameraMode = "thirdPerson" | "firstPerson";
@@ -170,7 +171,7 @@ class AvatarController {
         this.camera = camera;
         this.scene = scene;
         this._joystickAxes = joystickAxes ?? { x: 0, y: 0 };
-        this.customHeadNode = new TransformNode("customHeadNode", scene, true);
+        this.customHeadNode = new TransformNode(`customHeadNode_${this.avatar.participant.sid}`, scene, true);
 
         this._stairHeightCheckPhysicsShape = new PhysicsShapeCylinder(
             new Vector3(0, 0.125, 0),
@@ -579,6 +580,14 @@ class AvatarController {
     }
 
     private _updateCharacter(): void {
+        useAvatarStore.getState().setAvatarAudioPosition({
+            position: this.avatar.getPosition(true).asArray(),
+            // rotation: this.avatar.getRotationQuaternion(true).asArray(),
+            // forward: this.avatar.root.forward.asArray(),
+            cameraPosition: this.camera.globalPosition.asArray(),
+            cameraRotation: this.camera.rotation.asArray(),
+        });
+
         if (
             !this._isActive ||
             !this.avatar.capsuleBody ||
@@ -1083,8 +1092,10 @@ class AvatarController {
         const toTarget = target.subtract(this.avatar.root.position).normalize();
         const dot = Vector3.Dot(forward, toTarget);
         if (dot >= 0.2) {
+            if (!this.avatar.dontSyncHeadWithUser) this.avatar.dontSyncHeadWithUser = true;
             this.avatar.update(target);
         } else {
+            if (this.avatar.dontSyncHeadWithUser) this.avatar.dontSyncHeadWithUser = false;
             this.avatar.currentBoneLookControllerTarget = undefined;
         }
     }

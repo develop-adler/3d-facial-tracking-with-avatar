@@ -1,17 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, type FC } from "react";
+import { useEffect, useMemo, type FC } from "react";
+import { ConnectionState, Track } from "livekit-client";
 
-import { RoomAudioRenderer } from "@livekit/components-react";
+import {
+    RoomAudioRenderer,
+    useLocalParticipant,
+} from "@livekit/components-react";
 
-import { AvatarFacialTracking } from "@/components/AvatarFacialTracking";
-import { CanvasPublisher } from "@/components/LiveKit/RoomPage/components/CanvasPublisher";
 import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
+import SpatialAudioController from "@/components/LiveKit/SpatialAudioController";
 
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { clientSettings } from "clientSettings";
+import { mediaStreamFrom3DCanvas } from "global";
 
 const AvatarScene = dynamic(
     () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -55,10 +60,16 @@ type Props = {
 export const RoomPage: FC<Props> = ({ roomName, name }) => {
     const room = useLiveKitStore((state) => state.room);
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
+    const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
     const setRoomNameAndUsername = useLiveKitStore(
         (state) => state.setRoomNameAndUsername
     );
-    const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
+
+    const { cameraTrack } = useLocalParticipant({ room });
+    const hasAvatarTrack = useMemo(
+        () => cameraTrack?.trackName === "avatar_video",
+        [cameraTrack]
+    );
 
     useEffect(() => {
         (async () => {
@@ -77,6 +88,50 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [room]);
+
+    useEffect(() => {
+        useTrackingStore.getState().faceTracker?.setIsMultiplayer(isMultiplayer);
+    }, [isMultiplayer]);
+
+    // Publish 3D babylon.js canvas as camera stream
+    useEffect(() => {
+        if (isMultiplayer || hasAvatarTrack) return;
+
+        let isMounted = true;
+
+        const handleTrack = async () => {
+            if (!mediaStreamFrom3DCanvas) return;
+            const track = mediaStreamFrom3DCanvas.getVideoTracks()[0];
+            const publishedTrack = await room.localParticipant.publishTrack(track, {
+                name: "avatar_video",
+                source: Track.Source.Camera,
+            });
+            if (!isMounted) {
+                publishedTrack.track?.stop();
+                room.localParticipant.unpublishTrack(track);
+            }
+            return publishedTrack;
+        };
+
+        const connectAndPublish = async () => {
+            if (room.state === ConnectionState.Connected) {
+                await handleTrack();
+            } else {
+                room.once("connected", handleTrack);
+            }
+        };
+
+        connectAndPublish();
+
+        return () => {
+            isMounted = false;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cameraTrack]);
+
+    // useEffect(() => {
+    //     return () => useTrackingStore.getState().faceTracker.dispose();
+    // }, []);
 
     return (
         <>
@@ -109,23 +164,20 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
                 Leave 3D space
             </button>
 
-            {/* The RoomAudioRenderer takes care of room-wide audio */}
-            <RoomAudioRenderer />
-
-            {/* For 3D facial tracking */}
-            <AvatarFacialTracking isMultiplayer={isMultiplayer} />
-
-            {/* To publish 3D babylon.js canvas as camera stream */}
-            <CanvasPublisher room={room} />
-
-            {/* Run the 3D avatar scene for video chat */}
-            {!isMultiplayer && <AvatarScene />}
+            {!isMultiplayer && (
+                <>
+                    {/* This takes care of room-wide audio */}
+                    <RoomAudioRenderer />
+                    <AvatarScene />
+                </>
+            )}
 
             {/* LiveKit container to handle Livekit UI elements */}
             <div data-lk-theme="default">
                 {/* This one contains layout of participants and chat window */}
                 {isMultiplayer ? (
                     <>
+                        <SpatialAudioController />
                         <MultiplayerPage />
                         <ChatContainer />
                     </>

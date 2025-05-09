@@ -1,25 +1,32 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, type FC } from "react";
+import { useEffect, useMemo, useRef, type FC } from "react";
+
 import { ConnectionState } from "livekit-client";
 
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { Multiplayer3DContainer } from "./styles";
 
-const Multiplayer3D = dynamic(
-    () => import("@/components/LiveKit/RoomPage/components/MultiplayerPage/components/Multiplayer3D"),
-    {
-        ssr: false,
-    }
-);
+import CoreScene from "@/3d/core/CoreScene";
+import RoomManager from "@/3d/multiplayer/RoomManager";
+import AvatarSpeakingHandler from "@/components/LiveKit/RoomPage/components/MultiplayerPage/components/AvatarSpeakingHandler";
+import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useEngineStore } from "@/stores/useEngineStore";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { useSceneStore } from "@/stores/useSceneStore";
 
 export const MultiplayerPage: FC = () => {
+    const coreEngine = useEngineStore((state) => state.coreEngine);
+    const setScene = useSceneStore((state) => state.setScene);
     const room = useLiveKitStore((state) => state.room);
-    const setIsMultiplayer = useLiveKitStore(
-        (state) => state.setIsMultiplayer
-    );
+    const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
+    const avatar = useAvatarStore((state) => state.avatar);
 
-    const isDisconnected = room.state === ConnectionState.Disconnected;
+    const canvasContainer = useRef<HTMLDivElement>(null);
+
+    const isDisconnected = useMemo(
+        () => room.state === ConnectionState.Disconnected,
+        [room.state]
+    );
 
     useEffect(() => {
         if (isDisconnected) {
@@ -29,11 +36,37 @@ export const MultiplayerPage: FC = () => {
         room.once("disconnected", () => {
             setIsMultiplayer(false);
         });
+
+        if (canvasContainer.current)
+            coreEngine.insertCanvasToDOM(canvasContainer.current);
+
+        let currentCoreScene = useSceneStore.getState().coreScene;
+        if (!currentCoreScene) {
+            currentCoreScene = new CoreScene(room, coreEngine);
+            setScene(currentCoreScene);
+        }
+        currentCoreScene.switchToMultiplayer();
+        currentCoreScene.atom.load();
+
+        const roomManager = new RoomManager(room, currentCoreScene);
+
         return () => {
             setIsMultiplayer(false);
-        }
+            roomManager.dispose();
+            //dispose atom without disposing skybox
+            currentCoreScene.atom.dispose(false);
+            currentCoreScene.switchToVideoChat();
+            coreEngine.removeCanvasFromDOM();
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return !isDisconnected && <Multiplayer3D room={room} />;
+    return (
+        !isDisconnected && (
+            <>
+                {avatar && <AvatarSpeakingHandler avatar={avatar} room={room} />}
+                <Multiplayer3DContainer ref={canvasContainer} />
+            </>
+        )
+    );
 };

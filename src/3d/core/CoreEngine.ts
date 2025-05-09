@@ -133,13 +133,10 @@ export class CoreEngine {
         container.append(this.canvas);
         // call resize to fix the canvas size
         this.resize();
-        console.log("Canvas inserted to DOM", container);
     }
 
-    removeCanvasFromDOM(container?: HTMLElement | null) {
-        // eslint-disable-next-line unicorn/prefer-dom-node-remove
-        (container ?? this.canvas.parentElement)?.removeChild(this.canvas);
-        console.log("Canvas removed from DOM", this.canvas);
+    removeCanvasFromDOM() {
+        this.canvas.remove();
     }
 
     resize() {
