@@ -87,7 +87,6 @@ const syncMorphTargets = (avatar: Avatar, blendShapes: Category[]) => {
 const syncHeadRotation = (
   avatar: Avatar,
   faceMatrix: Matrix,
-  isMultiplayer: boolean = false,
   mirrored: boolean = false,
 ) => {
   const headBoneNode = avatar.bones
@@ -98,38 +97,6 @@ const syncHeadRotation = (
     console.warn("Head bone not found in avatar bones.");
     return;
   }
-
-  // TODO: match head rotation with user's face rotation in multiplayer (unstable right now)
-  // if (isMultiplayer) {
-  //   const userFacePosition = faceMatrix.getTranslation();
-  //   const userFaceForward = Vector3.TransformCoordinates(
-  //     Vector3.Forward(),
-  //     faceMatrix
-  //   );
-
-  //   const targetPositionOffset = userFaceForward.subtract(userFacePosition).scale(10);
-  //   const targetPosition = headBoneNode.absolutePosition
-  //   .add(avatar.root.forward.scale(0.5))
-  //   .add(targetPositionOffset);
-
-  //   // check if camera is behind avatar's back or in front of
-  //   // avatar's face to invert the target position
-  //   const cameraPosition = avatar.coreScene.camera.globalPosition;
-  //   const avatarForward = avatar.root.forward.normalize();
-  //   const toTarget = cameraPosition
-  //     .subtract(avatar.root.absolutePosition)
-  //     .normalize();
-  //   const dot = Vector3.Dot(avatarForward, toTarget);
-
-  //   // is behind avatar's back, invert target horizontal position
-  //   if (dot <= -0.1) {
-  //     targetPosition.x *= -1;
-  //   }
-
-  //   avatar.currentBoneLookControllerTarget = targetPosition;
-
-  //   return;
-  // }
 
   const faceRotation = Quaternion.FromRotationMatrix(faceMatrix);
 
@@ -242,20 +209,10 @@ export const AvatarFacialTracking: FC<Props> = ({ isMultiplayer = false }) => {
 
     const matrixData = result.facialTransformationMatrixes[0].data;
     const faceMatrix = Matrix.FromArray(matrixData);
-    syncHeadRotation(avatar, faceMatrix, isMultiplayer);
+    syncHeadRotation(avatar, faceMatrix);
 
     // reset head rotation and avatar position for multiplayer
     if (isMultiplayer) {
-      // if (!isHeadReset.current) {
-      //   const headBoneNode = avatar.bones
-      //     ?.find((bone) => bone.name === "Head")
-      //     ?.getTransformNode();
-
-      //   if (headBoneNode) {
-      //     headBoneNode.rotationQuaternion = Quaternion.Identity();
-      //     isHeadReset.current = true;
-      //   }
-      // }
       if (!isPositionReset.current && avatar.container) {
         avatar.container.meshes[0].position = Vector3.Zero();
         isPositionReset.current = true;
@@ -398,6 +355,7 @@ export const AvatarFacialTracking: FC<Props> = ({ isMultiplayer = false }) => {
       faceDetectorRef.current?.dispose();
       handDetectorRef.current?.dispose();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // eslint-disable-next-line unicorn/no-null

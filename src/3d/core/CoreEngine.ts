@@ -1,6 +1,5 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
-import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { DracoCompression } from "@babylonjs/core/Meshes/Compression/dracoCompression";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { Logger } from "@babylonjs/core/Misc/logger";
@@ -16,7 +15,7 @@ registerBuiltInLoaders();
 const SafeCanvas = (() =>
     typeof document === 'undefined' ?
         {
-            getContext: () => { },
+            getContext: () => {},
         } as unknown as HTMLCanvasElement :
         document.createElement('canvas'))();
 
@@ -138,6 +137,7 @@ export class CoreEngine {
     }
 
     removeCanvasFromDOM(container?: HTMLElement | null) {
+        // eslint-disable-next-line unicorn/prefer-dom-node-remove
         (container ?? this.canvas.parentElement)?.removeChild(this.canvas);
         console.log("Canvas removed from DOM", this.canvas);
     }

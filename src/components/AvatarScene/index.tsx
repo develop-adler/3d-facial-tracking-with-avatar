@@ -32,8 +32,9 @@ export const AvatarScene: FC = () => {
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
 
     useEffect(() => {
+        const canvasContainer = bjsCanvasContainer.current;
         return () => {
-            coreEngine.removeCanvasFromDOM(bjsCanvasContainer.current);
+            coreEngine.removeCanvasFromDOM(canvasContainer);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

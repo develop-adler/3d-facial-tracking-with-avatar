@@ -21,6 +21,8 @@ const Multiplayer3D: FC<Props> = ({ room }) => {
 
     useEffect(() => {
         if (!canvasContainer.current) return;
+
+        const canvasCont = canvasContainer.current;
         coreEngine.insertCanvasToDOM(canvasContainer.current);
 
         let currentCoreScene = useSceneStore.getState().coreScene;
@@ -37,7 +39,7 @@ const Multiplayer3D: FC<Props> = ({ room }) => {
             //dispose atom without disposing skybox
             currentCoreScene.atom.dispose(false);
             currentCoreScene.switchToVideoChat();
-            coreEngine.removeCanvasFromDOM(canvasContainer.current);
+            coreEngine.removeCanvasFromDOM(canvasCont);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
