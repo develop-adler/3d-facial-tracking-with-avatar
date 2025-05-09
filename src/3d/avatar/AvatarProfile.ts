@@ -27,7 +27,7 @@ class AvatarProfile {
     readonly avatar: Avatar;
     readonly scene: Scene;
 
-    rootTransformNode?: TransformNode;
+    readonly rootTransformNode: TransformNode;
     // profilePicture?: Mesh;
     username: Mesh;
     chatBubble?: Mesh;
@@ -50,7 +50,7 @@ class AvatarProfile {
     static readonly MESSAGE_LINE_HEIGHT = 1.5 * AvatarProfile.MESSAGE_FONT_SIZE;
     static readonly MESSAGE_EMPTY_GAP_HEIGHT = 23;
 
-    static readonly SEPARATOR_LINE_COLOR = "#898989";
+    // static readonly SEPARATOR_LINE_COLOR = COLOR.grayScale60;
 
     private static readonly PROFILE_CHAT_BUBBLE_WIDTH = 0.6;
     private static readonly PROFILE_CHAT_BUBBLE_HEIGHT_DEFAULT = 0.1;
@@ -696,16 +696,15 @@ class AvatarProfile {
     }
 
     show(): void {
-        this.rootTransformNode?.setEnabled(true);
+        this.rootTransformNode.setEnabled(true);
     }
     hide(): void {
-        this.rootTransformNode?.setEnabled(false);
+        this.rootTransformNode.setEnabled(false);
     }
     dispose(): void {
         this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
 
-        this.rootTransformNode?.dispose(false, true);
-        this.rootTransformNode = undefined;
+        this.rootTransformNode.dispose(false, true);
         // this.profilePicture?.dispose(false, true);
         // this.profilePicture = undefined;
         this.username.dispose(false, true);

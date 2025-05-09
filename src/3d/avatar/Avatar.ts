@@ -24,6 +24,7 @@ import type { Participant } from "livekit-client";
 import type AvatarProfile from "@/3d/avatar/AvatarProfile";
 import type AvatarProfileCard from "@/3d/avatar/AvatarProfileCard";
 import AvatarInteraction from "@/3d/avatar/AvatarInteraction";
+import AvatarVoiceBubble from "@/3d/avatar/AvatarVoiceBubble";
 import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
 import type {
@@ -134,6 +135,7 @@ class Avatar {
   readonly isSelf: boolean;
   readonly headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
 
+  private _voiceBubble?: AvatarVoiceBubble;
   private _profile?: AvatarProfile;
   private _multiplayProfile?: AvatarProfileCard;
   private _isCreatingProfileCard: boolean = false;
@@ -296,6 +298,9 @@ class Avatar {
   get physicsBodies(): Array<PhysicsBody> {
     return this._physicsBodies;
   }
+  get voiceBubble(): AvatarVoiceBubble | undefined {
+    return this._voiceBubble;
+  }
   get profile(): AvatarProfile | undefined {
     return this._profile;
   }
@@ -397,6 +402,10 @@ class Avatar {
 
     this.isLoadingAvatar = false;
     eventBus.emit(`avatar:modelLoaded:${this.participant.sid}`, container);
+
+    if (!this._voiceBubble) {
+      this._voiceBubble = new AvatarVoiceBubble(this);
+    }
 
     // change head node parent and camera target
     const headNode = this.scene.getTransformNodeByName(`customHeadNode_${this.participant.sid}`);

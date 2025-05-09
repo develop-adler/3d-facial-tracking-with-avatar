@@ -10,17 +10,16 @@ type Props = {
     avatar: Avatar;
 }
 
-const AvatarSpeakingHandler: FC<Props> = ({ room }) => {
+const AvatarSpeakingHandler: FC<Props> = ({ avatar, room }) => {
     const isSpeaking = useIsSpeaking(room.localParticipant);
+
     useEffect(() => {
-        if (isSpeaking) {
-            console.log("Avatar is speaking");
-            // avatar.setSpeaking(true);
-        } else {
-            console.log("Avatar is not speaking");
-            // avatar.setSpeaking(false);
+        avatar.voiceBubble?.setVisible(isSpeaking);
+        return () => {
+            avatar.voiceBubble?.setVisible(false);
         }
-    }, [isSpeaking]);
+    }, [isSpeaking, avatar.voiceBubble]);
+
     // eslint-disable-next-line unicorn/no-null
     return null;
 };
