@@ -118,12 +118,9 @@ class FaceTracker {
         this.syncHeadRotation(avatar, faceMatrix);
 
         // reset head rotation and avatar position for multiplayer
-        if (this._isMultiplayer) {
-            if (!this.isAvatarPositionReset) {
-                avatar.setPosition(Vector3.Zero());
-                this.isAvatarPositionReset = true;
-            }
-            return;
+        if (this._isMultiplayer && !this.isAvatarPositionReset) {
+            avatar.root.position = Vector3.Zero();
+            this.isAvatarPositionReset = true;
         }
 
         this.syncHeadPosition(avatar, faceMatrix);
@@ -318,6 +315,8 @@ class FaceTracker {
     }
 
     syncHeadPosition(avatar: Avatar, faceMatrix: Matrix) {
+        if (this.isMultiplayer) return;
+
         const faceMatrixPosition = faceMatrix.getTranslation();
 
         // fix distance of avatar from 3D camera's position
@@ -331,12 +330,8 @@ class FaceTracker {
         );
 
         if (avatar.container) {
-            const lerped = Vector3.Lerp(
-                avatar.container.meshes[0].position,
-                headPosition,
-                0.25
-            );
-            avatar.container.meshes[0].position = lerped;
+            const lerped = Vector3.Lerp(avatar.root.position, headPosition, 0.25);
+            avatar.root.position = lerped;
         }
     }
 

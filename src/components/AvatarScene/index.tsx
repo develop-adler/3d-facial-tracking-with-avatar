@@ -17,8 +17,8 @@ import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
-import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
 import { clientSettings } from "clientSettings";
+import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
 
 export const AvatarScene: FC = () => {
     const pathName = usePathname();
