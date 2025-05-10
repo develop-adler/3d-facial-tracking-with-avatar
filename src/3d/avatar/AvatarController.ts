@@ -171,7 +171,7 @@ class AvatarController {
         this.camera = camera;
         this.scene = scene;
         this._joystickAxes = joystickAxes ?? { x: 0, y: 0 };
-        this.customHeadNode = new TransformNode(`customHeadNode_${this.avatar.participant.sid}`, scene, true);
+        this.customHeadNode = new TransformNode(`customHeadNode_${this.avatar.participant.identity}`, scene, true);
 
         this._stairHeightCheckPhysicsShape = new PhysicsShapeCylinder(
             new Vector3(0, 0.125, 0),
@@ -519,11 +519,9 @@ class AvatarController {
         if (this.avatar.isControlledByAnotherSession || this.avatar.interaction)
             return;
 
-        const animPrefix = this.avatar.gender === "male" ? "Male" : "Female";
-
         // play jump animation if not on ground
         if (!this.avatar.isGrounded) {
-            this.avatar.playAnimation(animPrefix + "Jump");
+            this.avatar.playAnimation("Jump");
             return;
         }
 
@@ -533,28 +531,28 @@ class AvatarController {
 
             if (Math.abs(velocity.x) <= 0.02 && Math.abs(velocity.z) <= 0.02) {
                 if (this.avatar.isCrouching) {
-                    this.avatar.playAnimation(animPrefix + "Crouch");
+                    this.avatar.playAnimation("Crouch");
                     return;
                 }
 
-                this.avatar.playAnimation(animPrefix + "Idle");
+                this.avatar.playAnimation("Idle");
                 return;
             }
 
             if (this.avatar.isCrouching) {
-                this.avatar.playAnimation(animPrefix + "CrouchWalk");
+                this.avatar.playAnimation("CrouchWalk");
                 return;
             } else if (this.avatar.isRunning) {
-                this.avatar.playAnimation(animPrefix + "Run");
+                this.avatar.playAnimation("Run");
                 return;
             } else {
-                this.avatar.playAnimation(animPrefix + "Walk");
+                this.avatar.playAnimation("Walk");
                 return;
             }
         }
 
         // play idle animation by default
-        this.avatar.playAnimation(animPrefix + "Idle");
+        this.avatar.playAnimation("Idle");
     }
 
     /**
@@ -893,7 +891,7 @@ class AvatarController {
                 this._isJumping = false;
             }, 300);
 
-            eventBus.once(`avatar:landing:${this.avatar.participant.sid}`, () => {
+            eventBus.once(`avatar:landing:${this.avatar.participant.identity}`, () => {
                 if (!this.avatar.isRunning) {
                     this._moveSpeed = AvatarController.WALK_SPEED;
                 }

@@ -20,7 +20,7 @@ class AvatarVoiceBubble {
         this.scene = avatar.scene;
 
         this.rootNode = new TransformNode(
-            "voiceBubbleTNode_" + this.avatar.participant.sid,
+            "voiceBubbleTNode_" + this.avatar.participant.identity,
             this.scene
         );
         this.rootNode.billboardMode = 7
@@ -31,7 +31,7 @@ class AvatarVoiceBubble {
 
     private _createBubble(): Mesh {
         const mesh = CreateDisc(
-            `avatarVoiceBubble_${this.avatar.participant.sid}`,
+            `avatarVoiceBubble_${this.avatar.participant.identity}`,
             {
                 radius: 0.07,
                 tessellation: 32,
@@ -44,7 +44,7 @@ class AvatarVoiceBubble {
         mesh.alwaysSelectAsActiveMesh = true;
 
         const material = new StandardMaterial(
-            `avatarVoiceBubbleMaterial_${this.avatar.participant.sid}`,
+            `avatarVoiceBubbleMaterial_${this.avatar.participant.identity}`,
             this.scene
         );
         const bubbleTexture = new Texture('/static/avatar/micVoiceBubble.ktx2', this.scene);

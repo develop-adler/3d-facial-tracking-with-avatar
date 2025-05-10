@@ -48,7 +48,7 @@ class AvatarProfileCard {
 
         // update the profile card on 3D side when the participant's profile is updated on 2D side
         this.windowEventListenerCallback = (forUser: Participant) => {
-            if (forUser.sid === this.participant.sid) {
+            if (forUser.identity === this.participant.identity) {
                 // set timeout to wait for icon images to properly load
                 setTimeout(() => {
                     this.htmlElement?.remove();
@@ -59,7 +59,7 @@ class AvatarProfileCard {
         eventBus.onWithEvent('multiplayer:avatarProfileCardUpdate', this.windowEventListenerCallback);
     }
     private _init(): HtmlMesh {
-        const htmlMesh = new HtmlMesh(this.avatar.scene, 'htmlMesh_' + this.participant.sid, {
+        const htmlMesh = new HtmlMesh(this.avatar.scene, 'htmlMesh_' + this.participant.identity, {
             isCanvasOverlay: true,
         });
         htmlMesh.billboardMode = 7;
@@ -68,7 +68,7 @@ class AvatarProfileCard {
         htmlMesh.setEnabled(false);
 
         // hide the black mesh with material due to having scene environment map
-        const material = new StandardMaterial('htmlMeshMaterial_' + this.participant.sid, this.avatar.scene);
+        const material = new StandardMaterial('htmlMeshMaterial_' + this.participant.identity, this.avatar.scene);
         material.alpha = 0;
         htmlMesh.material = material;
 
@@ -76,7 +76,7 @@ class AvatarProfileCard {
     }
     attachToElement(display: boolean = true): HTMLElement | undefined {
         // retrieve the React component and set HTML content of html mesh
-        const div = document.querySelector(`#multiplay_profile_${this.participant.sid}`);
+        const div = document.querySelector(`#multiplay_profile_${this.participant.identity}`);
         if (!div) {
             eventBus.emitWithEvent('multiplayer:avatarProfileCardSync', this.participant);
             return;
@@ -85,7 +85,7 @@ class AvatarProfileCard {
         // clone the React component to prevent React from crashing when
         // removing or doing anything with it from Javascript side
         const clonedElem = div.cloneNode(true) as HTMLElement;
-        clonedElem.id = `multiplay_profile_${this.participant.sid}_clone`;
+        clonedElem.id = `multiplay_profile_${this.participant.identity}_clone`;
         clonedElem.style.display = display ? 'flex' : 'none';
         clonedElem.style.userSelect = 'none';
 

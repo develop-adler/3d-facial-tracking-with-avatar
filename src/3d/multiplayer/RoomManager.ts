@@ -134,7 +134,7 @@ class RoomManager {
 
         useAvatarStore.getState().setRemoteAvatarAudioPositions(
             [...this.remoteAvatars.values()].map((avatar) => ({
-                sid: avatar.participant.sid,
+                identity: avatar.participant.identity,
                 position: avatar.getPosition(true).asArray(),
                 // rotation: avatar.getRotationQuaternion(true).asArray(),
                 // forward: avatar.root.forward.asArray(),
@@ -148,9 +148,11 @@ class RoomManager {
         // if not already loaded, load the avatar
         if (this.localAvatar.container) {
             this.localAvatar.showAvatarInfo();
+            this.localAvatar.loadAnimations();
         } else {
             this.localAvatar.loadAvatar().then(() => {
                 this.localAvatar.showAvatarInfo();
+            this.localAvatar.loadAnimations();
             });
         }
 
@@ -161,7 +163,7 @@ class RoomManager {
                 this.avatarController.start();
             } else {
                 eventBus.once(
-                    `avatar:modelLoaded:${this.localAvatar.participant.sid}`,
+                    `avatar:modelLoaded:${this.localAvatar.participant.identity}`,
                     () => {
                         this.avatarController.start();
                     }
@@ -182,20 +184,21 @@ class RoomManager {
         participant: Participant,
         isEvent: boolean = true
     ) {
-        if (participant.sid === this.room.localParticipant.sid) {
+        if (participant.identity === this.room.localParticipant.identity) {
             return;
         }
         const avatar = new Avatar(this.coreScene, participant, "male", false);
         avatar.loadAvatar().then(() => {
             avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
+            avatar.loadAnimations();
         });
         this.remoteAvatars.set(participant, avatar);
 
         if (isEvent) {
             useAvatarStore.getState().setRemoteAvatarAudioPositions(
                 [...this.remoteAvatars.values()].map((avatar) => ({
-                    sid: avatar.participant.sid,
+                    identity: avatar.participant.identity,
                     position: avatar.getPosition(true).asArray(),
                     // rotation: avatar.getRotationQuaternion(true).asArray(),
                     // forward: avatar.root.forward.asArray(),
@@ -207,7 +210,7 @@ class RoomManager {
     }
 
     private _removeRemoteParticipantAvatar(participant: Participant) {
-        if (participant.sid === this.room.localParticipant.sid) {
+        if (participant.identity === this.room.localParticipant.identity) {
             return;
         }
         const avatar = this.remoteAvatars.get(participant);
@@ -221,14 +224,14 @@ class RoomManager {
         this.remoteAvatars.get(participant)?.updateName(name);
     }
 
-    private _changeAvatarEventBus({ sid, avatarId, gender }: AvatarChange) {
+    private _changeAvatarEventBus({ identity, avatarId, gender }: AvatarChange) {
         for (const participant of this.remoteAvatars.keys()) {
             try {
                 this.room.localParticipant.performRpc({
                     destinationIdentity: participant.identity,
                     method: "participantChangeAvatar",
                     payload: JSON.stringify({
-                        sid,
+                        identity,
                         avatarId,
                         gender,
                     }),
@@ -243,7 +246,9 @@ class RoomManager {
         const { avatarId, gender } = JSON.parse(data.payload) as AvatarChange;
         for (const [participant, avatar] of this.remoteAvatars) {
             if (participant.identity === data.callerIdentity) {
-                avatar.loadAvatar(avatarId, gender);
+                avatar.loadAvatar(avatarId, gender).then(() => {
+                    avatar.loadAnimations();
+                });
                 break;
             }
         }
@@ -253,7 +258,7 @@ class RoomManager {
     private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
         const decoder = new TextDecoder();
         const syncData = JSON.parse(decoder.decode(payload));
-        if (syncData.id === this.room.localParticipant.sid) {
+        if (syncData.id === this.room.localParticipant.identity) {
             return;
         }
         this._syncAvatarState(syncData);
@@ -263,13 +268,13 @@ class RoomManager {
         const isLoading = this.localAvatar.isLoadingAvatar;
 
         return {
-            sid: this.room.localParticipant.sid,
+            identity: this.room.localParticipant.identity,
             position: this.localAvatar.getPosition(true).asArray(),
             rotation: this.localAvatar.getRotationQuaternion(true).asArray(),
             lookTarget: this.localAvatar.currentBoneLookControllerTarget?.asArray(),
             animation:
                 this.localAvatar.playingAnimation?.name ??
-                (this.localAvatar.gender === "male" ? "Male" : "Female") + "Idle",
+                (this.localAvatar.gender === "male" ? "Male" : "Female") + "Idle_" + this.localAvatar.participant.identity,
             isAnimationLooping: this.localAvatar.isPlayingAnimationLooping,
             isCrouching: this.localAvatar.isCrouching,
             isMoving: this.localAvatar.isMoving,
@@ -282,7 +287,7 @@ class RoomManager {
 
     private async _syncAvatarState(syncData: SyncState) {
         const {
-            sid,
+            identity,
             position,
             rotation,
             animation,
@@ -295,7 +300,7 @@ class RoomManager {
         } = syncData;
 
         for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.sid === sid) {
+            if (participant.identity === identity) {
                 avatar.isMoving = isMoving;
                 avatar.isGrounded = isGrounded;
                 avatar.setPosition(Vector3.FromArray(position));
@@ -316,7 +321,7 @@ class RoomManager {
         // update the avatar position for audio
         useAvatarStore.getState().setRemoteAvatarAudioPositions(
             [...this.remoteAvatars.values()].map((avatar) => ({
-                sid: avatar.participant.sid,
+                identity: avatar.participant.identity,
                 position: avatar.getPosition(true).asArray(),
                 // rotation: avatar.getRotationQuaternion(true).asArray(),
                 // forward: avatar.root.forward.asArray(),

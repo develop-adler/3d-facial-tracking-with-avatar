@@ -6,7 +6,7 @@ export type RoomAndName = {
 };
 
 export type SyncState = {
-    sid: string;
+    identity: string;
     position: ObjectTransform;
     rotation: ObjectQuaternion;
     animation: string;
@@ -19,7 +19,7 @@ export type SyncState = {
 };
 
 export type AvatarChange = {
-    sid: string;
+    identity: string;
     avatarId: string;
     gender: AvatarGender;
 };
@@ -34,5 +34,5 @@ export type AvatarAudioData = {
 };
 
 export type RemoteAvatarAudioData = AvatarAudioData & {
-    sid: string;
+    identity: string;
 };

@@ -224,7 +224,7 @@ class Avatar {
 
     this._preloadAnimationResources();
 
-    const tNodeName = "avatarRootNode_" + participant.sid;
+    const tNodeName = "avatarRootNode_" + participant.identity;
     this.root = new TransformNode(tNodeName, this.scene);
 
     if (position) {
@@ -322,7 +322,7 @@ class Avatar {
 
     if (emitChangeEvent) {
       eventBus.emit<AvatarChange>("avatar:changeAvatar", {
-        sid: this.participant.sid,
+        identity: this.participant.identity,
         avatarId: id,
         gender: "female",
       });
@@ -382,6 +382,8 @@ class Avatar {
       this._morphTargetManager = container.morphTargetManagers[0];
     }
 
+    if (emitChangeEvent) this.loadAnimations();
+
     container.meshes.forEach((mesh, i) => {
       // is root mesh, skip
       if (i === 0) {
@@ -413,7 +415,7 @@ class Avatar {
     });
 
     this.isLoadingAvatar = false;
-    eventBus.emit(`avatar:modelLoaded:${this.participant.sid}`, container);
+    eventBus.emit(`avatar:modelLoaded:${this.participant.identity}`, container);
 
     if (!this._voiceBubble) {
       this._voiceBubble = new AvatarVoiceBubble(this);
@@ -421,7 +423,7 @@ class Avatar {
 
     // change head node parent and camera target
     const headNode = this.scene.getTransformNodeByName(
-      `customHeadNode_${this.participant.sid}`
+      `customHeadNode_${this.participant.identity}`
     );
     if (headNode) headNode.parent = this.root;
 
@@ -436,7 +438,7 @@ class Avatar {
     // this.scene.onBeforeRenderObservable.add(() => {
     //   if (!this._rootMesh) return;
     //   if (this._rootMesh.getChildMeshes().every(mesh => mesh.isOccluded === true)) {
-    //     console.log(`avatar ${this.participant.sid} is occluded`);
+    //     console.log(`avatar ${this.participant.identity} is occluded`);
     //   }
     // });
 
@@ -470,19 +472,15 @@ class Avatar {
       );
     }
 
-    // animation has to be loaded after avatar model is loaded
-    // so the anims have bone target assigned
-    this._loadAnimations(container.skeletons[0]);
-
-    if (this.isAnimationsReady === true) {
-      this.isReady = true;
-      eventBus.emit(`avatar:ready:${this.participant.sid}`, this);
-    } else {
-      eventBus.once(`avatar:animationsReady:${this.participant.sid}`, () => {
-        this.isReady = true;
-        eventBus.emit(`avatar:ready:${this.participant.sid}`, this);
-      });
-    }
+    // if (this.isAnimationsReady === true) {
+    //   this.isReady = true;
+    //   eventBus.emit(`avatar:ready:${this.participant.identity}`, this);
+    // } else {
+    //   eventBus.once(`avatar:animationsReady:${this.participant.identity}`, () => {
+    //     this.isReady = true;
+    //     eventBus.emit(`avatar:ready:${this.participant.identity}`, this);
+    //   });
+    // }
 
     // update camera position and target to face the avatar's eyes
     if (isVideoChat) {
@@ -835,7 +833,24 @@ class Avatar {
     });
   }
 
-  private async _loadAnimations(skeleton: Skeleton) {
+  /**
+   * Load avatar animations, MUST be loaded after avatar model is loaded
+   */
+  async loadAnimations() {
+    if (!this._skeleton) {
+      console.error('No avatar skeleton found, load animation failed');
+      return;
+    }
+
+    const skeleton = this._skeleton;
+
+    // remove all existing animations
+    for (const anim of Object.values(this._animations)) {
+      anim.stop(true);
+      anim.dispose();
+    }
+    this._animations = {};
+
     // import animations and retarget to this skeleton
     await Promise.all(
       // resources.map(async ({ url }) => {
@@ -875,15 +890,17 @@ class Avatar {
 
         // stop animation to prevent it from playing and loop infinitely
         for (const ta of importedAnimation.targetedAnimations) {
-          this.scene.stopAnimation(ta.target, ta.animation.name);
+          this.scene.stopAnimation(ta.target);
         }
         // importedAnimation.stop(true); // for some reason this doesn't work at all
+
         importedAnimation.enableBlending = true;
         importedAnimation.blendingSpeed = 0.05;
 
-        const animationName =
-          this.gender.charAt(0).toUpperCase() + this.gender.slice(1) + animName;
-        this._animations[animationName] = importedAnimation;
+        // rename animation to have user's id
+        importedAnimation.name = `${animName}_${this.participant.identity}`;
+
+        this._animations[importedAnimation.name] = importedAnimation;
 
         // remove head bone from all animations (this will allow head to be synced with user)
         // importedAnimation.targetedAnimations.splice(
@@ -903,9 +920,11 @@ class Avatar {
       })
     );
 
+    console.log('Avatar animations loaded:', this._animations);
+
     this.playingAnimation = undefined;
     this.isAnimationsReady = true;
-    eventBus.emit(`avatar:animationsReady:${this.participant.sid}`, this);
+    eventBus.emit(`avatar:animationsReady:${this.participant.identity}`, this);
   }
 
   loadPhysicsBodies(skeleton?: Skeleton): void {
@@ -920,7 +939,7 @@ class Avatar {
 
     if (clientSettings.DEBUG) {
       console.log(
-        `Physics bodies created for ${this.participant.sid}:`,
+        `Physics bodies created for ${this.participant.identity}:`,
         this._physicsBodies.map((body) => body.transformNode.name)
       );
     }
@@ -966,7 +985,7 @@ class Avatar {
 
     if (!this._capsuleBodyNode) {
       this._capsuleBodyNode = new TransformNode(
-        "avatarCapsuleBodyNode_" + this.participant.sid,
+        "avatarCapsuleBodyNode_" + this.participant.identity,
         this.scene
       );
     }
@@ -1009,7 +1028,7 @@ class Avatar {
       this.root.setAbsolutePosition(this._capsuleBodyNode.absolutePosition);
     });
 
-    eventBus.emit(`avatar:capsuleBodyCreated:${this.participant.sid}`, body);
+    eventBus.emit(`avatar:capsuleBodyCreated:${this.participant.identity}`, body);
 
     this._fallSceneObserver = this.scene.onAfterPhysicsObservable.add(() => {
       // if is falling and capsule body isn't colliding with anything
@@ -1052,7 +1071,7 @@ class Avatar {
       if (!bone) return;
 
       const bodyNode = new TransformNode(
-        bone.name + "_node_" + this.participant.sid,
+        bone.name + "_node_" + this.participant.identity,
         this.scene
       );
       bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
@@ -1108,7 +1127,7 @@ class Avatar {
       if (!bone) return;
 
       const bodyNode = new TransformNode(
-        bone.name + "_node_" + this.participant.sid,
+        bone.name + "_node_" + this.participant.identity,
         this.scene
       );
       bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
@@ -1161,13 +1180,13 @@ class Avatar {
                   )
                 ) {
                   // TODO: handle flinching interaction better
-                  // const sid = collision.collidedAgainst.transformNode.name
+                  // const identity = collision.collidedAgainst.transformNode.name
                   //   .split("_")
                   //   .at(-1);
                   // for (const avatar of this._otherAvatars) {
                   //   // if avatar is not already getting hit, play head flinch animation
                   //   if (
-                  //     avatar.participant.sid === sid &&
+                  //     avatar.participant.identity === identity &&
                   //     avatar.interaction?.type === "hitting" &&
                   //     this.interaction?.type !== "gethit"
                   //   ) {
@@ -1202,14 +1221,14 @@ class Avatar {
                   )
                 ) {
                   // TODO: handle flinching interaction better
-                  // const sid = collision.collidedAgainst.transformNode.name
+                  // const identity = collision.collidedAgainst.transformNode.name
                   //   .split("_")
                   //   .at(-1);
                   // for (const avatar of this._otherAvatars) {
                   //   // if avatar is not already getting hit, play chest flinch animation
                   //   // and prevent having another flinch if already getting hit
                   //   if (
-                  //     avatar.participant.name === sid &&
+                  //     avatar.participant.name === identity &&
                   //     avatar.interaction?.type === "hitting" &&
                   //     this.interaction?.type !== "gethit"
                   //   ) {
@@ -1386,7 +1405,7 @@ class Avatar {
 
   private _createGroundCheckBody(): void {
     const bodyNode = new TransformNode(
-      "groundCheckBody_node_" + this.participant.sid,
+      "groundCheckBody_node_" + this.participant.identity,
       this.scene
     );
     bodyNode.setAbsolutePosition(this.root.getAbsolutePosition());
@@ -1424,7 +1443,7 @@ class Avatar {
           }
           // this means character is landing
           if (!this.isGrounded) {
-            eventBus.emit(`avatar:landing:${this.participant.sid}`, this);
+            eventBus.emit(`avatar:landing:${this.participant.identity}`, this);
           }
           this.isGrounded = true;
           break;
@@ -1519,11 +1538,9 @@ class Avatar {
 
     if (typeof animation === "string") {
       let animationName = animation;
-      const gender = this.gender.charAt(0).toUpperCase() + this.gender.slice(1);
-
-      // prefix gender to animation name if not already prefixed
-      if (!animationName.includes(gender)) {
-        animationName = gender + animationName;
+      // if missing user identity, append it to animation name
+      if (!animationName.includes(`_${this.participant.identity}`)) {
+        animationName = animationName + "_" + this.participant.identity;
       }
 
       if (
@@ -1541,7 +1558,7 @@ class Avatar {
       );
 
       // if (clientSettings.DEBUG) {
-      //   console.log('Playing animation from name for ', this.participant.sid, ':', animationName);
+      //   console.log('Playing animation from name for ', this.participant.identity, ':', animationName);
       // }
     } else {
       if (this.playingAnimation === animation) return;
@@ -1557,7 +1574,7 @@ class Avatar {
       // if (clientSettings.DEBUG) {
       //   console.log(
       //     'Playing animation from animGroup for ',
-      //     this.participant.sid,
+      //     this.participant.identity,
       //     ':',
       //     animation.name
       //   );
@@ -1645,7 +1662,7 @@ class Avatar {
       );
     }
     if (clientSettings.DEBUG) {
-      console.log("Show avatar for user:", this.participant.sid);
+      console.log("Show avatar for user:", this.participant.identity);
     }
   }
 
@@ -1663,7 +1680,7 @@ class Avatar {
       this._isCapsuleBodyColliding = false;
     }
     if (clientSettings.DEBUG) {
-      console.log("Hide avatar for user:", this.participant.sid);
+      console.log("Hide avatar for user:", this.participant.identity);
     }
   }
 

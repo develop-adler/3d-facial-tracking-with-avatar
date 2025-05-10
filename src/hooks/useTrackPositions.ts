@@ -33,19 +33,19 @@ export const useTrackPositions = () => {
 
         // Memoize all of the remote microphone tracks
         for (const tpp of trackParticipantPairs) {
-            microphoneTrackLookup.set(tpp.participant.sid, tpp);
+            microphoneTrackLookup.set(tpp.participant.identity, tpp);
         }
 
         const res = remoteAvatarAudioPositions
-            .filter((avatar) => microphoneTrackLookup.has(avatar.sid))
+            .filter((avatar) => microphoneTrackLookup.has(avatar.identity))
             .map((avatar) => {
                 return {
-                    trackPublication: microphoneTrackLookup.get(avatar.sid)!
+                    trackPublication: microphoneTrackLookup.get(avatar.identity)!
                         .publication,
-                    participant: microphoneTrackLookup.get(avatar.sid)!
+                    participant: microphoneTrackLookup.get(avatar.identity)!
                         .participant,
                     audioData: {
-                        sid: avatar.sid,
+                        identity: avatar.identity,
                         position: avatar.position,
                         // rotation: avatar.rotation,
                         // forward: avatar.forward,
