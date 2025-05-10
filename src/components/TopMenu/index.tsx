@@ -40,7 +40,7 @@ const TopMenu: FC = () => {
     };
 
     const switchAvatar = (avatarId: string) => {
-        avatar?.loadAvatar(avatarId, undefined, !isMultiplayer);
+        avatar?.loadAvatar(avatarId, undefined, !isMultiplayer, true);
     };
 
     const pushRoute = (route: string) => {

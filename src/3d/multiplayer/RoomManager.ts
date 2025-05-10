@@ -94,27 +94,7 @@ class RoomManager {
         } catch {
             // empty
         }
-
-        eventBus.on(
-            "avatar:changeAvatar",
-            ({ sid, avatarId, gender }: AvatarChange) => {
-                console.log("change avatar");
-
-                if (sid !== this.room.localParticipant.sid) {
-                    return;
-                }
-                for (const participant of this.remoteAvatars.keys()) {
-                    this.room.localParticipant.performRpc({
-                        destinationIdentity: participant.identity,
-                        method: "participantChangeAvatar",
-                        payload: JSON.stringify({
-                            avatarId,
-                            gender,
-                        }),
-                    });
-                }
-            }
-        );
+        eventBus.on("avatar:changeAvatar", this._changeAvatarEventBus.bind(this));
 
         const encoder = new TextEncoder();
 
@@ -240,16 +220,28 @@ class RoomManager {
         this.remoteAvatars.get(participant)?.updateName(name);
     }
 
-    private async _changeRemoteParticipantAvatar(data: RpcInvocationData) {
-        console.log("update remote avatar", data.payload);
-        const changeData = JSON.parse(data.payload) as AvatarChange;
-
-        if (changeData.sid === this.room.localParticipant.sid) {
-            return "isLocalUser" as string;
+    private _changeAvatarEventBus({ sid, avatarId, gender }: AvatarChange) {
+        for (const participant of this.remoteAvatars.keys()) {
+            try {
+                this.room.localParticipant.performRpc({
+                    destinationIdentity: participant.identity,
+                    method: "participantChangeAvatar",
+                    payload: JSON.stringify({
+                        sid,
+                        avatarId,
+                        gender,
+                    }),
+                });
+            } catch (error) {
+                console.log("Error performing change avatar RPC", error);
+            }
         }
-        const { sid, avatarId, gender } = changeData;
+    }
+
+    private async _changeRemoteParticipantAvatar(data: RpcInvocationData) {
+        const { avatarId, gender } = JSON.parse(data.payload) as AvatarChange;
         for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.sid === sid) {
+            if (participant.identity === data.callerIdentity) {
                 avatar.loadAvatar(avatarId, gender);
                 break;
             }
@@ -355,6 +347,7 @@ class RoomManager {
         );
         this.room.off("participantNameChanged", this._updateRemoteParticipantName);
         this.room.unregisterRpcMethod("participantChangeAvatar");
+        eventBus.off("avatar:changeAvatar", this._changeAvatarEventBus);
 
         if (clientSettings.DEBUG)
             console.log("RoomManager disposed", this.room.name);

@@ -317,7 +317,8 @@ class Avatar {
   async loadAvatar(
     id: string = useAvatarStore.getState().avatarId ?? DEFAULT_AVATAR_ID,
     gender: AvatarGender = "male",
-    isVideoChat: boolean = false
+    isVideoChat: boolean = false,
+    emitChangeEvent: boolean = false
   ): Promise<this> {
     if (this.isLoadingAvatar || this.currentAvatarId === id) return this;
 
@@ -327,6 +328,14 @@ class Avatar {
 
     this.isLoadingAvatar = true;
     useAvatarLoadingStore.getState().setStartLoading();
+
+    if (emitChangeEvent) {
+      eventBus.emit<AvatarChange>("avatar:changeAvatar", {
+        sid: this.participant.sid,
+        avatarId: id,
+        gender: "female",
+      });
+    }
 
     const container = await loadAssetContainerAsync(
       `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS,
@@ -349,8 +358,20 @@ class Avatar {
 
     // remove existing avatar model
     if (this._container) {
-      // eslint-disable-next-line unicorn/no-null
-      if (this._rootMesh) this._rootMesh.parent = null; // remove root mesh parent
+      if (this._rootMesh) {
+        // eslint-disable-next-line unicorn/no-null
+        this._rootMesh.parent = null; // remove root mesh parent
+        // remove all children from root mesh
+        for (const child of this._rootMesh.getChildren()) {
+          // eslint-disable-next-line unicorn/no-null
+          child.parent = null;
+        }
+      }
+      this._rootMesh = undefined;
+      this._meshes = [];
+      this._skeleton = undefined;
+      this._bones = undefined;
+      this._morphTargetManager = undefined;
       this._container.dispose();
     }
 
@@ -726,12 +747,7 @@ class Avatar {
       return;
     }
     if (this.currentAvatarId === id) return;
-    eventBus.emit<AvatarChange>("avatar:changeAvatar", {
-      sid: this.participant.sid,
-      avatarId: id,
-      gender: "female",
-    });
-    return this.loadAvatar(id);
+    return this.loadAvatar(id, undefined, undefined, true);
   }
 
   // private _handleMorpTargets(mesh: AbstractMesh): void {
