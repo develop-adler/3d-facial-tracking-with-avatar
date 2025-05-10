@@ -187,6 +187,7 @@ class RoomManager {
         }
         const avatar = new Avatar(this.coreScene, participant, "male", false);
         avatar.loadAvatar().then(() => {
+            avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
         });
         this.remoteAvatars.set(participant, avatar);
