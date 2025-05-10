@@ -259,6 +259,8 @@ class RoomManager {
     }
 
     private _getSelfAvatarState(): SyncState {
+        const isLoading = this.localAvatar.isLoadingAvatar;
+
         return {
             sid: this.room.localParticipant.sid,
             position: this.localAvatar.getPosition(true).asArray(),
@@ -271,7 +273,7 @@ class RoomManager {
             isCrouching: this.localAvatar.isCrouching,
             isMoving: this.localAvatar.isMoving,
             isGrounded: this.localAvatar.isGrounded,
-            morphTargets: extractMorphTargetInfluences(
+            morphTargets: isLoading ? {} : extractMorphTargetInfluences(
                 this.localAvatar.morphTargetManager
             ),
         };
