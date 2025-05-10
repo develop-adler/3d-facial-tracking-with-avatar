@@ -39,14 +39,14 @@ class CoreScene {
     readonly scene: Scene;
     readonly camera: ArcRotateCamera;
     readonly atom: Atom;
-    readonly avatarPhysicsShapes: AvatarPhysicsShapes;
+    readonly remoteAvatarPhysicsShapes: AvatarPhysicsShapes;
 
     isPhysicsEnabled: boolean = false;
 
     constructor(room: Room, coreEngine: CoreEngine) {
         this.coreEngine = coreEngine;
         this.room = room;
-        this.avatarPhysicsShapes = {
+        this.remoteAvatarPhysicsShapes = {
             male: {},
             female: {},
             other: {},
@@ -135,14 +135,14 @@ class CoreScene {
     private _createAvatarPhysicsShapes(): void {
         const genders = ["male", "female", "other"] as const;
         for (const gender of genders) {
-            const physicsShapes = this.avatarPhysicsShapes[gender];
+            const physicsShapes = this.remoteAvatarPhysicsShapes[gender];
             if (!physicsShapes.normal) {
-                physicsShapes.normal = CreateAvatarPhysicsShape(this.scene, gender, false);
-                this.avatarPhysicsShapes[gender].normal = physicsShapes.normal;
+                physicsShapes.normal = CreateAvatarPhysicsShape(this.scene, gender, false, true);
+                this.remoteAvatarPhysicsShapes[gender].normal = physicsShapes.normal;
             }
             if (!physicsShapes.crouch) {
-                physicsShapes.crouch = CreateAvatarPhysicsShape(this.scene, gender, true);
-                this.avatarPhysicsShapes[gender].crouch = physicsShapes.crouch;
+                physicsShapes.crouch = CreateAvatarPhysicsShape(this.scene, gender, true, true);
+                this.remoteAvatarPhysicsShapes[gender].crouch = physicsShapes.crouch;
             }
         }
     }

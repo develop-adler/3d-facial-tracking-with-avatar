@@ -15,7 +15,8 @@ import type { Scene } from "@babylonjs/core/scene";
 const CreateAvatarPhysicsShape = (
     scene: Scene,
     gender: AvatarGender,
-    isShort: boolean = false
+    isShort: boolean = false,
+    isOther: boolean = false
 ): PhysicsShapeContainer | PhysicsShapeSphere => {
     const capsuleHeight =
         gender === "male" || gender === "other"
@@ -30,8 +31,9 @@ const CreateAvatarPhysicsShape = (
             scene
         );
         shape.material = { friction: 0.4, restitution: 0 };
-        shape.filterMembershipMask =
-            PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
+        shape.filterMembershipMask = isOther
+            ? PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER
+            : PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
         shape.filterCollideMask =
             PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
             PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |
@@ -48,8 +50,9 @@ const CreateAvatarPhysicsShape = (
         scene
     );
     capsuleShape.material = { friction: 0.4, restitution: 0 };
-    capsuleShape.filterMembershipMask =
-        PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
+    capsuleShape.filterMembershipMask = isOther
+        ? PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER
+        : PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
     capsuleShape.filterCollideMask =
         PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
         PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |
@@ -62,8 +65,9 @@ const CreateAvatarPhysicsShape = (
         scene
     );
     cylinderShape.material = { friction: 0, restitution: 0 };
-    cylinderShape.filterMembershipMask =
-        PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
+    cylinderShape.filterMembershipMask = isOther
+        ? PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER
+        : PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF;
     cylinderShape.filterCollideMask =
         PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
         PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF |

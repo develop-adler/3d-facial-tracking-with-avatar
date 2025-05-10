@@ -30,6 +30,7 @@ import eventBus from "@/eventBus";
 import type {
   AvatarGender,
   AvatarInteractionType,
+  AvatarPhysicsShapes,
   ObjectQuaternion,
   ObjectTransform,
 } from "@/models/3d";
@@ -59,21 +60,6 @@ import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin
 import type { Scene } from "@babylonjs/core/scene";
 
 type AnimationsRecord = Record<string, AnimationGroup>;
-
-export type AvatarPhysicsShapes = {
-  male: {
-    normal: PhysicsShapeCapsule;
-    crouch: PhysicsShapeCapsule;
-  };
-  female: {
-    normal: PhysicsShapeCapsule;
-    crouch: PhysicsShapeCapsule;
-  };
-  other: {
-    normal: PhysicsShapeCapsule;
-    crouch: PhysicsShapeCapsule;
-  };
-};
 
 type HandBoneIKControllers = {
   left?: BoneIKController;
@@ -134,6 +120,7 @@ class Avatar {
   gender: AvatarGender;
   readonly isSelf: boolean;
   readonly headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
+  readonly avatarPhysicsShapes: AvatarPhysicsShapes;
 
   private _voiceBubble?: AvatarVoiceBubble;
   private _profile?: AvatarProfile;
@@ -209,7 +196,6 @@ class Avatar {
   isAnimationsReady: boolean = false;
   isReady: boolean = false;
 
-
   constructor(
     coreScene: CoreScene,
     participant: Participant,
@@ -227,6 +213,11 @@ class Avatar {
     this.gender = gender;
     this.participant = participant;
     this.isSelf = isSelf;
+    this.avatarPhysicsShapes = {
+      male: {},
+      female: {},
+      other: {},
+    };
 
     if (this.gender === "female")
       this.headHeight = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_FEMALE;
@@ -429,7 +420,9 @@ class Avatar {
     }
 
     // change head node parent and camera target
-    const headNode = this.scene.getTransformNodeByName(`customHeadNode_${this.participant.sid}`);
+    const headNode = this.scene.getTransformNodeByName(
+      `customHeadNode_${this.participant.sid}`
+    );
     if (headNode) headNode.parent = this.root;
 
     // if (this.post) {
@@ -502,14 +495,11 @@ class Avatar {
 
       if (leftEyeTNode && rightEyeTNode) {
         const pointBetweenEyes = new Vector3(
-          (leftEyeTNode.absolutePosition.x +
-            rightEyeTNode.absolutePosition.x) /
+          (leftEyeTNode.absolutePosition.x + rightEyeTNode.absolutePosition.x) /
           2,
-          (leftEyeTNode.absolutePosition.y +
-            rightEyeTNode.absolutePosition.y) /
+          (leftEyeTNode.absolutePosition.y + rightEyeTNode.absolutePosition.y) /
           2,
-          (leftEyeTNode.absolutePosition.z +
-            rightEyeTNode.absolutePosition.z) /
+          (leftEyeTNode.absolutePosition.z + rightEyeTNode.absolutePosition.z) /
           2
         );
 
@@ -937,18 +927,22 @@ class Avatar {
   }
 
   private _generateCapsuleBody(position?: Vector3): PhysicsBody {
-    const { avatarPhysicsShapes } = this.coreScene;
+    const avatarPhysicsShapes = this.isSelf
+      ? this.avatarPhysicsShapes
+      : this.coreScene.remoteAvatarPhysicsShapes;
 
     avatarPhysicsShapes[this.gender].normal ??= CreateAvatarPhysicsShape(
       this.scene,
       this.gender,
-      false
+      false,
+      !this.isSelf
     );
 
     avatarPhysicsShapes[this.gender].crouch ??= CreateAvatarPhysicsShape(
       this.scene,
       this.gender,
-      true
+      true,
+      !this.isSelf
     );
 
     this.avatarBodyShapeFull = avatarPhysicsShapes[this.gender].normal!;
@@ -958,7 +952,8 @@ class Avatar {
       this.avatarBodyShapeFullForChecks = CreateAvatarPhysicsShape(
         this.scene,
         this.gender,
-        false
+        false,
+        !this.isSelf
       );
       this.avatarBodyShapeFullForChecks.filterCollideMask =
         PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT;
@@ -1688,11 +1683,14 @@ class Avatar {
     if (isCrouch) {
       this._capsuleBody.disableSync = true;
       if (!this.avatarBodyShapeCrouch) {
-        const { avatarPhysicsShapes } = this.coreScene;
+        const avatarPhysicsShapes = this.isSelf
+          ? this.avatarPhysicsShapes
+          : this.coreScene.remoteAvatarPhysicsShapes;
         avatarPhysicsShapes[this.gender].crouch ??= CreateAvatarPhysicsShape(
           this.scene,
           this.gender,
-          true
+          true,
+          !this.isSelf
         );
         this.avatarBodyShapeCrouch = avatarPhysicsShapes[this.gender].crouch!;
       }
@@ -1706,12 +1704,15 @@ class Avatar {
     } else {
       this._capsuleBody.disableSync = true;
       if (!this.avatarBodyShapeFull) {
-        const { avatarPhysicsShapes } = this.coreScene;
+        const avatarPhysicsShapes = this.isSelf
+          ? this.avatarPhysicsShapes
+          : this.coreScene.remoteAvatarPhysicsShapes;
 
         avatarPhysicsShapes[this.gender].normal ??= CreateAvatarPhysicsShape(
           this.scene,
           this.gender,
-          false
+          false,
+          !this.isSelf
         );
         this.avatarBodyShapeFull = avatarPhysicsShapes[this.gender].normal!;
       }
@@ -1759,7 +1760,8 @@ class Avatar {
       case !this.playingAnimation:
       case !this.isGrounded:
       case this.isCrouching && this.isMoving:
-      case this.interaction?.type === "continuous" && this.interaction.continuousPhase !== 1:
+      case this.interaction?.type === "continuous" &&
+        this.interaction.continuousPhase !== 1:
       case this.interaction?.type === "loop":
       case this.interaction?.type === "gethit": {
         // - no animation is playing, no need to update bone look controller
@@ -1775,11 +1777,7 @@ class Avatar {
       this.currentBoneLookControllerTarget = target;
       this._boneLookController.target = target;
     } else if (this.currentBoneLookControllerTarget) {
-      this._boneLookController.target = Vector3.Lerp(
-        this._boneLookController.target,
-        this.currentBoneLookControllerTarget,
-        0.3
-      );
+      this._boneLookController.target = this.currentBoneLookControllerTarget;
     }
 
     // update the bone look controller

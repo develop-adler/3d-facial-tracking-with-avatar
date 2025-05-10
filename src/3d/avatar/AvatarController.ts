@@ -1113,7 +1113,7 @@ class AvatarController {
             {
                 collideWith:
                     PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT |
-                    PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_SELF,
+                    PHYSICS_SHAPE_FILTER_GROUPS.AVATAR_CAPSULE_OTHER,
             }
         );
 
