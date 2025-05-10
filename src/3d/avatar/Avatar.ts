@@ -129,6 +129,7 @@ class Avatar {
   private _clickedToOpenProfileCard: boolean = false;
 
   readonly root: TransformNode;
+  readonly customHeadNode: TransformNode;
   private _container?: AssetContainer;
   private _bones?: Bone[];
   private _morphTargetManager?: MorphTargetManager;
@@ -224,8 +225,15 @@ class Avatar {
 
     this._preloadAnimationResources();
 
-    const tNodeName = "avatarRootNode_" + participant.identity;
-    this.root = new TransformNode(tNodeName, this.scene);
+    this.root = new TransformNode(
+      `avatarRootNode_${participant.identity}`,
+      this.scene
+    );
+    this.customHeadNode = new TransformNode(
+      `customHeadNode_${participant.identity}`,
+      this.scene,
+      true
+    );
 
     if (position) {
       if (position instanceof Vector3) this.root.position = position.clone();
@@ -422,10 +430,14 @@ class Avatar {
     }
 
     // change head node parent and camera target
-    const headNode = this.scene.getTransformNodeByName(
-      `customHeadNode_${this.participant.identity}`
+    this.customHeadNode.setAbsolutePosition(
+      new Vector3(
+        this.root.absolutePosition.x,
+        this.root.absolutePosition.y + this.headHeight,
+        this.root.absolutePosition.z
+      )
     );
-    if (headNode) headNode.parent = this.root;
+    this.customHeadNode.parent = this.root;
 
     // if (this.post) {
     //   const pickingList = [...this.post.gpuPickerPickingList, ...this._meshes.map(mesh => mesh.getChildMeshes()).flat()];
@@ -838,7 +850,7 @@ class Avatar {
    */
   async loadAnimations() {
     if (!this._skeleton) {
-      console.error('No avatar skeleton found, load animation failed');
+      console.error("No avatar skeleton found, load animation failed");
       return;
     }
 
@@ -902,25 +914,21 @@ class Avatar {
 
         this._animations[importedAnimation.name] = importedAnimation;
 
-        // remove head bone from all animations (this will allow head to be synced with user)
-        // importedAnimation.targetedAnimations.splice(
-        //   importedAnimation.targetedAnimations.findIndex(
-        //     (ta) => ta.target.name === "Head"
-        //   ),
-        //   1
-        // );
-        for (const ta of importedAnimation.targetedAnimations) {
-          if (ta.target.name === "Head") {
-            importedAnimation.targetedAnimations.splice(
-              importedAnimation.targetedAnimations.indexOf(ta),
-              1
-            );
+        // remove head bone from idle animations (this will allow head to be synced with user)
+        if (animName === "Idle") {
+          for (const ta of importedAnimation.targetedAnimations) {
+            if (ta.target.name === "Head") {
+              importedAnimation.targetedAnimations.splice(
+                importedAnimation.targetedAnimations.indexOf(ta),
+                1
+              );
+            }
           }
         }
       })
     );
 
-    console.log('Avatar animations loaded:', this._animations);
+    console.log("Avatar animations loaded:", this._animations);
 
     this.playingAnimation = undefined;
     this.isAnimationsReady = true;
@@ -1028,7 +1036,10 @@ class Avatar {
       this.root.setAbsolutePosition(this._capsuleBodyNode.absolutePosition);
     });
 
-    eventBus.emit(`avatar:capsuleBodyCreated:${this.participant.identity}`, body);
+    eventBus.emit(
+      `avatar:capsuleBodyCreated:${this.participant.identity}`,
+      body
+    );
 
     this._fallSceneObserver = this.scene.onAfterPhysicsObservable.add(() => {
       // if is falling and capsule body isn't colliding with anything
@@ -1803,6 +1814,13 @@ class Avatar {
 
   dispose(): void {
     this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
+
+    this.boneIKTargets.left.pole.dispose();
+    this.boneIKTargets.left.target.dispose();
+    this.boneIKTargets.right.pole.dispose();
+    this.boneIKTargets.right.target.dispose();
+
+    this.customHeadNode.dispose();
 
     this._bones = undefined;
     this._morphTargetManager = undefined;

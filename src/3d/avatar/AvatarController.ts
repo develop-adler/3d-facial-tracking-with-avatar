@@ -8,7 +8,6 @@ import {
     Vector3,
 } from "@babylonjs/core/Maths/math.vector";
 // import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { ProximityCastResult } from "@babylonjs/core/Physics/proximityCastResult";
 import { ShapeCastResult } from "@babylonjs/core/Physics/shapeCastResult";
 import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
@@ -88,7 +87,6 @@ class AvatarController {
     readonly scene: Scene;
     readonly camera: ArcRotateCamera;
     readonly avatar: Avatar;
-    readonly customHeadNode: TransformNode;
 
     private readonly _joystickAxes: JoystickAxes;
     private _isActive: boolean = false;
@@ -171,7 +169,6 @@ class AvatarController {
         this.camera = camera;
         this.scene = scene;
         this._joystickAxes = joystickAxes ?? { x: 0, y: 0 };
-        this.customHeadNode = new TransformNode(`customHeadNode_${this.avatar.participant.identity}`, scene, true);
 
         this._stairHeightCheckPhysicsShape = new PhysicsShapeCylinder(
             new Vector3(0, 0.125, 0),
@@ -279,16 +276,16 @@ class AvatarController {
         }
 
         // make camera follow avatar and target head
-        this.customHeadNode.setAbsolutePosition(
+        this.avatar.customHeadNode.setAbsolutePosition(
             new Vector3(
                 this.avatar.root.absolutePosition.x,
                 this.avatar.root.absolutePosition.y + this.avatar.headHeight,
                 this.avatar.root.absolutePosition.z
             )
         );
-        this.customHeadNode.parent = this.avatar.root;
+        this.avatar.customHeadNode.parent = this.avatar.root;
 
-        this.camera.targetHost = this.customHeadNode;
+        this.camera.targetHost = this.avatar.customHeadNode;
 
         // update bounding info before every render but with reduced frequency
         // (even though it uses GPU it can be expensive on lower end devices)
@@ -1074,7 +1071,7 @@ class AvatarController {
         const cameraToUse = this._xrCamera ?? this.camera;
         // target is the point on the other side of the camera compare to the camera target
         const target = cameraToUse.globalPosition.add(
-            this.customHeadNode.absolutePosition
+            this.avatar.customHeadNode.absolutePosition
                 .subtract(cameraToUse.globalPosition)
                 .normalize()
                 .scale(100)
@@ -1106,7 +1103,7 @@ class AvatarController {
         if (!physicsEngine) return;
 
         const raycastResult = physicsEngine.raycast(
-            this.customHeadNode.absolutePosition,
+            this.avatar.customHeadNode.absolutePosition,
             this.camera.globalPosition,
             {
                 collideWith:
@@ -1124,14 +1121,14 @@ class AvatarController {
             const hitPoint = raycastResult.hitPointWorld;
             const distanceToHead = Vector3.Distance(
                 hitPoint,
-                this.customHeadNode.absolutePosition
+                this.avatar.customHeadNode.absolutePosition
             );
             const avatarOtherSide =
                 distanceToHead + AVATAR_PARAMS.CAPSULE_RADIUS * 2.25;
 
             // check if other side of avatar has collision
             const raycastResult2 = physicsEngine.raycast(
-                this.customHeadNode.absolutePosition,
+                this.avatar.customHeadNode.absolutePosition,
                 this.camera.globalPosition,
                 {
                     collideWith: PHYSICS_SHAPE_FILTER_GROUPS.ENVIRONMENT,
@@ -1172,7 +1169,7 @@ class AvatarController {
             this.camera.radius,
             Vector3.Distance(
                 result.hitPointWorld,
-                this.customHeadNode.absolutePosition
+                this.avatar.customHeadNode.absolutePosition
             ) - 0.03,
             0.5
         );
@@ -1525,7 +1522,6 @@ class AvatarController {
     dispose(): void {
         this.stop();
         this.keyboardPressObserver.remove();
-        this.customHeadNode.dispose();
         this.scene
             .getEngine()
             .getRenderingCanvas()!
