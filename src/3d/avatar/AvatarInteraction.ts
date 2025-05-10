@@ -29,6 +29,7 @@ class AvatarInteraction {
         this.type = type;
     }
 
+    // TODO: fix sitting not working
     play(onAnimationEndCallback?: () => void): void {
         let hasAnim = false;
         switch (this.type) {
