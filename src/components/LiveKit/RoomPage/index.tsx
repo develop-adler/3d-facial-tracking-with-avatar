@@ -90,7 +90,7 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
     }, [room]);
 
     useEffect(() => {
-        useTrackingStore.getState().faceTracker?.setIsMultiplayer(isMultiplayer);
+        useTrackingStore.getState().faceTracker.setIsMultiplayer(isMultiplayer);
     }, [isMultiplayer]);
 
     // Publish 3D babylon.js canvas as camera stream
@@ -129,9 +129,9 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cameraTrack]);
 
-    // useEffect(() => {
-    //     return () => useTrackingStore.getState().faceTracker.dispose();
-    // }, []);
+    useEffect(() => {
+        return () => useTrackingStore.getState().faceTracker.dispose();
+    }, []);
 
     return (
         <>

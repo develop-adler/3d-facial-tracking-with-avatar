@@ -17,6 +17,13 @@ import {
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 
+const SafeVideo = (() =>
+    typeof document === 'undefined' ?
+        {
+            getContext: () => { },
+        } as unknown as HTMLVideoElement :
+        document.createElement('video'))();
+
 class FaceTracker {
     private static instance: FaceTracker;
     readonly cameraVideoElem: HTMLVideoElement;
@@ -31,6 +38,24 @@ class FaceTracker {
     private _isDisposed: boolean;
 
     private constructor() {
+        this._isDisposed = false;
+        this._isMultiplayer = false;
+        this.isStreamReady = false;
+        this.isAvatarPositionReset = false;
+        if (this.detectFaceInterval) clearInterval(this.detectFaceInterval);
+        this.detectFaceInterval = undefined;
+        if (this.detectHandInterval) clearInterval(this.detectHandInterval);
+        this.detectHandInterval = undefined;
+
+        if (typeof document === 'undefined') {
+            this.cameraVideoElem = SafeVideo;
+            this.faceDetector = new FaceDetector(this.cameraVideoElem);
+            this.faceDetector.dispose();
+            this.handDetector = new HandDetector(this.cameraVideoElem);
+            this.handDetector.dispose();
+            return;
+        }
+
         this.cameraVideoElem = document.createElement("video");
         this.faceDetector = new FaceDetector(this.cameraVideoElem);
         this.faceDetector.init();
@@ -52,15 +77,6 @@ class FaceTracker {
         this._getUserVideoStream(this.cameraVideoElem).then(() => {
             this.detect();
         });
-
-        this._isDisposed = false;
-        this._isMultiplayer = false;
-        this.isStreamReady = false;
-        this.isAvatarPositionReset = false;
-        if (this.detectFaceInterval) clearInterval(this.detectFaceInterval);
-        this.detectFaceInterval = undefined;
-        if (this.detectHandInterval) clearInterval(this.detectHandInterval);
-        this.detectHandInterval = undefined;
     }
     get isMultiplayer() {
         return this._isMultiplayer;
@@ -393,6 +409,11 @@ class FaceTracker {
         return stream;
     }
 
+    /**
+     * Dispose current FaceTracker instance and create a new one.
+     * This is useful for resetting the state of the FaceTracker.
+     * @returns new FaceTracker instance
+     */
     dispose() {
         if (this._isDisposed) return;
         if (this.detectFaceInterval) clearInterval(this.detectFaceInterval);
@@ -408,6 +429,8 @@ class FaceTracker {
         this._isMultiplayer = false;
         this.isAvatarPositionReset = false;
         this._isDisposed = true;
+
+        FaceTracker.instance = new FaceTracker();
     }
 }
 

@@ -35,10 +35,10 @@ export const AvatarScene: FC = () => {
 
     useEffect(() => {
         // to initialize the face tracker
-        const _faceTracker = useTrackingStore.getState().faceTracker;
+        const faceTracker = useTrackingStore.getState().faceTracker;
         return () => {
             coreEngine.removeCanvasFromDOM();
-            // faceTracker.dispose();
+            faceTracker.dispose();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
