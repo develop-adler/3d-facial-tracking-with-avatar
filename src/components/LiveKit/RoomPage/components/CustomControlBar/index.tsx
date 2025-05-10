@@ -37,6 +37,9 @@ export const CustomControlBar = () => {
     const currentCameraEnabledState = useRef<boolean>(enabled);
     const toggleChat = useChatToggleStore((state) => state.toggleChat);
 
+    // for future settings option for user
+    const [isMinimal] = useState<boolean>(true);
+
     const {
         saveAudioInputEnabled,
         saveVideoInputEnabled,
@@ -90,7 +93,7 @@ export const CustomControlBar = () => {
                         showIcon={true}
                         onChange={microphoneOnChange}
                     >
-                        Microphone
+                        {!isMinimal && "Microphone"}
                     </TrackToggle>
                     <div className="lk-button-group-menu">
                         <MediaDeviceMenu
@@ -113,7 +116,7 @@ export const CustomControlBar = () => {
                                 borderBottomRightRadius: "var(--lk-border-radius)",
                             }}
                         >
-                            Camera
+                            {!isMinimal && "Camera"}
                         </TrackToggle>
                     ) : (
                         <TrackToggle
@@ -123,11 +126,11 @@ export const CustomControlBar = () => {
                                 cursor: "not-allowed",
                             }}
                             disabled={true}
-                            onClick={() => {}}
-                            onChange={() => {}}
+                            onClick={() => false}
+                            onChange={() => false}
                         >
                             <CameraDisabledIcon />
-                            Camera
+                            {!isMinimal && "Camera"}
                         </TrackToggle>
                     )}
                 </div>
@@ -138,16 +141,17 @@ export const CustomControlBar = () => {
                         showIcon={true}
                         onChange={onScreenShareChange}
                     >
-                        {isScreenShareEnabled ? "Stop screen share" : "Share screen"}
+                        {!isMinimal &&
+                            (isScreenShareEnabled ? "Stop screen share" : "Share screen")}
                     </TrackToggle>
                 )}
                 <ChatToggle onClick={() => toggleChat()}>
                     <ChatIcon />
-                    Chat
+                    {!isMinimal && "Chat"}
                 </ChatToggle>
                 <DisconnectButton>
                     <LeaveIcon />
-                    Leave
+                    {!isMinimal && "Leave"}
                 </DisconnectButton>
             </div>
         </LayoutContextProvider>
