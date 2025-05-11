@@ -9,7 +9,6 @@ import {
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import type { Room } from "livekit-client";
 
 import eventBus from "@/eventBus";
 import type { RequestJoinSpace, SpaceType } from "@/models/multiplayer";
@@ -20,14 +19,11 @@ import { COLOR } from "constant";
 const drawerWidth = 200;
 const buttonHeight = 48;
 
-type Props = {
-    room: Room;
-};
-
-const LeftMenu: FC<Props> = ({ room }) => {
+const LeftMenu: FC = () => {
     const [open, setOpen] = useState<boolean>(false);
     const [override, setOverride] = useState<boolean>(false);
 
+    const room = useLiveKitStore((state) => state.room);
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
     const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
 

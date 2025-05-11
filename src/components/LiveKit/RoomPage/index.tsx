@@ -14,6 +14,7 @@ import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { clientSettings } from "clientSettings";
+import { ToastContainer } from "react-toastify";
 
 const AvatarScene = dynamic(
     () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -97,7 +98,9 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
 
     return (
         <>
-            <LeftMenu room={room} />
+            <ToastContainer />
+
+            <LeftMenu />
 
             {!!openJoinSpaceModal && <EnterSpaceConfirmModal />}
 
