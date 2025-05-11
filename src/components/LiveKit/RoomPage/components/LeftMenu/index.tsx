@@ -52,70 +52,24 @@ const LeftMenu: FC<Props> = ({ room }) => {
             sx={{
                 position: "fixed",
                 top: "50%",
-                left: 0,
+                left: open ? 0 : -drawerWidth,
                 transform: "translateY(-50%)",
+                transition: "left 0.3s ease",
                 zIndex: 1300,
                 height: buttonHeight,
                 display: "flex",
+                flexDirection: "row",
                 alignItems: "center",
             }}
         >
-            {/* Arrow Icon that triggers menu */}
-            <Box
-                sx={{
-                    position: "fixed",
-                    top: "50%",
-                    left: open ? drawerWidth : 0,
-                    transform: "translateY(-50%)",
-                    zIndex: 1300,
-                    transition: "left 0.3s ease",
-                }}
-            >
-                <IconButton
-                    sx={{
-                        backgroundColor: COLOR.grayScale22,
-                        color: COLOR.white,
-                        marginLeft: "1rem",
-                        borderRadius: "2rem",
-                        height: "3vh", // button size
-                        width: "3vh", // button size
-                        fontSize: "3vh", // icon size
-                        "&:hover": {
-                            backgroundColor: COLOR.grayScale30,
-                        },
-                    }}
-                    onClick={() => {
-                        if (open) {
-                            setOpen(false);
-                            setOverride(true);
-                            setTimeout(() => {
-                                setOverride(false);
-                            }, 300);
-                        }
-                    }}
-                >
-                    {open ? (
-                        <ChevronLeftIcon fontSize="inherit" />
-                    ) : (
-                        <ChevronRightIcon fontSize="inherit" />
-                    )}
-                </IconButton>
-            </Box>
-
             {/* Sliding Menu */}
             <Paper
                 elevation={4}
                 sx={{
-                    position: "fixed",
-                    top: "50%",
-                    left: open ? 0 : -drawerWidth,
-                    transform: "translateY(-50%)",
                     width: drawerWidth,
-                    transition: "left 0.3s ease",
                     background: "none",
                     border: "none",
                     boxShadow: "none",
-                    zIndex: 1200,
                     display: "flex",
                     alignItems: "center", // vertically center list
                 }}
@@ -155,6 +109,39 @@ const LeftMenu: FC<Props> = ({ room }) => {
                     )}
                 </List>
             </Paper>
+
+            {/* Arrow Icon that triggers menu */}
+            <Box>
+                <IconButton
+                    sx={{
+                        backgroundColor: COLOR.grayScale22,
+                        color: COLOR.white,
+                        marginLeft: "1rem",
+                        borderRadius: "2rem",
+                        height: "3vh", // button size
+                        width: "3vh", // button size
+                        fontSize: "3vh", // icon size
+                        "&:hover": {
+                            backgroundColor: COLOR.grayScale30,
+                        },
+                    }}
+                    onClick={() => {
+                        if (open) {
+                            setOpen(false);
+                            setOverride(true);
+                            setTimeout(() => {
+                                setOverride(false);
+                            }, 300);
+                        }
+                    }}
+                >
+                    {open ? (
+                        <ChevronLeftIcon fontSize="inherit" />
+                    ) : (
+                        <ChevronRightIcon fontSize="inherit" />
+                    )}
+                </IconButton>
+            </Box>
         </Box>
     );
 };

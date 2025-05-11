@@ -11,21 +11,21 @@ export default function RoomLayout({
 }: {
     readonly children: ReactNode;
 }) {
-    const room = useLiveKitStore((state) => state.room);
+    const liveKitRoom = useLiveKitStore((state) => state.liveKitRoom);
     const setRoomNameAndUsername = useLiveKitStore(
         (state) => state.setRoomNameAndUsername
     );
 
     useEffect(() => {
-        room.on("disconnected", () => {
+        liveKitRoom.room.on("disconnected", () => {
             setRoomNameAndUsername();
         });
         return () => {
-            // disconnect when navigating away from /room route
-            room.disconnect();
+            // dispose room when navigating away from /room route
+            liveKitRoom.dispose();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return <RoomContext.Provider value={room}>{children}</RoomContext.Provider>;
+    return <RoomContext.Provider value={liveKitRoom.room}>{children}</RoomContext.Provider>;
 }

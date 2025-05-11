@@ -1,8 +1,8 @@
-import type { Room as LiveKitRoom } from "livekit-client";
 import { create } from 'zustand';
 
-import { Room } from '@/LiveKitRoomSingleton';
+import LiveKitRoom from '@/LiveKitRoomSingleton';
 import type { RoomAndName, SpaceType } from '@/models/multiplayer';
+import type { Room } from 'livekit-client';
 
 type OpenJoinSpaceModal = {
     identity: string;
@@ -10,7 +10,8 @@ type OpenJoinSpaceModal = {
 };
 
 type LiveKitStore = {
-    room: LiveKitRoom;
+    liveKitRoom: LiveKitRoom;
+    room: Room;
     roomNameAndUsername?: RoomAndName;
     isMultiplayer?: string;
     openJoinSpaceModal?: OpenJoinSpaceModal;
@@ -20,14 +21,15 @@ type LiveKitStore = {
 };
 
 export const useLiveKitStore = create<LiveKitStore>((set, get) => ({
-    room: Room.getInstance(),
+    liveKitRoom: LiveKitRoom.getInstance(),
+    room: LiveKitRoom.getInstance().room,
     roomNameAndUsername: undefined,
     isMultiplayer: undefined,
     openJoinSpaceModal: undefined,
     setRoomNameAndUsername: (roomNameAndUsername) => set({ roomNameAndUsername }),
     setIsMultiplayer: (isMultiplayer) => {
-        const { room } = get();
-        room.localParticipant.setAttributes({
+        const { liveKitRoom } = get();
+        liveKitRoom.room.localParticipant.setAttributes({
             'inSpace': JSON.stringify(isMultiplayer),
         });
         set({ isMultiplayer });

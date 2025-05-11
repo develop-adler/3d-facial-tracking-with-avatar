@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type FC } from "react";
 
-import { useMediaDevices } from "@livekit/components-react";
+import { useMediaDevices, useTrackToggle } from "@livekit/components-react";
+import { ConnectionState, Track } from "livekit-client";
 
 import { CanvasContainer, CanvasStyled, WaitingText } from "./styles";
 
@@ -33,6 +34,10 @@ export const AvatarScene: FC = () => {
     const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
     const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
 
+    const { toggle } = useTrackToggle({
+        source: Track.Source.Camera,
+    });
+
     useEffect(() => {
         // to initialize the face tracker
         const faceTracker = useTrackingStore.getState().faceTracker;
@@ -51,7 +56,8 @@ export const AvatarScene: FC = () => {
     useEffect(() => {
         if (videoDevices.length === 0) return;
 
-        if (bjsCanvasContainer.current) coreEngine.insertCanvasToDOM(bjsCanvasContainer.current);
+        if (bjsCanvasContainer.current)
+            coreEngine.insertCanvasToDOM(bjsCanvasContainer.current);
 
         let currentCoreScene = useSceneStore.getState().coreScene;
         if (!currentCoreScene) {
@@ -80,17 +86,79 @@ export const AvatarScene: FC = () => {
         // Create MediaStream to pass to LiveKit
         if (pathName === "/room") {
             updateMediaStream(coreEngine.canvas.captureStream(60));
-            if (clientSettings.DEBUG) console.log("Publishing 3D canvas as camera stream");
-        }
 
-        return () => {
-            mediaStreamFrom3DCanvas
-                ?.getTracks()
-                .forEach((track) => track.stop());
-            updateMediaStream();
-        };
+            // Publish 3D babylon.js canvas as camera stream
+            if (
+                !mediaStreamFrom3DCanvas ||
+                // has avatar video track
+                room.localParticipant.getTrackPublicationByName("avatar_video") ||
+                // has existing camera track
+                room.localParticipant.getTrackPublication(Track.Source.Camera)
+            ) {
+                return;
+            }
+            if (useLiveKitStore.getState().isMultiplayer) {
+                const tracks = mediaStreamFrom3DCanvas.getTracks();
+                room.localParticipant.unpublishTracks(tracks);
+            } else {
+                const handleTrack = async (mediaStream: MediaStream) => {
+                    const track = mediaStream.getVideoTracks()[0];
+                    const publishedTrack = await room.localParticipant.publishTrack(
+                        track,
+                        {
+                            name: "avatar_video",
+                            source: Track.Source.Camera,
+                        }
+                    );
+
+                    if (clientSettings.DEBUG) {
+                        console.log("Published 3D canvas as camera stream");
+                    }
+                    return publishedTrack;
+                };
+
+                if (room.state === ConnectionState.Connected) {
+                    handleTrack(mediaStreamFrom3DCanvas);
+                } else {
+                    room.once("connected", () => {
+                        if (mediaStreamFrom3DCanvas) {
+                            handleTrack(mediaStreamFrom3DCanvas);
+                        }
+                    });
+                }
+            }
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoDevices]);
+
+    // Mainly for cleanup
+    useEffect(() => {
+        toggle(false); // camera off by default
+        return () => {
+            toggle(false); // turn camera off (for multiplayer)
+
+            if (mediaStreamFrom3DCanvas) {
+                const tracks = mediaStreamFrom3DCanvas.getTracks();
+                for (const track of tracks) {
+                    track.stop();
+                }
+                room.localParticipant.unpublishTracks(tracks);
+            }
+            updateMediaStream();
+            for (const pub of room.localParticipant.videoTrackPublications.values()) {
+                if (pub.videoTrack) {
+                    room.localParticipant.unpublishTrack(pub.videoTrack);
+                }
+            }
+
+            const track =
+                room.localParticipant.getTrackPublicationByName("avatar_video");
+            if (track?.track) {
+                room.localParticipant.unpublishTrack(track.track);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // show waiting text if camera is not available
     if (videoDevices.length === 0) {
