@@ -18,10 +18,11 @@ import {
     useChat,
     type MessageFormatter,
 } from "@livekit/components-react";
-
-import ChatEntry from "@/components/LiveKit/RoomPage/components/ChatEntry";
-import { useChatToggleStore } from "@/stores/useChatToggle";
 import { Box, Typography } from "@mui/material";
+
+import ChatEntry from "@/components/LiveKit/RoomPage/components/ChatContainer/components/ChatEntry";
+import { useChatToggleStore } from "@/stores/useChatToggle";
+
 import { COLOR } from "constant";
 
 type ChatGroup = {

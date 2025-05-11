@@ -1,7 +1,7 @@
 import { LayoutContextProvider } from "@livekit/components-react";
 import { Box } from "@mui/material";
 
-import ChatBox from "@/components/LiveKit/RoomPage/components/ChatBox";
+import ChatBox from "@/components/LiveKit/RoomPage/components/ChatContainer/components/ChatBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
 
 import { TOP_MENU_HEIGHT } from "constant";
