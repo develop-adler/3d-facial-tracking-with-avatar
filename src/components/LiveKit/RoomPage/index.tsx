@@ -5,6 +5,8 @@ import { useEffect, type FC } from "react";
 
 import { RoomAudioRenderer } from "@livekit/components-react";
 
+import { FlexBox } from "./styles";
+
 import RoomManager from "@/3d/multiplayer/RoomManager";
 import SpatialAudioController from "@/components/LiveKit/SpatialAudioController";
 import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
@@ -31,11 +33,8 @@ const ChatContainer = dynamic(
         ssr: false,
     }
 );
-const MainConferenceBody = dynamic(
-    () =>
-        import("@/components/LiveKit/RoomPage/components/MainConferenceBody").then(
-            (p) => p.MainConferenceBody
-        ),
+const LoadingBar = dynamic(
+    () => import("@/components/AvatarScene/components/LoadingBar"),
     {
         ssr: false,
     }
@@ -45,6 +44,15 @@ const MultiplayerPage = dynamic(
         import("@/components/LiveKit/RoomPage/components/MultiplayerPage").then(
             (p) => p.MultiplayerPage
         ),
+    {
+        ssr: false,
+    }
+);
+const VideoConferenceLayout = dynamic(
+    () =>
+        import(
+            "@/components/LiveKit/RoomPage/components/VideoConferenceLayout"
+        ).then((p) => p.VideoConferenceLayout),
     {
         ssr: false,
     }
@@ -122,7 +130,11 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
                         <ChatContainer />
                     </>
                 ) : (
-                    <MainConferenceBody />
+                    <FlexBox>
+                        <LoadingBar isRoomPage />
+                        <VideoConferenceLayout />
+                        <ChatContainer />
+                    </FlexBox>
                 )}
 
                 {/* Controls for user (need to always be at the bottom) */}

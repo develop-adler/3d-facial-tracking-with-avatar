@@ -1,4 +1,4 @@
-import { type Room, type RpcInvocationData } from "livekit-client";
+import { RoomEvent, type Room, type RpcInvocationData } from "livekit-client";
 import { toast } from "react-toastify";
 
 import eventBus from "@/eventBus";
@@ -15,7 +15,7 @@ class RoomManager {
 
     private _initRoomEvents() {
         this.room.on(
-            "participantDisconnected",
+            RoomEvent.ParticipantDisconnected,
             this._onParticipantLeave.bind(this)
         );
 
@@ -142,14 +142,14 @@ class RoomManager {
         return "ok" as string;
     }
 
-    _onParticipantLeave() {
+    private _onParticipantLeave() {
         if (!this._checkIsAnyoneInSpace()) {
             useLiveKitStore.getState().setIsMultiplayer();
         }
     }
 
     dispose(): void {
-        this.room.off("participantDisconnected", this._onParticipantLeave);
+        this.room.off(RoomEvent.ParticipantDisconnected, this._onParticipantLeave);
         eventBus.offWithEvent(
             "multiplayer:requestJoinSpace",
             this._requestJoinSpaceEventListener

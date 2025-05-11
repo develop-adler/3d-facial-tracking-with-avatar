@@ -74,15 +74,15 @@ class MultiplayerManager {
 
     private _initRoomEvents() {
         this.room.on(
-            "participantConnected",
+            RoomEvent.ParticipantConnected,
             this._loadRemoteParticipantAvatar.bind(this)
         );
         this.room.on(
-            "participantDisconnected",
+            RoomEvent.ParticipantDisconnected,
             this._removeRemoteParticipantAvatar.bind(this)
         );
         this.room.on(
-            "participantNameChanged",
+            RoomEvent.ParticipantNameChanged,
             this._updateRemoteParticipantName.bind(this)
         );
 
@@ -348,12 +348,12 @@ class MultiplayerManager {
         this.syncAvatarObserver = undefined;
 
         this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
-        this.room.off("participantConnected", this._loadRemoteParticipantAvatar);
+        this.room.off(RoomEvent.ParticipantConnected, this._loadRemoteParticipantAvatar);
         this.room.off(
-            "participantDisconnected",
+            RoomEvent.ParticipantDisconnected,
             this._removeRemoteParticipantAvatar
         );
-        this.room.off("participantNameChanged", this._updateRemoteParticipantName);
+        this.room.off(RoomEvent.ParticipantNameChanged, this._updateRemoteParticipantName);
         this.room.unregisterRpcMethod("participantChangeAvatar");
         eventBus.off("avatar:changeAvatar", this._changeAvatarEventListener);
         this.room.unregisterRpcMethod("participantRequestJoinSpace");

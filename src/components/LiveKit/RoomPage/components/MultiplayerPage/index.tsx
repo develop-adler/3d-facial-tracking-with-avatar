@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, type FC } from "react";
 
-import { ConnectionState } from "livekit-client";
+import { ConnectionState, RoomEvent } from "livekit-client";
 
 import { Multiplayer3DContainer } from "./styles";
 
@@ -33,7 +33,7 @@ export const MultiplayerPage: FC = () => {
             setIsMultiplayer();
             return;
         }
-        room.once("disconnected", () => {
+        room.once(RoomEvent.Disconnected, () => {
             setIsMultiplayer();
         });
 

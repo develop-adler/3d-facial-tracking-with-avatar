@@ -10,6 +10,7 @@ import {
     LeaveIcon,
     MediaDeviceMenu,
     TrackToggle,
+    useChat,
     useLocalParticipant,
     usePersistentUserChoices,
     useTrackToggle,
@@ -20,6 +21,7 @@ import { Track } from "livekit-client";
 import { KrispNoiseFilterInputBox } from "@/components/LiveKit/RoomPage/components/KrispNoiseFilterInputBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { Badge } from "@mui/material";
 
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector
@@ -31,6 +33,11 @@ export const CustomControlBar = () => {
     const hasAvatarTrack = cameraTrack?.trackName === "avatar_video";
 
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
+    const isChatOpen = useChatToggleStore((state) => state.isChatOpen);
+    const unreadCount = useChatToggleStore((state) => state.unreadCount);
+
+    const { chatMessages } = useChat();
+
     const { toggle: toggleCamera, enabled } = useTrackToggle({
         source: Track.Source.Camera,
     });
@@ -80,6 +87,28 @@ export const CustomControlBar = () => {
         if (isMultiplayer) return;
         currentCameraEnabledState.current = enabled;
     }, [isMultiplayer, enabled]);
+
+    // when the chat is opened, reset the unread count
+    useEffect(() => {
+        if (!isChatOpen) return;
+        setTimeout(() => {
+            useChatToggleStore.getState().setUnreadCount(0);
+        }, 600);
+    }, [isChatOpen]);
+
+    // when a new message is received and the chat is closed, increment the unread count
+    useEffect(() => {
+        const latestMessage = chatMessages.at(-1);
+        if (!latestMessage) return;
+        if (
+            latestMessage.from !== useLiveKitStore.getState().room.localParticipant &&
+            !useChatToggleStore.getState().isChatOpen
+        ) {
+            useChatToggleStore
+                .getState()
+                .setUnreadCount(useChatToggleStore.getState().unreadCount + 1);
+        }
+    }, [chatMessages]);
 
     return (
         <LayoutContextProvider>
@@ -145,10 +174,26 @@ export const CustomControlBar = () => {
                             (isScreenShareEnabled ? "Stop screen share" : "Share screen")}
                     </TrackToggle>
                 )}
-                <ChatToggle onClick={() => toggleChat()}>
-                    <ChatIcon />
-                    {!isMinimal && "Chat"}
-                </ChatToggle>
+                <Badge
+                    badgeContent={unreadCount} // the number inside the circle
+                    color="info" // color of the badge
+                    overlap="circular"
+                    anchorOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                    }}
+                    showZero={false}
+                    onClick={() => toggleChat()}
+                    sx={{
+                        userSelect: "none",
+                        cursor: "pointer",
+                    }}
+                >
+                    <ChatToggle>
+                        <ChatIcon />
+                        {!isMinimal && "Chat"}
+                    </ChatToggle>
+                </Badge>
                 <DisconnectButton>
                     <LeaveIcon />
                     {!isMinimal && "Leave"}
