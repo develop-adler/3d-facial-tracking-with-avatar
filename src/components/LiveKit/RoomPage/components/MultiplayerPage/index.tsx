@@ -7,7 +7,7 @@ import { ConnectionState } from "livekit-client";
 import { Multiplayer3DContainer } from "./styles";
 
 import CoreScene from "@/3d/core/CoreScene";
-import RoomManager from "@/3d/multiplayer/RoomManager";
+import MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import AvatarSpeakingHandler from "@/components/LiveKit/RoomPage/components/MultiplayerPage/components/AvatarSpeakingHandler";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
@@ -30,11 +30,11 @@ export const MultiplayerPage: FC = () => {
 
     useEffect(() => {
         if (isDisconnected) {
-            setIsMultiplayer(false);
+            setIsMultiplayer();
             return;
         }
         room.once("disconnected", () => {
-            setIsMultiplayer(false);
+            setIsMultiplayer();
         });
 
         if (canvasContainer.current)
@@ -48,11 +48,11 @@ export const MultiplayerPage: FC = () => {
         currentCoreScene.switchToMultiplayer();
         currentCoreScene.atom.load();
 
-        const roomManager = new RoomManager(room, currentCoreScene);
+        const multiplayerManager = new MultiplayerManager(room, currentCoreScene);
 
         return () => {
-            setIsMultiplayer(false);
-            roomManager.dispose();
+            setIsMultiplayer();
+            multiplayerManager.dispose();
             //dispose atom without disposing skybox
             currentCoreScene.atom.dispose(false);
             currentCoreScene.switchToVideoChat();

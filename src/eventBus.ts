@@ -13,6 +13,9 @@ type EventNames =
     | 'multiplayer:fetchAuthenticatedMultiplayerUsers'
     | 'multiplayer:fetchMultiplayUsers'
     | 'multiplayer:fetchMultiplayMessage'
+    | 'multiplayer:requestJoinSpace'
+    | 'multiplayer:confirmJoinSpace'
+    | 'avatar:changeAvatar'
     | 'avatar:set'
     | 'avatar:capsuleBodyCreated'
     | 'avatar:animationsReady'
@@ -102,4 +105,5 @@ class EventBus extends EventEmitter {
 
 // Create a shared instance
 const eventBus = new EventBus();
+eventBus.setMaxListeners(0);
 export default eventBus;

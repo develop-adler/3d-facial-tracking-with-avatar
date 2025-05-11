@@ -36,3 +36,16 @@ export type AvatarAudioData = {
 export type RemoteAvatarAudioData = AvatarAudioData & {
     identity: string;
 };
+
+export type SpaceType = "self" | "other";
+
+export type RequestJoinSpace = {
+    identity: string;
+    spaceType: SpaceType;
+    // spaceId: string;
+};
+
+export type ConfirmJoinSpace = {
+    identity: string;
+    confirm: boolean;
+};

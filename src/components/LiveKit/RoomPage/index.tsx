@@ -1,22 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, type FC } from "react";
-import { ConnectionState, Track } from "livekit-client";
+import { useEffect, type FC } from "react";
 
-import {
-    RoomAudioRenderer,
-    useLocalParticipant,
-} from "@livekit/components-react";
+import { RoomAudioRenderer } from "@livekit/components-react";
 
-import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
+import RoomManager from "@/3d/multiplayer/RoomManager";
 import SpatialAudioController from "@/components/LiveKit/SpatialAudioController";
-
+import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
+import EnterSpaceConfirmModal from "@/components/LiveKit/RoomPage/components/EnterSpaceConfirmModal";
+import LeftMenu from "@/components/LiveKit/RoomPage/components/LeftMenu";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { clientSettings } from "clientSettings";
-import { mediaStreamFrom3DCanvas } from "global";
 
 const AvatarScene = dynamic(
     () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -60,15 +57,11 @@ type Props = {
 export const RoomPage: FC<Props> = ({ roomName, name }) => {
     const room = useLiveKitStore((state) => state.room);
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
-    const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
+    const openJoinSpaceModal = useLiveKitStore(
+        (state) => state.openJoinSpaceModal
+    );
     const setRoomNameAndUsername = useLiveKitStore(
         (state) => state.setRoomNameAndUsername
-    );
-
-    const { cameraTrack } = useLocalParticipant({ room });
-    const hasAvatarTrack = useMemo(
-        () => cameraTrack?.trackName === "avatar_video",
-        [cameraTrack]
     );
 
     useEffect(() => {
@@ -90,79 +83,23 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
     }, [room]);
 
     useEffect(() => {
-        useTrackingStore.getState().faceTracker.setIsMultiplayer(isMultiplayer);
+        useTrackingStore.getState().faceTracker.setIsMultiplayer(!!isMultiplayer);
     }, [isMultiplayer]);
 
-    // Publish 3D babylon.js canvas as camera stream
     useEffect(() => {
-        if (isMultiplayer || hasAvatarTrack) return;
-
-        let isMounted = true;
-
-        const handleTrack = async () => {
-            if (!mediaStreamFrom3DCanvas) return;
-            const track = mediaStreamFrom3DCanvas.getVideoTracks()[0];
-            const publishedTrack = await room.localParticipant.publishTrack(track, {
-                name: "avatar_video",
-                source: Track.Source.Camera,
-            });
-            if (!isMounted) {
-                publishedTrack.track?.stop();
-                room.localParticipant.unpublishTrack(track);
-            }
-            return publishedTrack;
-        };
-
-        const connectAndPublish = async () => {
-            if (room.state === ConnectionState.Connected) {
-                await handleTrack();
-            } else {
-                room.once("connected", handleTrack);
-            }
-        };
-
-        connectAndPublish();
-
+        const roomManager = new RoomManager(room);
         return () => {
-            isMounted = false;
+            roomManager.dispose();
+            useTrackingStore.getState().faceTracker.dispose();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cameraTrack]);
-
-    useEffect(() => {
-        return () => useTrackingStore.getState().faceTracker.dispose();
     }, []);
 
     return (
         <>
-            <button
-                onClick={() => {
-                    setIsMultiplayer(true);
-                }}
-                style={{
-                    position: "absolute",
-                    top: "5%",
-                    left: "10%",
-                    fontSize: "3rem",
-                    zIndex: 1000,
-                }}
-            >
-                Enter 3D space
-            </button>
-            <button
-                onClick={() => {
-                    setIsMultiplayer(false);
-                }}
-                style={{
-                    position: "absolute",
-                    top: "12%",
-                    left: "10%",
-                    fontSize: "3rem",
-                    zIndex: 1000,
-                }}
-            >
-                Leave 3D space
-            </button>
+            <LeftMenu room={room} />
+
+            {!!openJoinSpaceModal && <EnterSpaceConfirmModal />}
 
             {!isMultiplayer && (
                 <>
