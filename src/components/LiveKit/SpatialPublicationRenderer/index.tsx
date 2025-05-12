@@ -114,9 +114,10 @@ export const SpatialPublicationRenderer: FC<Props> = ({
 
         // Initialize the PannerNode and its values
         panner.current = audioContext.createPanner();
+        panner.current.channelCount = 2; // stereo
         panner.current.coneOuterAngle = 360;
         panner.current.coneInnerAngle = 360;
-        panner.current.positionX.setValueAtTime(1000, 0); // set far away initially so we don't hear it at full volume
+        panner.current.positionX.setValueAtTime(0, 0);
         panner.current.positionY.setValueAtTime(0, 0);
         panner.current.positionZ.setValueAtTime(0, 0);
         panner.current.coneOuterGain = 1;
