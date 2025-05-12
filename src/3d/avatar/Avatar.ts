@@ -314,13 +314,19 @@ class Avatar {
    */
   async loadAvatar(
     id: string = useAvatarStore.getState().avatarId ?? DEFAULT_AVATAR_ID,
-    gender: AvatarGender = "male",
+    gender?: AvatarGender,
     isVideoChat: boolean = false,
     fromChangeEvent: boolean = false
   ): Promise<this> {
     if (this.isLoadingAvatar || this.currentAvatarId === id) return this;
 
-    this.gender = gender;
+    this.gender =
+      gender ??
+      (await fetch(`https://models.readyplayer.me/${id}.json`)
+        .then((res) => res.json())
+        .then((data) =>
+          data.outfitGender === "masculine" ? "male" : "female"
+        ));
 
     this.scene.blockMaterialDirtyMechanism = true;
 
@@ -331,32 +337,27 @@ class Avatar {
       try {
         this.participant.setAttributes({
           avatarId: id,
-          gender: "female",
+          gender: this.gender,
         });
       } catch {
         // empty
       }
     }
 
-    const urlToLoad = `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS;
-    const container = await loadAssetContainerAsync(
-      urlToLoad,
-      this.scene,
-      {
-        pluginExtension: ".glb",
-        pluginOptions: {
-          gltf: {
-            compileMaterials: true,
-          },
+    const urlToLoad =
+      `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS;
+    const container = await loadAssetContainerAsync(urlToLoad, this.scene, {
+      pluginExtension: ".glb",
+      pluginOptions: {
+        gltf: {
+          compileMaterials: true,
         },
-        onProgress: (progress) => {
-          const percentage = Math.floor(
-            (progress.loaded / progress.total) * 100
-          );
-          useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
-        },
-      }
-    );
+      },
+      onProgress: (progress) => {
+        const percentage = Math.floor((progress.loaded / progress.total) * 100);
+        useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
+      },
+    });
 
     // remove existing avatar model
     if (this._container) {
@@ -382,7 +383,7 @@ class Avatar {
     container.addAllToScene();
 
     this.currentAvatarId = id;
-    useAvatarStore.getState().setAvatarId(id);
+    useAvatarStore.getState().setAvatarId(id, this.gender);
 
     this._rootMesh = container.meshes[0];
     this._meshes = container.meshes.slice(1);

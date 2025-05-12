@@ -15,6 +15,7 @@ import {
     StyledButton,
 } from "./styles";
 
+import type { AvatarGender } from "@/models/3d";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
@@ -39,8 +40,8 @@ const TopMenu: FC = () => {
         setAnchorEl(undefined);
     };
 
-    const switchAvatar = (avatarId: string) => {
-        avatar?.loadAvatar(avatarId, undefined, !isMultiplayer, true);
+    const switchAvatar = (avatarId: string, gender: AvatarGender) => {
+        avatar?.loadAvatar(avatarId, gender, !isMultiplayer, true);
     };
 
     const pushRoute = (route: string) => {
@@ -98,9 +99,7 @@ const TopMenu: FC = () => {
                                     ?.trim()
                                     .replaceAll(/\s+/g, "");
 
-                                if (res) {
-                                    avatar?.changeAvatar(res);
-                                }
+                                if (res) avatar?.changeAvatar(res);
                             }}
                         >
                             Change avatar URL
@@ -133,16 +132,16 @@ const TopMenu: FC = () => {
                     horizontal: "center",
                 }}
             >
-                <MenuItem onClick={() => switchAvatar("6809df026026f5144d94f3f4")}>
+                <MenuItem onClick={() => switchAvatar("6809df026026f5144d94f3f4", "female")}>
                     Asian female
                 </MenuItem>
-                <MenuItem onClick={() => switchAvatar("6809df7c4e68c7a706ac7e55")}>
+                <MenuItem onClick={() => switchAvatar("6809df7c4e68c7a706ac7e55", "female")}>
                     White female
                 </MenuItem>
-                <MenuItem onClick={() => switchAvatar("6809d76c64ce38bc90a10c88")}>
+                <MenuItem onClick={() => switchAvatar("6809d76c64ce38bc90a10c88", "male")}>
                     Black male
                 </MenuItem>
-                <MenuItem onClick={() => switchAvatar("67fe6f7713b3fb7e8aa0328c")}>
+                <MenuItem onClick={() => switchAvatar("67fe6f7713b3fb7e8aa0328c", "male")}>
                     White male
                 </MenuItem>
             </Menu>

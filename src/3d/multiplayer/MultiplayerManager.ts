@@ -197,8 +197,8 @@ class MultiplayerManager {
         if (participant.identity === this.room.localParticipant.identity) {
             return;
         }
-        const avatar = new Avatar(this.coreScene, participant, "male", false);
-        avatar.loadAvatar().then(() => {
+        const avatar = new Avatar(this.coreScene, participant, participant.attributes.gender as AvatarGender, false);
+        avatar.loadAvatar(participant.attributes.avatarId).then(() => {
             avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
             avatar.loadAnimations();

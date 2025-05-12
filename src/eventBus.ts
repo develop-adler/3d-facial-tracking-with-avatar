@@ -87,19 +87,8 @@ class EventBus extends EventEmitter {
     onceWithEvent<T>(event: EventNames, listener: (data: T) => void) {
         this.once(event, listener);
     }
-    onceWithEventCheckPostId<T>(id: string, event: EventNames, listener: (data: T) => void) {
-        this.on(event, (data: SpaceEvent) => {
-            if (data.postId === id) {
-                listener(data as T);
-                this.off(event, listener);
-            }
-        });
-    }
     offWithEvent<T>(event: EventNames, listener: (data: T) => void) {
         this.off(event, listener);
-    }
-    offAllDelegated(event: EventNames) {
-        this.removeAllListeners(event);
     }
 }
 
