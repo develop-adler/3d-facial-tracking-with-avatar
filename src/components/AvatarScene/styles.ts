@@ -1,29 +1,14 @@
 import { styled } from "@mui/material/styles";
 
-export const CanvasContainer = styled("div")<{
-    $viewportFill?: boolean;
-    $fullscreen?: boolean;
-}>(({ $viewportFill, $fullscreen }) => {
-    const fill = $viewportFill || $fullscreen; // either one active, we fill screen
-    return {
-        position: "absolute",
-        top: fill ? 0 : "50%",
-        left: fill ? 0 : "50%",
-        translate: fill ? undefined : "-50% -50%",
-        width: fill ? "100%" : "auto",
-        height: fill ? "100%" : "60%",
-    };
-});
-
 export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
     ({ $isForRoom }) => ({
+        // don't interfere with current DOM elements when in room
+        position: $isForRoom ? 'fixed' : 'static',
         width: "100%",
         height: "100%",
         userSelect: "none",
-        zIndex: $isForRoom ? 0 : -999_999,
+        zIndex: $isForRoom ? -999_999 : 0,
         visibility: $isForRoom ? "hidden" : "visible", 
-        // don't interfere with current DOM elements
-        position: $isForRoom ? 'fixed' : 'static',
 
         // mirrored
         transform: "scaleX(-1)",

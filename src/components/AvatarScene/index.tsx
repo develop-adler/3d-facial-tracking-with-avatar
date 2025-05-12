@@ -6,11 +6,10 @@ import { useEffect, useRef, type FC } from "react";
 import { useMediaDevices, useTrackToggle } from "@livekit/components-react";
 import { ConnectionState, Track } from "livekit-client";
 
-import { CanvasContainer, CanvasStyled, WaitingText } from "./styles";
+import { CanvasStyled, WaitingText } from "./styles";
 
 import Avatar from "@/3d/avatar/Avatar";
 import CoreScene from "@/3d/core/CoreScene";
-import LoadingBar from "@/components/AvatarScene/components/LoadingBar";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useSceneStore } from "@/stores/useSceneStore";
@@ -175,17 +174,11 @@ export const AvatarScene: FC = () => {
                 style={{ border: "none", zIndex: 1 }}
             /> */}
 
-            {pathName === "/room" ? (
-                <CanvasStyled id="avatar-canvas" ref={bjsCanvasContainer} $isForRoom />
-            ) : (
-                <CanvasContainer
-                    $viewportFill={isViewportFill}
-                    $fullscreen={isFullscreen}
-                >
-                    <LoadingBar />
-                    <CanvasStyled id="avatar-canvas" ref={bjsCanvasContainer} />
-                </CanvasContainer>
-            )}
+            <CanvasStyled
+                id="avatar-canvas"
+                ref={bjsCanvasContainer}
+                $isForRoom={pathName === "/room"}
+            />
         </>
     );
 };
