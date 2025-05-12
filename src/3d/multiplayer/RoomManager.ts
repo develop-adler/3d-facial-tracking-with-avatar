@@ -130,7 +130,7 @@ class RoomManager {
         if (payload.confirm) {
             useLiveKitStore.getState().setIsMultiplayer("true");
         } else {
-            toast("Your request to join space was declined :(", {
+            toast("Your request to join space was declined", {
                 position: "top-center",
                 autoClose: 3000,
                 hideProgressBar: false,
