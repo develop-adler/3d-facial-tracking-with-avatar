@@ -16,12 +16,14 @@ import {
     useTrackToggle,
     // useTrackByName,
 } from "@livekit/components-react";
+import { Badge } from "@mui/material";
 import { Track } from "livekit-client";
 
+import VoiceChangerModal from "@/components/VoiceChangerModal";
 import { KrispNoiseFilterInputBox } from "@/components/LiveKit/RoomPage/components/KrispNoiseFilterInputBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
-import { Badge } from "@mui/material";
+import { useVoiceChangerStore } from "@/stores/useVoiceChangerStore";
 
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector
@@ -33,6 +35,9 @@ export const CustomControlBar = () => {
     const hasAvatarTrack = cameraTrack?.trackName === "avatar_video";
 
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
+    const openVoiceChangerModal = useVoiceChangerStore(
+        (state) => state.openVoiceChangerModal
+    );
     const isChatOpen = useChatToggleStore((state) => state.isChatOpen);
     const unreadCount = useChatToggleStore((state) => state.unreadCount);
 
@@ -112,8 +117,24 @@ export const CustomControlBar = () => {
 
     return (
         <LayoutContextProvider>
+            <VoiceChangerModal open={openVoiceChangerModal} onClose={() => false} />
             <div className="lk-control-bar">
                 <div className="lk-button-group">
+                    <TrackToggle
+                        source={Track.Source.Unknown}
+                        showIcon={false}
+                        onClick={() => {
+                            useVoiceChangerStore.getState().toggleVoiceChangerModal();
+                        }}
+                        style={{
+                            // fix right side borders being right angled
+                            borderTopRightRadius: "var(--lk-border-radius)",
+                            borderBottomRightRadius: "var(--lk-border-radius)",
+                            marginRight: "0.6rem",
+                        }}
+                    >
+                        Mic effects
+                    </TrackToggle>
                     <KrispNoiseFilterInputBox />
                 </div>
                 <div className="lk-button-group">
@@ -190,7 +211,7 @@ export const CustomControlBar = () => {
                     }}
                 >
                     <ChatToggle>
-                        <ChatIcon />
+                        {<ChatIcon />}
                         {!isMinimal && "Chat"}
                     </ChatToggle>
                 </Badge>

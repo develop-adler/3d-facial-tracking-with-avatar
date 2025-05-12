@@ -1,8 +1,8 @@
-import { create } from 'zustand';
+import type { Room } from "livekit-client";
+import { create } from "zustand";
 
-import LiveKitRoom from '@/LiveKitRoomSingleton';
-import type { RoomAndName, SpaceType } from '@/models/multiplayer';
-import type { Room } from 'livekit-client';
+import LiveKitRoom from "@/LiveKitRoomSingleton";
+import type { RoomAndName, SpaceType } from "@/models/multiplayer";
 
 type OpenJoinSpaceModal = {
     identity: string;
