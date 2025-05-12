@@ -26,7 +26,7 @@ const LoadingBar: FC<Props> = ({ isRoomPage }) => {
                 top: isRoomPage ? "5rem" : "auto",
                 left: isRoomPage ? "50%" : "auto",
                 transform: isRoomPage ? "translateX(-50%)" : "none",
-                width: "80%",
+                width: isRoomPage ? "80%" : "100%",
                 zIndex: 9999,
             }}
         >

@@ -9,6 +9,7 @@ import { FlexBox } from "./styles";
 
 import RoomManager from "@/3d/multiplayer/RoomManager";
 import SpatialAudioController from "@/components/LiveKit/SpatialAudioController";
+import AvatarLoadingToast from "@/components/LiveKit/RoomPage/components/AvatarLoadingToast";
 import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
 import EnterSpaceConfirmModal from "@/components/LiveKit/RoomPage/components/EnterSpaceConfirmModal";
 import LeftMenu from "@/components/LiveKit/RoomPage/components/LeftMenu";
@@ -29,12 +30,6 @@ const ChatContainer = dynamic(
         import("@/components/LiveKit/RoomPage/components/ChatContainer").then(
             (p) => p.ChatContainer
         ),
-    {
-        ssr: false,
-    }
-);
-const LoadingBar = dynamic(
-    () => import("@/components/AvatarScene/components/LoadingBar"),
     {
         ssr: false,
     }
@@ -107,6 +102,7 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
     return (
         <>
             <ToastContainer />
+            <AvatarLoadingToast />
 
             <LeftMenu />
 
@@ -131,7 +127,6 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
                     </>
                 ) : (
                     <FlexBox>
-                        <LoadingBar isRoomPage />
                         <VideoConferenceLayout />
                         <ChatContainer />
                     </FlexBox>

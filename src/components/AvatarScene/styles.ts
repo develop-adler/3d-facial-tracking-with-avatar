@@ -22,8 +22,5 @@ export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
 export const WaitingText = styled("div")(({ theme }) => ({
     fontSize: theme.typography.h3.fontSize,
     color: theme.palette.common.white,
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    translate: "-50% -50%",
+    userSelect: "none",
 }));
