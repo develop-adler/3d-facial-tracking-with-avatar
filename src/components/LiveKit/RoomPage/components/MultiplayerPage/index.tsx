@@ -30,11 +30,11 @@ export const MultiplayerPage: FC = () => {
 
     useEffect(() => {
         if (isDisconnected) {
-            setIsMultiplayer();
+            setIsMultiplayer(false);
             return;
         }
         room.once(RoomEvent.Disconnected, () => {
-            setIsMultiplayer();
+            setIsMultiplayer(false);
         });
 
         if (canvasContainer.current)
@@ -51,7 +51,7 @@ export const MultiplayerPage: FC = () => {
         const multiplayerManager = new MultiplayerManager(room, currentCoreScene);
 
         return () => {
-            setIsMultiplayer();
+            setIsMultiplayer(false);
             multiplayerManager.dispose();
             //dispose atom without disposing skybox
             currentCoreScene.atom.dispose(false);

@@ -33,7 +33,23 @@ export async function GET(req: NextRequest) {
     }
 
     const at = new AccessToken(apiKey, apiSecret, { identity: username });
-    at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true });
+    at.addGrant({
+        room,
+        roomJoin: true,
+        roomList: false,
+        roomRecord: false,
+        roomAdmin: false,
+        canPublish: true,
+        canSubscribe: true,
+        canUpdateOwnMetadata: true,
+    });
+
+    // default attributes for user
+    at.attributes = {
+        isInSpace: "false",
+        avatarId: "",
+        gender: "",
+    };
 
     return NextResponse.json(
         { token: await at.toJwt() },

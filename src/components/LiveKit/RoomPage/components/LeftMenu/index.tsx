@@ -75,7 +75,7 @@ const LeftMenu: FC = () => {
                         <ListItem
                             component="button"
                             sx={{ cursor: "pointer" }}
-                            onClick={() => setIsMultiplayer()}
+                            onClick={() => setIsMultiplayer(false)}
                         >
                             <ListItemText primary="Leave space" />
                         </ListItem>

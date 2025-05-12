@@ -1,19 +1,18 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import {
+    LocalParticipant,
     RoomEvent,
     type Participant,
+    type RemoteParticipant,
     type Room,
-    type RpcInvocationData,
 } from "livekit-client";
 
 import Avatar from "@/3d/avatar/Avatar";
-import {
-    AvatarChange,
-    type SyncState,
-} from "@/models/multiplayer";
+import { type AvatarChangeAttributesData, type SyncState } from "@/models/multiplayer";
 import AvatarController from "@/3d/avatar/AvatarController";
 import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
+import type { AvatarGender } from "@/models/3d";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 
 import { clientSettings } from "clientSettings";
@@ -86,22 +85,6 @@ class MultiplayerManager {
             this._updateRemoteParticipantName.bind(this)
         );
 
-        eventBus.onWithEvent<AvatarChange>(
-            "avatar:changeAvatar",
-            this._changeAvatarEventListener.bind(this)
-        );
-        // register RPC method to sync when user changes avatar
-        try {
-            // unregister the method if it already exists to prevent error
-            this.room.unregisterRpcMethod("participantChangeAvatar");
-            this.room.registerRpcMethod(
-                "participantChangeAvatar",
-                this._changeRemoteParticipantAvatarRPC.bind(this)
-            );
-        } catch {
-            // empty
-        }
-
         const encoder = new TextEncoder();
 
         // send our avatar state to all participants in the room
@@ -120,7 +103,28 @@ class MultiplayerManager {
             }
         );
 
-        // Receive sync state data from other participants
+        // receive attribute changes from other participants
+        this.room.on(
+            RoomEvent.ParticipantAttributesChanged,
+            (changedAttribute, participant) => {
+                if (participant instanceof LocalParticipant) return;
+
+                console.log(
+                    "remote participant attributes changed",
+                    changedAttribute,
+                    participant
+                );
+                if ("avatarId" in changedAttribute || "gender" in changedAttribute) {
+                    const attributeData = {
+                        avatarId: changedAttribute.avatarId,
+                        gender: changedAttribute.gender as AvatarGender,
+                    };
+                    this._changeRemoteParticipantAvatarListener(attributeData, participant);
+                }
+            }
+        );
+
+        // receive sync state data packets from other participants
         this.room.on(RoomEvent.DataReceived, this._syncRemoteAvatars.bind(this));
     }
 
@@ -187,7 +191,7 @@ class MultiplayerManager {
     }
 
     private _loadRemoteParticipantAvatar(
-        participant: Participant,
+        participant: RemoteParticipant,
         isEvent: boolean = true
     ) {
         if (participant.identity === this.room.localParticipant.identity) {
@@ -230,39 +234,15 @@ class MultiplayerManager {
         this.remoteAvatars.get(participant)?.updateName(name);
     }
 
-    private _changeAvatarEventListener({
-        identity,
-        avatarId,
-        gender,
-    }: AvatarChange) {
-        for (const [, participant] of this.room.remoteParticipants) {
-            try {
-                this.room.localParticipant.performRpc({
-                    destinationIdentity: participant.identity,
-                    method: "participantChangeAvatar",
-                    payload: JSON.stringify({
-                        identity,
-                        avatarId,
-                        gender,
-                    }),
-                });
-            } catch (error) {
-                console.log("Error performing change avatar RPC", error);
-            }
-        }
-    }
-
-    private async _changeRemoteParticipantAvatarRPC(data: RpcInvocationData) {
-        const { avatarId, gender } = JSON.parse(data.payload) as AvatarChange;
+    private async _changeRemoteParticipantAvatarListener(attribute: AvatarChangeAttributesData, remoteParticipant: RemoteParticipant) {
         for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.identity === data.callerIdentity) {
-                avatar.loadAvatar(avatarId, gender).then(() => {
+            if (participant.sid === remoteParticipant.sid) {
+                avatar.loadAvatar(attribute.avatarId, attribute.gender).then(() => {
                     avatar.loadAnimations();
                 });
                 break;
             }
         }
-        return "ok" as string;
     }
 
     private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
@@ -348,14 +328,18 @@ class MultiplayerManager {
         this.syncAvatarObserver = undefined;
 
         this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
-        this.room.off(RoomEvent.ParticipantConnected, this._loadRemoteParticipantAvatar);
+        this.room.off(
+            RoomEvent.ParticipantConnected,
+            this._loadRemoteParticipantAvatar
+        );
         this.room.off(
             RoomEvent.ParticipantDisconnected,
             this._removeRemoteParticipantAvatar
         );
-        this.room.off(RoomEvent.ParticipantNameChanged, this._updateRemoteParticipantName);
-        this.room.unregisterRpcMethod("participantChangeAvatar");
-        eventBus.off("avatar:changeAvatar", this._changeAvatarEventListener);
+        this.room.off(
+            RoomEvent.ParticipantNameChanged,
+            this._updateRemoteParticipantName
+        );
         this.room.unregisterRpcMethod("participantRequestJoinSpace");
     }
 

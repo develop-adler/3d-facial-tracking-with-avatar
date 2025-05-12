@@ -18,8 +18,7 @@ export type SyncState = {
     lookTarget?: ObjectTransform;
 };
 
-export type AvatarChange = {
-    identity: string;
+export type AvatarChangeAttributesData = {
     avatarId: string;
     gender: AvatarGender;
 };

@@ -19,7 +19,7 @@ import {
   PhysicsShapeContainer,
   PhysicsShapeSphere,
 } from "@babylonjs/core/Physics/v2/physicsShape";
-import type { Participant } from "livekit-client";
+import { LocalParticipant, type RemoteParticipant } from "livekit-client";
 
 import type AvatarProfile from "@/3d/avatar/AvatarProfile";
 import type AvatarProfileCard from "@/3d/avatar/AvatarProfileCard";
@@ -34,7 +34,6 @@ import type {
   ObjectQuaternion,
   ObjectTransform,
 } from "@/models/3d";
-import type { AvatarChange } from "@/models/multiplayer";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useAvatarLoadingStore } from "@/stores/useAvatarLoadingStore";
 import CreateAvatarPhysicsShape from "@/utils/CreateAvatarPhysicsShape";
@@ -116,7 +115,7 @@ const DEFAULT_AVATAR_ID = "67fe6f7713b3fb7e8aa0328c";
 class Avatar {
   readonly coreScene: CoreScene;
   readonly scene: Scene;
-  readonly participant: Participant;
+  readonly participant: LocalParticipant | RemoteParticipant;
   gender: AvatarGender;
   readonly isSelf: boolean;
   readonly headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
@@ -199,7 +198,7 @@ class Avatar {
 
   constructor(
     coreScene: CoreScene,
-    participant: Participant,
+    participant: LocalParticipant | RemoteParticipant,
     gender: AvatarGender,
     isSelf: boolean = false,
     physicsShapes?: {
@@ -317,7 +316,7 @@ class Avatar {
     id: string = useAvatarStore.getState().avatarId ?? DEFAULT_AVATAR_ID,
     gender: AvatarGender = "male",
     isVideoChat: boolean = false,
-    emitChangeEvent: boolean = false
+    fromChangeEvent: boolean = false
   ): Promise<this> {
     if (this.isLoadingAvatar || this.currentAvatarId === id) return this;
 
@@ -328,16 +327,20 @@ class Avatar {
     this.isLoadingAvatar = true;
     useAvatarLoadingStore.getState().setStartLoading();
 
-    if (emitChangeEvent) {
-      eventBus.emit<AvatarChange>("avatar:changeAvatar", {
-        identity: this.participant.identity,
-        avatarId: id,
-        gender: "female",
-      });
+    if (this.participant instanceof LocalParticipant) {
+      try {
+        this.participant.setAttributes({
+          avatarId: id,
+          gender: "female",
+        });
+      } catch {
+        // empty
+      }
     }
 
+    const urlToLoad = `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS;
     const container = await loadAssetContainerAsync(
-      `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS,
+      urlToLoad,
       this.scene,
       {
         pluginExtension: ".glb",
@@ -390,7 +393,7 @@ class Avatar {
       this._morphTargetManager = container.morphTargetManagers[0];
     }
 
-    if (emitChangeEvent) this.loadAnimations();
+    if (fromChangeEvent) this.loadAnimations();
 
     container.meshes.forEach((mesh, i) => {
       // is root mesh, skip
