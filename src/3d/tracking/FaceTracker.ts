@@ -18,17 +18,17 @@ import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 
 const SafeVideo = (() =>
-    typeof document === 'undefined' ?
-        {
+    typeof document === "undefined"
+        ? ({
             getContext: () => { },
-        } as unknown as HTMLVideoElement :
-        document.createElement('video'))();
+        } as unknown as HTMLVideoElement)
+        : document.createElement("video"))();
 
 class FaceTracker {
     private static instance: FaceTracker;
     readonly cameraVideoElem: HTMLVideoElement;
-    readonly faceDetector: FaceDetector;
-    readonly handDetector: HandDetector;
+    faceDetector: FaceDetector;
+    handDetector: HandDetector;
     private _isMultiplayer: boolean;
     isStreamReady: boolean;
     isAvatarPositionReset: boolean;
@@ -47,7 +47,7 @@ class FaceTracker {
         if (this.detectHandInterval) clearInterval(this.detectHandInterval);
         this.detectHandInterval = undefined;
 
-        if (typeof document === 'undefined') {
+        if (typeof document === "undefined") {
             this.cameraVideoElem = SafeVideo;
             this.faceDetector = new FaceDetector(this.cameraVideoElem);
             this.faceDetector.dispose();
@@ -118,11 +118,21 @@ class FaceTracker {
     }
 
     async detectFace() {
+        if (this.faceDetector.isDisposed) return;
+
         const avatar = useAvatarStore.getState().avatar;
 
         if (!avatar) return;
 
-        const result = await this.faceDetector.detect();
+        let result;
+        try {
+            result = await this.faceDetector.detect();
+        } catch {
+            this.faceDetector.dispose();
+            this.faceDetector = new FaceDetector(this.cameraVideoElem);
+            this.faceDetector.init();
+            return;
+        }
 
         if (!result || result.faceBlendshapes.length === 0) return;
 
@@ -143,11 +153,22 @@ class FaceTracker {
     }
 
     async detectHand() {
+        if (this.handDetector.isDisposed) return;
+
         const avatar = useAvatarStore.getState().avatar;
 
         if (!avatar) return;
 
-        const result = await this.handDetector.detect();
+        let result;
+        try {
+            result = await this.handDetector.detect();
+        } catch {
+            this.handDetector.dispose();
+            this.handDetector = new HandDetector(this.cameraVideoElem);
+            this.handDetector.init();
+            return;
+        }
+
         if (!result || result.handedness.length === 0) {
             const canvas = document.querySelector(
                 "#hand-canvas"

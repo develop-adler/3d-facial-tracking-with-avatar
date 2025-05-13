@@ -10,9 +10,14 @@ let faceLandmarkerRunningMode: "IMAGE" | "VIDEO" = "VIDEO";
 export class FaceDetector {
     faceLandmarker?: FaceLandmarker;
     readonly video: HTMLVideoElement;
+    private _isDisposed: boolean = true;
 
     constructor(video: HTMLVideoElement) {
         this.video = video;
+    }
+
+    get isDisposed(): boolean {
+        return this._isDisposed;
     }
 
     // Before we can use HandLandmarker class we must wait for it to finish
@@ -24,7 +29,7 @@ export class FaceDetector {
         const filesetResolver = await FilesetResolver.forVisionTasks(
             "/@mediapipe-tasks-vision/wasm"
         );
-        return await FaceLandmarker.createFromOptions(filesetResolver, {
+        const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
             baseOptions: {
                 modelAssetPath: "/landmarker/face_landmarker.task", // `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
                 delegate: "GPU",
@@ -34,6 +39,8 @@ export class FaceDetector {
             outputFaceBlendshapes: true,
             outputFacialTransformationMatrixes: true,
         });
+        this._isDisposed = false;
+        return landmarker;
     }
 
     private async _predictWebcam(
@@ -69,10 +76,9 @@ export class FaceDetector {
     }
 
     dispose() {
-        if (this.faceLandmarker) {
-            this.faceLandmarker.close();
-            this.faceLandmarker = undefined;
-        }
+        this.faceLandmarker?.close();
+        this.faceLandmarker = undefined;
+        this._isDisposed = true;
     }
 }
 
