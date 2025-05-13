@@ -17,7 +17,7 @@ import {
   PitchSlider,
   PresetSelector,
   ReverbSlider,
-} from "@/components/VoiceChangerModal/VoiceChanger/Sliders";
+} from "@/components/LiveKit/RoomPage/components/VoiceChangerModal/Sliders";
 import { useVoiceChangerStore } from "@/stores/useVoiceChangerStore";
 
 import { COLOR } from "constant";
@@ -110,6 +110,8 @@ const VoiceChanger: FC = () => {
       eqRef.current.mid.value = useVoiceChangerStore.getState().eq.mid;
       eqRef.current.high.value = useVoiceChangerStore.getState().eq.high;
     }
+
+    console.log('Audio params updated');
   };
 
   return (

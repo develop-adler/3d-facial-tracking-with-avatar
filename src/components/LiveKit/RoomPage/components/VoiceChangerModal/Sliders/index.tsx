@@ -14,7 +14,7 @@ import {
 import type {
     EQType,
     PresetType,
-} from "@/components/VoiceChangerModal/VoiceChanger";
+} from "@/components/LiveKit/RoomPage/components/VoiceChangerModal/VoiceChanger";
 import { useVoiceChangerStore } from "@/stores/useVoiceChangerStore";
 
 import { COLOR } from "constant";
@@ -29,7 +29,7 @@ const GainSliderNonMemoed = () => {
             <Slider
                 value={gain}
                 min={0}
-                max={2}
+                max={5}
                 step={0.01}
                 onChange={(_, v) => setGain(v as number)}
                 disabled={!enabled}
@@ -84,7 +84,7 @@ const ReverbSliderNonMemoed = () => {
             <Typography gutterBottom>Reverb Decay: {reverbDecay}</Typography>
             <Slider
                 value={reverbDecay}
-                min={0}
+                min={0.01}
                 max={10}
                 step={0.1}
                 onChange={(_, v) => setReverbDecay(v as number)}

@@ -65,19 +65,18 @@ export const AvatarScene: FC = () => {
         }
         currentCoreScene.switchToVideoChat();
 
-        let existingAvatar = useAvatarStore.getState().avatar;
-        if (!existingAvatar) {
-            existingAvatar = new Avatar(
+        if (!useAvatarStore.getState().avatar) {
+            const newAvatar = new Avatar(
                 currentCoreScene,
                 room.localParticipant,
                 "male",
                 true
             );
-            setAvatar(existingAvatar);
+            setAvatar(newAvatar);
 
             currentCoreScene.atom.loadHDRSkybox(0.8, false).then(() => {
-                if (!existingAvatar!.container) {
-                    existingAvatar!.loadAvatar(undefined, undefined, true);
+                if (!newAvatar!.container) {
+                    newAvatar!.loadAvatar(undefined, undefined, true);
                 }
             });
         }

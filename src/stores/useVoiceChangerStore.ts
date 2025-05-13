@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 import type {
     EQType,
     PresetType,
-} from "@/components/VoiceChangerModal/VoiceChanger";
+} from "@/components/LiveKit/RoomPage/components/VoiceChangerModal/VoiceChanger";
 import type { Vector2 } from "@/models/3d";
 
 type VoiceChangerStore = {
@@ -32,7 +32,7 @@ export const useVoiceChangerStore = create<VoiceChangerStore>()(
             enabled: false,
             pitch: 0,
             gain: 1,
-            reverbDecay: 2,
+            reverbDecay: 0.01,
             eq: { low: 0, mid: 0, high: 0 },
             preset: "default",
             modalPosition: { x: 100, y: 100 },

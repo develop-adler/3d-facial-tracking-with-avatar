@@ -19,7 +19,7 @@ import {
 import { Badge } from "@mui/material";
 import { Track } from "livekit-client";
 
-import VoiceChangerModal from "@/components/VoiceChangerModal";
+import VoiceChangerModal from "@/components/LiveKit/RoomPage/components/VoiceChangerModal";
 import { KrispNoiseFilterInputBox } from "@/components/LiveKit/RoomPage/components/KrispNoiseFilterInputBox";
 import { useChatToggleStore } from "@/stores/useChatToggle";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";

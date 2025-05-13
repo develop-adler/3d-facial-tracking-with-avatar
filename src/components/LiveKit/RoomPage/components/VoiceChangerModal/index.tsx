@@ -10,7 +10,7 @@ import {
 import { Box, DialogContent, IconButton, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-import VoiceChanger from "@/components/VoiceChangerModal/VoiceChanger";
+import VoiceChanger from "@/components/LiveKit/RoomPage/components/VoiceChangerModal/VoiceChanger";
 import { Vector2 } from "@/models/3d";
 import { useVoiceChangerStore } from "@/stores/useVoiceChangerStore";
 
@@ -98,7 +98,8 @@ const VoiceChangerModal: FC<Props> = ({ open, onClose }) => {
                 position: "absolute",
                 top: localPosition.y,
                 left: localPosition.x,
-                width: 400,
+                minWidth: "sm",
+                width: "20vw",
                 backgroundColor: "#1D1A22",
                 borderRadius: 4,
                 boxShadow: 6,
