@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type FC } from "react";
+import { useCallback, useEffect, useRef, useState, type FC } from "react";
 
 import {
   Typography,
@@ -40,7 +40,7 @@ const VoiceChanger: FC = () => {
   const reverbRef = useRef<Tone.Reverb>(undefined);
   const eqRef = useRef<Tone.EQ3>(undefined);
 
-  const start = async (): Promise<void> => {
+  const start = useCallback(async (): Promise<void> => {
     await Tone.start();
 
     const mic = new Tone.UserMedia();
@@ -62,7 +62,7 @@ const VoiceChanger: FC = () => {
       useVoiceChangerStore.getState().gain
     ).toDestination();
 
-    if (useVoiceChangerStore.getState().enabled) {
+    if (enabled) {
       mic.connect(pitchShift);
       pitchShift.connect(eq3);
       eq3.connect(reverb);
@@ -77,7 +77,8 @@ const VoiceChanger: FC = () => {
     gainRef.current = gainNode;
 
     setStarted(true);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stop = (): void => {
     micRef.current?.disconnect();
@@ -95,23 +96,26 @@ const VoiceChanger: FC = () => {
     setStarted(false);
   };
 
-  const updateAudioParams = (): void => {
+  const updateAudioParams = (
+    pitch: number,
+    gain: number,
+    reverbDecay: number,
+    eq: EQType,
+  ): void => {
     if (!started || !enabled) return;
 
     if (pitchShiftRef.current)
-      pitchShiftRef.current.pitch = useVoiceChangerStore.getState().pitch;
+      pitchShiftRef.current.pitch = pitch;
     if (reverbRef.current)
-      reverbRef.current.decay = useVoiceChangerStore.getState().reverbDecay;
+      reverbRef.current.decay = reverbDecay;
     if (gainRef.current)
-      gainRef.current.gain.value = useVoiceChangerStore.getState().gain;
+      gainRef.current.gain.value = gain;
 
     if (eqRef.current) {
-      eqRef.current.low.value = useVoiceChangerStore.getState().eq.low;
-      eqRef.current.mid.value = useVoiceChangerStore.getState().eq.mid;
-      eqRef.current.high.value = useVoiceChangerStore.getState().eq.high;
+      eqRef.current.low.value = eq.low;
+      eqRef.current.mid.value = eq.mid;
+      eqRef.current.high.value = eq.high;
     }
-
-    console.log('Audio params updated');
   };
 
   return (
@@ -160,7 +164,12 @@ const VoiceChanger: FC = () => {
   );
 };
 
-const AudioParamUpdater: FC<{ updateAudioParams: () => void }> = ({
+const AudioParamUpdater: FC<{ updateAudioParams: (
+    pitch: number,
+    gain: number,
+    reverbDecay: number,
+    eq: EQType,
+  ) => void }> = ({
   updateAudioParams,
 }) => {
   const enabled = useVoiceChangerStore((state) => state.enabled);
@@ -170,7 +179,7 @@ const AudioParamUpdater: FC<{ updateAudioParams: () => void }> = ({
   const eq = useVoiceChangerStore((state) => state.eq);
 
   useEffect(() => {
-    updateAudioParams();
+    updateAudioParams(pitch, gain, reverbDecay, eq);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, pitch, gain, reverbDecay, eq]);
 
