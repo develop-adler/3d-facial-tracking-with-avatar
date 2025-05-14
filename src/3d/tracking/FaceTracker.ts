@@ -33,6 +33,7 @@ class FaceTracker {
     private _isMultiplayer: boolean;
     isStreamReady: boolean;
     isAvatarPositionReset: boolean;
+    isAvatarHeadRotationReset: boolean;
 
     private _isDisposed: boolean;
 
