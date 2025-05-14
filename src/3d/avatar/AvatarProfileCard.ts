@@ -30,10 +30,10 @@ class AvatarProfileCard {
         this.htmlMesh = this._init();
 
         // hide the profile card when the mesh is too close to camera
-        this.sceneRenderObserver = avatar.scene.onBeforeRenderObservable.add(scene => {
-            if (!scene.activeCamera || !this.isDisplayed) return;
+        this.sceneRenderObserver = avatar.scene.onBeforeRenderObservable.add(() => {
+            if (!this.isDisplayed) return;
 
-            const distance = scene.activeCamera.globalPosition
+            const distance = avatar.coreScene.camera.globalPosition
                 .subtract(this.htmlMesh.absolutePosition)
                 .length();
 
