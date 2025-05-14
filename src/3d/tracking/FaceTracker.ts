@@ -427,7 +427,9 @@ class FaceTracker {
         this._isDisposed = true;
 
         FaceTracker.instance = new FaceTracker();
-        useTrackingStore.getState().setFaceTracker(FaceTracker.instance);
+        useTrackingStore.setState({
+            faceTracker: FaceTracker.instance,
+        });
         return FaceTracker.instance;
     }
 }
