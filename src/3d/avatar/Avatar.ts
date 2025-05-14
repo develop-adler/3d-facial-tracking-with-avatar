@@ -392,6 +392,7 @@ class Avatar {
 
     if (container.morphTargetManagers.length > 0) {
       this._morphTargetManager = container.morphTargetManagers[0];
+      this._morphTargetManager.numMaxInfluencers = 52; // apple ARKit morph targets
     }
 
     if (fromChangeEvent) this.loadAnimations();
