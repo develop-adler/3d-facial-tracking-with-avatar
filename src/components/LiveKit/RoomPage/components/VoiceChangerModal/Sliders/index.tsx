@@ -29,7 +29,7 @@ const GainSliderNonMemoed = () => {
             <Slider
                 value={gain}
                 min={0}
-                max={5}
+                max={20}
                 step={0.01}
                 onChange={(_, v) => setGain(v as number)}
                 disabled={!enabled}
@@ -151,21 +151,21 @@ const PresetSelectorNonMemoed = () => {
             case "default": {
                 useVoiceChangerStore.getState().setGain(1);
                 useVoiceChangerStore.getState().setPitch(0);
-                useVoiceChangerStore.getState().setReverbDecay(2);
+                useVoiceChangerStore.getState().setReverbDecay(0.01);
                 useVoiceChangerStore.getState().setEq({ low: 0, mid: 0, high: 0 });
                 break;
             }
             case "robot": {
                 useVoiceChangerStore.getState().setGain(1.2);
                 useVoiceChangerStore.getState().setPitch(-6);
-                useVoiceChangerStore.getState().setReverbDecay(0.2);
+                useVoiceChangerStore.getState().setReverbDecay(0.01);
                 useVoiceChangerStore.getState().setEq({ low: 10, mid: -10, high: -10 });
                 break;
             }
             case "helium": {
                 useVoiceChangerStore.getState().setGain(0.8);
                 useVoiceChangerStore.getState().setPitch(8);
-                useVoiceChangerStore.getState().setReverbDecay(1.5);
+                useVoiceChangerStore.getState().setReverbDecay(0.01);
                 useVoiceChangerStore.getState().setEq({ low: -5, mid: 0, high: 10 });
                 break;
             }
