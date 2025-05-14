@@ -13,6 +13,7 @@ import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useSceneStore } from "@/stores/useSceneStore";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 export const MultiplayerPage: FC = () => {
     const coreEngine = useEngineStore((state) => state.coreEngine);
@@ -50,7 +51,18 @@ export const MultiplayerPage: FC = () => {
 
         const multiplayerManager = new MultiplayerManager(room, currentCoreScene);
 
+        let elapsedTime = 0;
+        const fps = 60;
+        const faceTrackObserver = currentCoreScene.scene.onBeforeRenderObservable.add(() => {
+            elapsedTime += 1000 / fps;
+            if (elapsedTime < 1000 / fps) return;
+            elapsedTime = 0;
+            useTrackingStore.getState().faceTracker.detectFace();
+            // useTrackingStore.getState().faceTracker.detectHand();
+        });
+
         return () => {
+            faceTrackObserver.remove();
             setIsMultiplayer(false);
             multiplayerManager.dispose();
             //dispose atom without disposing skybox

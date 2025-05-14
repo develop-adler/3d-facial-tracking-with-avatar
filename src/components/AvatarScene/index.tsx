@@ -126,6 +126,20 @@ export const AvatarScene: FC = () => {
                 }
             }
         }
+
+        let elapsedTime = 0;
+        const fps = 60;
+        const faceTrackObserver = currentCoreScene.scene.onBeforeRenderObservable.add(() => {
+            elapsedTime += 1000 / fps;
+            if (elapsedTime < 1000 / fps) return;
+            elapsedTime = 0;
+            useTrackingStore.getState().faceTracker.detectFace();
+            // useTrackingStore.getState().faceTracker.detectHand();
+        });
+
+        return () => {
+            faceTrackObserver.remove();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoDevices]);
 

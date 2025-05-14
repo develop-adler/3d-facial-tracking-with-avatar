@@ -16,6 +16,7 @@ import {
 
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 const SafeVideo = (() =>
     typeof document === "undefined"
@@ -32,8 +33,6 @@ class FaceTracker {
     private _isMultiplayer: boolean;
     isStreamReady: boolean;
     isAvatarPositionReset: boolean;
-    detectFaceInterval?: ReturnType<typeof setInterval>;
-    detectHandInterval?: ReturnType<typeof setInterval>;
 
     private _isDisposed: boolean;
 
@@ -42,10 +41,7 @@ class FaceTracker {
         this._isMultiplayer = false;
         this.isStreamReady = false;
         this.isAvatarPositionReset = false;
-        if (this.detectFaceInterval) clearInterval(this.detectFaceInterval);
-        this.detectFaceInterval = undefined;
-        if (this.detectHandInterval) clearInterval(this.detectHandInterval);
-        this.detectHandInterval = undefined;
+        this.isAvatarHeadRotationReset = false;
 
         if (typeof document === "undefined") {
             this.cameraVideoElem = SafeVideo;
@@ -74,9 +70,8 @@ class FaceTracker {
         // this.cameraVideoElem.style.pointerEvents = "none"; // disable pointer events
         // document.body.appendChild(this.cameraVideoElem);
 
-        this._getUserVideoStream(this.cameraVideoElem).then(() => {
-            this.detect();
-        });
+        // this.detect();
+        this._getUserVideoStream(this.cameraVideoElem);
     }
     get isMultiplayer() {
         return this._isMultiplayer;
@@ -92,32 +87,8 @@ class FaceTracker {
         return FaceTracker.instance;
     }
 
-    detect() {
-        this.runFaceDetection();
-        // this.runHandDetection();
-    }
-
-    runFaceDetection() {
-        if (this.detectFaceInterval) {
-            clearInterval(this.detectFaceInterval);
-        }
-        this.detectFaceInterval = setInterval(() => {
-            if (!this.cameraVideoElem.srcObject) return;
-            this.detectFace();
-        }, 1000 / 60);
-    }
-
-    runHandDetection() {
-        if (this.detectHandInterval) {
-            clearInterval(this.detectHandInterval);
-        }
-        this.detectHandInterval = setInterval(() => {
-            if (!this.cameraVideoElem.srcObject) return;
-            this.detectHand();
-        }, 1000 / 60);
-    }
-
     async detectFace() {
+        if (!this.cameraVideoElem.srcObject) return;
         if (this.faceDetector.isDisposed) return;
 
         const avatar = useAvatarStore.getState().avatar;
@@ -153,6 +124,7 @@ class FaceTracker {
     }
 
     async detectHand() {
+            if (!this.cameraVideoElem.srcObject) return;
         if (this.handDetector.isDisposed) return;
 
         const avatar = useAvatarStore.getState().avatar;
@@ -214,7 +186,7 @@ class FaceTracker {
             const rightWristWorldPos = this.mapLandmarkToWorld(
                 wrist,
                 avatar.scene.getEngine() as Engine,
-                avatar.scene.activeCamera as Camera,
+                avatar.scene.getCameraByName("camera") as Camera,
                 -0.3
             );
             rightWristWorldPos.z *= -1; // flip z axis
@@ -230,7 +202,7 @@ class FaceTracker {
             const leftWristWorldPos = this.mapLandmarkToWorld(
                 wrist,
                 avatar.scene.getEngine() as Engine,
-                avatar.scene.activeCamera as Camera,
+                avatar.scene.getCameraByName("camera") as Camera,
                 -0.3
             );
             leftWristWorldPos.z *= -1; // flip z axis
@@ -292,7 +264,6 @@ class FaceTracker {
         const faceRotation = Quaternion.FromRotationMatrix(faceMatrix);
 
         // get dot product of camera and avatar position to check if is behind or in front
-        let isCameraBehind = false;
         const camera = avatar.coreScene.camera;
         const cameraPosition = camera.globalPosition;
         const avatarPosition = avatar.getPosition(true);
@@ -301,16 +272,22 @@ class FaceTracker {
         const dot = Vector3.Dot(avatarForward, toTarget);
 
         // camera is behind avatar
-        if (dot < -0.1) isCameraBehind = true;
+        if (dot < -0.1) {
+            if (!this.isAvatarHeadRotationReset) {
+                headBoneNode.rotationQuaternion = Quaternion.Identity();
+                this.isAvatarHeadRotationReset = true;
+            }
+            return;
+        }
 
         const rotation = new Quaternion(
-            mirrored || (this.isMultiplayer && isCameraBehind)
+            mirrored
                 ? -faceRotation.x
                 : faceRotation.x,
             faceRotation.y,
             faceRotation.z,
             // maintain quaternion unit rotation direction when mirrored
-            mirrored || (this.isMultiplayer && isCameraBehind)
+            mirrored
                 ? -faceRotation.w
                 : faceRotation.w
         );
@@ -329,6 +306,7 @@ class FaceTracker {
             correctedRotation,
             0.3
         );
+        if (this.isAvatarHeadRotationReset) this.isAvatarHeadRotationReset = false;
 
         // don't sync spine rotation in multiplayer
         if (this.isMultiplayer) return;
@@ -411,7 +389,7 @@ class FaceTracker {
         this._isMultiplayer = isMultiplayer;
         // re-run detection intervals
         this.isAvatarPositionReset = false;
-        this.detect();
+        // this.detect();
     }
 
     private async _getUserVideoStream(video: HTMLVideoElement) {
@@ -437,10 +415,6 @@ class FaceTracker {
      */
     dispose() {
         if (this._isDisposed) return;
-        if (this.detectFaceInterval) clearInterval(this.detectFaceInterval);
-        this.detectFaceInterval = undefined;
-        if (this.detectHandInterval) clearInterval(this.detectHandInterval);
-        this.detectHandInterval = undefined;
         this.faceDetector.dispose();
         this.handDetector.dispose();
         // eslint-disable-next-line unicorn/no-null
@@ -452,6 +426,8 @@ class FaceTracker {
         this._isDisposed = true;
 
         FaceTracker.instance = new FaceTracker();
+        useTrackingStore.getState().setFaceTracker(FaceTracker.instance);
+        return FaceTracker.instance;
     }
 }
 
