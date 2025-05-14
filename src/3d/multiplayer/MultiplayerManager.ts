@@ -8,7 +8,10 @@ import {
 } from "livekit-client";
 
 import Avatar from "@/3d/avatar/Avatar";
-import { type AvatarChangeAttributesData, type SyncState } from "@/models/multiplayer";
+import {
+    type AvatarChangeAttributesData,
+    type SyncState,
+} from "@/models/multiplayer";
 import AvatarController from "@/3d/avatar/AvatarController";
 import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
@@ -45,6 +48,7 @@ class MultiplayerManager {
     readonly remoteAvatars: Map<Participant, Avatar>;
     readonly avatarController: AvatarController;
     syncAvatarObserver?: Observer<Scene>;
+    positionFacialCameraObserver?: Observer<Scene>;
 
     constructor(room: Room, coreScene: CoreScene) {
         this.room = room;
@@ -119,7 +123,10 @@ class MultiplayerManager {
                         avatarId: changedAttribute.avatarId,
                         gender: changedAttribute.gender as AvatarGender,
                     };
-                    this._changeRemoteParticipantAvatarListener(attributeData, participant);
+                    this._changeRemoteParticipantAvatarListener(
+                        attributeData,
+                        participant
+                    );
                 }
             }
         );
@@ -190,6 +197,25 @@ class MultiplayerManager {
         }
     }
 
+    private _syncFacialCameraPosition(avatar: Avatar = this.localAvatar) {
+        this.positionFacialCameraObserver =
+            this.coreScene.scene.onBeforeRenderObservable.add(() => {
+                if (!this.coreScene.facialExpressionCamera) {
+                    this.coreScene.facialExpressionCamera =
+                        this.coreScene.createFacialExpressionCamera();
+                }
+
+                // set camera position to be in front of the avatar's face and always point at it
+                const target = avatar.customHeadNode.absolutePosition;
+                const inFrontOfFace = target.add(
+                    avatar.root.forward.normalize().scaleInPlace(0.65)
+                );
+                this.coreScene.facialExpressionCamera.setPosition(inFrontOfFace);
+                target.y -= 0.1; // point camera down a bit
+                this.coreScene.facialExpressionCamera.target = target;
+            });
+    }
+
     private _loadRemoteParticipantAvatar(
         participant: RemoteParticipant,
         isEvent: boolean = true
@@ -197,11 +223,17 @@ class MultiplayerManager {
         if (participant.identity === this.room.localParticipant.identity) {
             return;
         }
-        const avatar = new Avatar(this.coreScene, participant, participant.attributes.gender as AvatarGender, false);
+        const avatar = new Avatar(
+            this.coreScene,
+            participant,
+            participant.attributes.gender as AvatarGender,
+            false
+        );
         avatar.loadAvatar(participant.attributes.avatarId).then(() => {
             avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
             avatar.loadAnimations();
+            this._syncFacialCameraPosition(avatar);
         });
         this.remoteAvatars.set(participant, avatar);
 
@@ -234,7 +266,10 @@ class MultiplayerManager {
         this.remoteAvatars.get(participant)?.updateName(name);
     }
 
-    private async _changeRemoteParticipantAvatarListener(attribute: AvatarChangeAttributesData, remoteParticipant: RemoteParticipant) {
+    private async _changeRemoteParticipantAvatarListener(
+        attribute: AvatarChangeAttributesData,
+        remoteParticipant: RemoteParticipant
+    ) {
         for (const [participant, avatar] of this.remoteAvatars) {
             if (participant.sid === remoteParticipant.sid) {
                 avatar.loadAvatar(attribute.avatarId, attribute.gender).then(() => {
@@ -349,6 +384,9 @@ class MultiplayerManager {
     }
 
     dispose() {
+        this.positionFacialCameraObserver?.remove();
+        this.positionFacialCameraObserver = undefined;
+
         this.clearAllListeners();
         this.clearAllRemoteAvatars();
 
@@ -361,8 +399,9 @@ class MultiplayerManager {
         this.localAvatar.setPosition(Vector3.Zero());
         this.localAvatar.setRotationQuaternion(Quaternion.Identity());
 
-        if (clientSettings.DEBUG)
-            console.log("MultiplayerManager disposed", this.room.name);
+        if (clientSettings.DEBUG) {
+            console.log("MultiplayerManager disposed for room:", this.room.name);
+        }
     }
 }
 
