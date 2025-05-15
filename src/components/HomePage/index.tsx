@@ -1,17 +1,35 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Box, Button, Fade, Link, List, ListItem, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Fade,
+  Link,
+  List,
+  ListItem,
+  Typography,
+} from "@mui/material";
 
-import { AvatarScene } from "@/components/AvatarScene";
-import LoadingBar from "@/components/AvatarScene/components/LoadingBar";
-// import { VoiceChat } from "@/components/VirtualAvatarVideo/components/VoiceChat";
-// import { ScreenControlButtons } from "@/components/ScreenControlButtons";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { COLOR, TOP_MENU_HEIGHT } from "constant";
-import { useTrackingStore } from "@/stores/useTrackingStore";
+
+const AvatarScene = dynamic(
+  () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
+  {
+    ssr: false,
+  }
+);
+const LoadingBar = dynamic(
+  () => import("@/components/AvatarScene/components/LoadingBar"),
+  {
+    ssr: false,
+  }
+);
 
 const Page = () => {
   const router = useRouter();
@@ -19,8 +37,8 @@ const Page = () => {
   const [started, setStarted] = useState<boolean>(false);
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         marginTop: TOP_MENU_HEIGHT,
         height: `calc(100vh - ${TOP_MENU_HEIGHT})`,
         width: "100vw",
@@ -42,15 +60,15 @@ const Page = () => {
           px: 2, // padding for small screens
         }}
       >
-        <Fade in appear timeout={1000}>
+        <Fade in timeout={1000}>
           <Typography
             variant="h1"
             sx={{
               userSelect: "none",
               fontSize: {
-                xs: "7vh",     // extra-small screens
-                sm: "9vh",     // small screens
-                md: "10vh",     // medium screens
+                xs: "7vh", // extra-small screens
+                sm: "9vh", // small screens
+                md: "10vh", // medium screens
                 // lg: "5rem",     // large screens
               },
             }}
@@ -89,7 +107,7 @@ const Page = () => {
             backgroundColor: COLOR.grayScale10,
             borderRadius: {
               sm: 0,
-              md: 4
+              md: 4,
             },
             boxShadow: 3,
             color: COLOR.white,
@@ -99,14 +117,16 @@ const Page = () => {
         >
           <br />
           <br />
-          <Typography sx={{
-            fontSize: {
-              xs: "5vw",
-              sm: "4vw",
-              md: "1.5vw",
-            },
-            textAlign: "justify",
-          }}>
+          <Typography
+            sx={{
+              fontSize: {
+                xs: "5vw",
+                sm: "4vw",
+                md: "1.5vw",
+              },
+              textAlign: "justify",
+            }}
+          >
             Please enable and allow camera access to use 3D avatar facial
             tracking. This application is{" "}
             <b>
@@ -126,38 +146,49 @@ const Page = () => {
               LiveKit
             </Link>{" "}
             using WebRTC.
-            <br />
-            <br />
-            <br />
-            <Typography sx={{
+          </Typography>
+          <br />
+          <br />
+          <br />
+          <Typography
+            sx={{
               fontSize: {
                 xs: "5vw",
                 sm: "4vw",
                 md: "2vw",
               },
-            }}>Current features:</Typography>
-            <List>
-              <ListItem>
-                • Call room: Create/Join video and voice chat room
-              </ListItem>
-              <ListItem>
-                • Avatar: Create Ready Player Me avatar and use the custom
-                avatar for video chat, you may also select an avatar from list
-                of preset avatars
-              </ListItem>
-              <ListItem>
-                • Multiplayer: Enter 3D space with users within the room
-              </ListItem>
-              <ListItem>
-                • Messaging: You can send messages to other users within the
-                room
-              </ListItem>
-              <ListItem>
-                • Spatial audio voice chat: While in 3D space, voice chatting
-                will be 3D spatial audio
-              </ListItem>
-            </List>
+            }}
+          >
+            Current features:
           </Typography>
+          <List
+            sx={{
+              fontSize: {
+                xs: "4vw",
+                sm: "3vw",
+                md: "1.25vw",
+              },
+            }}
+          >
+            <ListItem>
+              • Call room: Create/Join video and voice chat room
+            </ListItem>
+            <ListItem>
+              • Avatar: Create Ready Player Me avatar and use the custom avatar
+              for video chat, you may also select an avatar from list of preset
+              avatars
+            </ListItem>
+            <ListItem>
+              • Multiplayer: Enter 3D space with users within the room
+            </ListItem>
+            <ListItem>
+              • Messaging: You can send messages to other users within the room
+            </ListItem>
+            <ListItem>
+              • Spatial audio voice chat: While in 3D space, voice chatting will
+              be 3D spatial audio
+            </ListItem>
+          </List>
         </Box>
 
         {started ? (
@@ -179,38 +210,51 @@ const Page = () => {
               color: COLOR.white,
               border: "none",
               borderRadius: "1rem",
-              padding: "1rem 2rem",
               fontSize: "2rem",
-              margin: "2rem",
+              textTransform: "none",
+              margin: "2rem 2rem 1rem 2rem",
             }}
             onClick={() => {
               setStarted(true);
               useTrackingStore.getState().faceTracker.getUserVideoStream();
             }}
           >
-            Start now!
+            Try now!
           </Button>
         )}
-        
-      <Button
-        style={{
-          marginTop: "3rem",
-          marginBottom: "2rem",
-          backgroundColor: COLOR.brandPrimary,
-          color: COLOR.white,
-          border: "none",
-          borderRadius: "1rem",
-          padding: "1rem 2rem",
-          fontSize: "2rem",
-        }}
-        onClick={() => {
-          router.push("/room");
-        }}
-      >
-        Join a call room
-      </Button>
+        <Typography
+          sx={{
+            fontSize: {
+              xs: "8vw",
+              sm: "6vw",
+              md: "2vw",
+            },
+            // marginTop: "2rem",
+            userSelect: "none",
+          }}
+        >
+          Or
+        </Typography>
+        <Button
+          variant="contained"
+          style={{
+            backgroundColor: COLOR.brandPrimary,
+            color: COLOR.white,
+            border: "none",
+            borderRadius: "1rem",
+            fontSize: "2rem",
+            textTransform: "none",
+            marginTop: "1rem",
+            marginBottom: "2rem",
+          }}
+          onClick={() => {
+            router.push("/room");
+          }}
+        >
+          Create / Join a call room
+        </Button>
       </Box>
-    </Box>
+    </div>
   );
 };
 
