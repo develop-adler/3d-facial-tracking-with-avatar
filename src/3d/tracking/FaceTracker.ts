@@ -31,6 +31,7 @@ class FaceTracker {
     faceDetector: FaceDetector;
     handDetector: HandDetector;
     private _isMultiplayer: boolean;
+    private _isGettingVideoStream: boolean;
     isStreamReady: boolean;
     isAvatarPositionReset: boolean;
     isAvatarHeadRotationReset: boolean;
@@ -40,6 +41,7 @@ class FaceTracker {
     private constructor() {
         this._isDisposed = false;
         this._isMultiplayer = false;
+        this._isGettingVideoStream = false;
         this.isStreamReady = false;
         this.isAvatarPositionReset = false;
         this.isAvatarHeadRotationReset = false;
@@ -72,7 +74,7 @@ class FaceTracker {
         // document.body.appendChild(this.cameraVideoElem);
 
         // this.detect();
-        this._getUserVideoStream(this.cameraVideoElem);
+        // this.getUserVideoStream(this.cameraVideoElem);
     }
     get isMultiplayer() {
         return this._isMultiplayer;
@@ -89,6 +91,10 @@ class FaceTracker {
     }
 
     async detectFace() {
+        if (!this.isStreamReady) {
+            await this.getUserVideoStream();
+        }
+
         if (!this.cameraVideoElem.srcObject) return;
         if (this.faceDetector.isDisposed) return;
 
@@ -125,7 +131,10 @@ class FaceTracker {
     }
 
     async detectHand() {
-            if (!this.cameraVideoElem.srcObject) return;
+        if (!this.isStreamReady) {
+            await this.getUserVideoStream();
+        }
+        if (!this.cameraVideoElem.srcObject) return;
         if (this.handDetector.isDisposed) return;
 
         const avatar = useAvatarStore.getState().avatar;
@@ -393,18 +402,22 @@ class FaceTracker {
         // this.detect();
     }
 
-    private async _getUserVideoStream(video: HTMLVideoElement) {
+    async getUserVideoStream() {
+        if (this.isStreamReady) return;
+        if (this._isGettingVideoStream) return;
         if (!hasGetUserMedia()) throw new Error("No webcam access!");
 
+        this._isGettingVideoStream = true;
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false,
         });
 
-        video.srcObject = stream;
-        video.playsInline = true; // Important for iOS Safari
-        await video.play();
+        this.cameraVideoElem.srcObject = stream;
+        this.cameraVideoElem.playsInline = true; // Important for iOS Safari
+        await this.cameraVideoElem.play();
         this.isStreamReady = true;
+        this._isGettingVideoStream = false;
 
         return stream;
     }

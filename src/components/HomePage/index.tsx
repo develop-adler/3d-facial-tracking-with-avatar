@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-import { Box, Button, Link, List, ListItem, Typography } from "@mui/material";
+import { Box, Button, Fade, Link, List, ListItem, Typography } from "@mui/material";
 
 import { AvatarScene } from "@/components/AvatarScene";
 import LoadingBar from "@/components/AvatarScene/components/LoadingBar";
@@ -10,14 +11,17 @@ import LoadingBar from "@/components/AvatarScene/components/LoadingBar";
 // import { ScreenControlButtons } from "@/components/ScreenControlButtons";
 
 import { COLOR, TOP_MENU_HEIGHT } from "constant";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 const Page = () => {
   const router = useRouter();
+
+  const [started, setStarted] = useState<boolean>(false);
+
   return (
     <Box
       sx={{
-        position: "absolute",
-        top: TOP_MENU_HEIGHT,
+        marginTop: TOP_MENU_HEIGHT,
         height: `calc(100vh - ${TOP_MENU_HEIGHT})`,
         width: "100vw",
         display: "flex",
@@ -26,23 +30,56 @@ const Page = () => {
         textAlign: "center",
       }}
     >
-      <Typography variant="h1" sx={{ position: "relative", top: "10%", userSelect: "none" }}>
-        Welcome to 3D video chat demo
-      </Typography>
+      <Box
+        sx={{
+          marginTop: "15vh",
+          height: `calc(70vh - ${TOP_MENU_HEIGHT})`,
+          minHeight: `calc(70vh - ${TOP_MENU_HEIGHT})`,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          textAlign: "center", // good for multi-line titles
+          px: 2, // padding for small screens
+        }}
+      >
+        <Fade in appear timeout={1000}>
+          <Typography
+            variant="h1"
+            sx={{
+              userSelect: "none",
+              fontSize: {
+                xs: "7vh",     // extra-small screens
+                sm: "9vh",     // small screens
+                md: "10vh",     // medium screens
+                // lg: "5rem",     // large screens
+              },
+            }}
+          >
+            Welcome to 3D video chat demo
+          </Typography>
+        </Fade>
+      </Box>
       {/* <ScreenControlButtons /> */}
 
       <Box
         sx={{
-          position: "absolute",
+          position: "relative",
           top: "25%",
           display: "flex",
-          flexDirection: "row",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <Box
-          maxWidth="50vw"
+          width={{
+            sm: "90vw",
+            md: "65vw",
+          }}
+          maxWidth={{
+            sm: "90vw",
+            md: "65vw",
+          }}
           sx={{
             display: "flex",
             flexDirection: "column",
@@ -50,15 +87,26 @@ const Page = () => {
             justifyContent: "center",
             padding: 2,
             backgroundColor: COLOR.grayScale10,
-            borderRadius: 4,
+            borderRadius: {
+              sm: 0,
+              md: 4
+            },
             boxShadow: 3,
             color: COLOR.white,
+            marginBottom: "2rem",
             userSelect: "none",
           }}
         >
           <br />
           <br />
-          <Typography variant="h5">
+          <Typography sx={{
+            fontSize: {
+              xs: "5vw",
+              sm: "4vw",
+              md: "1.5vw",
+            },
+            textAlign: "justify",
+          }}>
             Please enable and allow camera access to use 3D avatar facial
             tracking. This application is{" "}
             <b>
@@ -80,8 +128,15 @@ const Page = () => {
             using WebRTC.
             <br />
             <br />
+            <br />
+            <Typography sx={{
+              fontSize: {
+                xs: "5vw",
+                sm: "4vw",
+                md: "2vw",
+              },
+            }}>Current features:</Typography>
             <List>
-              Current features:
               <ListItem>
                 • Call room: Create/Join video and voice chat room
               </ListItem>
@@ -104,35 +159,57 @@ const Page = () => {
             </List>
           </Typography>
         </Box>
-        <Box
-          sx={{
-            width: "50vw",
-            height: "50vh",
-            border: `4px solid ${COLOR.brandPrimary}`,
-          }}
-        >
-          <LoadingBar />
-          <AvatarScene />
-        </Box>
-      </Box>
 
+        {started ? (
+          <Box
+            sx={{
+              width: "50vw",
+              height: "50vh",
+              border: `4px solid ${COLOR.brandPrimary}`,
+            }}
+          >
+            <LoadingBar />
+            <AvatarScene />
+          </Box>
+        ) : (
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: COLOR.brandPrimary,
+              color: COLOR.white,
+              border: "none",
+              borderRadius: "1rem",
+              padding: "1rem 2rem",
+              fontSize: "2rem",
+              margin: "2rem",
+            }}
+            onClick={() => {
+              setStarted(true);
+              useTrackingStore.getState().faceTracker.getUserVideoStream();
+            }}
+          >
+            Start now!
+          </Button>
+        )}
+        
       <Button
         style={{
-          position: "absolute",
-          bottom: "8%",
+          marginTop: "3rem",
+          marginBottom: "2rem",
           backgroundColor: COLOR.brandPrimary,
           color: COLOR.white,
           border: "none",
           borderRadius: "1rem",
           padding: "1rem 2rem",
-          fontSize: "2rem"
+          fontSize: "2rem",
         }}
         onClick={() => {
           router.push("/room");
         }}
       >
-        Join a call room!
+        Join a call room
       </Button>
+      </Box>
     </Box>
   );
 };
