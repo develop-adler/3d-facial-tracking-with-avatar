@@ -9,21 +9,21 @@ export const Multiplayer3DContainer = styled("div")({
   height: `calc(100vh - ${TOP_MENU_HEIGHT} - var(--lk-control-bar-height))`,
 });
 
-export const FacialExpressionCanvasContainer = styled("div")({
-  position: "absolute",
-  top: `calc(5% + ${TOP_MENU_HEIGHT})`,
-  right: "5%",
-  // 9 / 16 aspect ratio
-  width: "35vh",
-  height: "35vh",
-  borderRadius: "10px",
-  border: `3px solid ${COLOR.brandPrimary}`,
-  // overflow: "hidden",
-  zIndex: 1000,
-});
-
-export const FacialExpressionCanvas = styled("canvas")({
-  width: "calc(100% * (16/9))",
-  height: "100%",
-  transform: "scaleY(-1)", // flip vertically
+export const FacialExpressionCanvas = styled("canvas")(() => {
+  const xMargin = 2.5;
+  const yMargin = xMargin * 2;
+  return {
+    width: "auto",
+    height: "35vh",
+    aspectRatio: "3 / 4",
+    transform: "scaleY(-1)", // flip vertically
+    position: "absolute",
+    top: `calc(${yMargin}% + ${TOP_MENU_HEIGHT})`,
+    right: xMargin + "%",
+    borderRadius: "10px",
+    border: `3px solid ${COLOR.brandPrimary}`,
+    overflow: "hidden",
+    opacity: 0,
+    transition: "opacity 0.3s ease-in-out",
+  };
 });

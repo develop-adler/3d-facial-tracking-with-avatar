@@ -13,6 +13,7 @@ import {
     type SyncState,
 } from "@/models/multiplayer";
 import AvatarController from "@/3d/avatar/AvatarController";
+import AvatarFaceView from "@/3d/avatar/AvatarFaceView";
 import type CoreScene from "@/3d/core/CoreScene";
 import eventBus from "@/eventBus";
 import type { AvatarGender } from "@/models/3d";
@@ -49,6 +50,8 @@ class MultiplayerManager {
     readonly avatarController: AvatarController;
     syncAvatarObserver?: Observer<Scene>;
     positionFacialCameraObserver?: Observer<Scene>;
+
+    avatarView?: AvatarFaceView;
 
     constructor(room: Room, coreScene: CoreScene) {
         this.room = room;
@@ -94,10 +97,10 @@ class MultiplayerManager {
         // send our avatar state to all participants in the room
         this.syncAvatarObserver = this.coreScene.scene.onBeforeRenderObservable.add(
             async () => {
-                // publish data takes in a Uint8Array, so we need to convert it
-                const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
                 try {
-                    this.room.localParticipant.publishData(data, {
+                    // publish data takes in a Uint8Array, so we need to convert it
+                    const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
+                    await this.room.localParticipant.publishData(data, {
                         reliable: true,
                         destinationIdentities: [],
                     });
@@ -166,10 +169,14 @@ class MultiplayerManager {
         if (this.localAvatar.container) {
             this.localAvatar.showAvatarInfo();
             this.localAvatar.loadAnimations();
+            // for debugging
+            // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
         } else {
             this.localAvatar.loadAvatar().then(() => {
                 this.localAvatar.showAvatarInfo();
                 this.localAvatar.loadAnimations();
+                // for debugging
+                // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
             });
         }
 
@@ -197,25 +204,6 @@ class MultiplayerManager {
         }
     }
 
-    private _syncFacialCameraPosition(avatar: Avatar = this.localAvatar) {
-        this.positionFacialCameraObserver =
-            this.coreScene.scene.onBeforeRenderObservable.add(() => {
-                if (!this.coreScene.facialExpressionCamera) {
-                    this.coreScene.facialExpressionCamera =
-                        this.coreScene.createFacialExpressionCamera();
-                }
-
-                // set camera position to be in front of the avatar's face and always point at it
-                const target = avatar.customHeadNode.absolutePosition;
-                const inFrontOfFace = target.add(
-                    avatar.root.forward.normalize().scaleInPlace(0.65)
-                );
-                this.coreScene.facialExpressionCamera.setPosition(inFrontOfFace);
-                target.y -= 0.1; // point camera down a bit
-                this.coreScene.facialExpressionCamera.target = target;
-            });
-    }
-
     private _loadRemoteParticipantAvatar(
         participant: RemoteParticipant,
         isEvent: boolean = true
@@ -233,7 +221,7 @@ class MultiplayerManager {
             avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
             avatar.loadAnimations();
-            this._syncFacialCameraPosition(avatar);
+            this.avatarView ??= new AvatarFaceView(this.coreScene, avatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
         });
         this.remoteAvatars.set(participant, avatar);
 
@@ -384,8 +372,8 @@ class MultiplayerManager {
     }
 
     dispose() {
-        this.positionFacialCameraObserver?.remove();
-        this.positionFacialCameraObserver = undefined;
+        this.avatarView?.dispose();
+        this.avatarView = undefined;
 
         this.clearAllListeners();
         this.clearAllRemoteAvatars();

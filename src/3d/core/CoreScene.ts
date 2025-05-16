@@ -9,7 +9,6 @@ import "@babylonjs/core/Rendering/boundingBoxRenderer"; // for occlusion queries
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
-import { Viewport } from "@babylonjs/core/Maths/math.viewport";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { Scene } from "@babylonjs/core/scene";
 
@@ -41,10 +40,6 @@ class CoreScene {
     readonly camera: ArcRotateCamera;
     readonly atom: Atom;
     readonly remoteAvatarPhysicsShapes: AvatarPhysicsShapes;
-
-    facialExpressionCamera?: ArcRotateCamera;
-    viewport?: Viewport;
-
     isPhysicsEnabled: boolean = false;
 
     constructor(room: Room, coreEngine: CoreEngine) {
@@ -214,82 +209,9 @@ class CoreScene {
 
         camera.attachControl();
 
-        camera.viewport = new Viewport(0, 0, 1, 1);
-
         eventBus.emit(`space:cameraCreated:${this.room.name}`, camera);
 
         return camera;
-    }
-
-    createFacialExpressionCamera(): ArcRotateCamera {
-        const camera = new ArcRotateCamera(
-            "facialExpressionCamera",
-            -Math.PI * 0.5,
-            Math.PI * 0.5,
-            MULTIPLAYER_PARAMS.DEFAULT_CAMERA_RADIUS,
-            Vector3.FromArray(MULTIPLAYER_PARAMS.CAMERA_TARGET_PREVIEW),
-            this.scene
-        );
-
-        // disable panning
-        camera.panningSensibility = 0;
-
-        camera.minZ = MULTIPLAYER_PARAMS.CAMERA_MINZ;
-        camera.maxZ = MULTIPLAYER_PARAMS.CAMERA_MAXZ;
-
-        // disable rotation using keyboard arrow key
-        camera.keysUp = [];
-        camera.keysDown = [];
-        camera.keysLeft = [];
-        camera.keysRight = [];
-
-        // lower rotation sensitivity, higher value = less sensitive
-        camera.angularSensibilityX =
-            MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
-        camera.angularSensibilityY =
-            MULTIPLAYER_PARAMS.CAMERA_HORIZONTAL_ROTATION_SPEED_PREVIEW;
-
-        // remove camera limitations
-        // eslint-disable-next-line unicorn/no-null
-        camera.lowerBetaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        camera.upperBetaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        camera.lowerAlphaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        camera.upperAlphaLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        camera.lowerRadiusLimit = null;
-        // eslint-disable-next-line unicorn/no-null
-        camera.upperRadiusLimit = null;
-
-        camera.fov = 0.8;
-
-        // viewport always fixed to 9:16 aspect ratio
-        const aspectRatio = 9 / 16;
-        const width = 0.24 * aspectRatio;
-        const height = 0.24 / aspectRatio;
-        // keep viewport in the top-right corner
-        camera.viewport = new Viewport(
-            0.975 - width,
-            0.975 - height,
-            width,
-            height
-        );
-
-        this.scene.activeCameras = [this.camera, camera];
-
-        return camera;
-    }
-
-    removeFacialExpressionCamera(): void {
-        this.facialExpressionCamera?.dispose();
-        this.facialExpressionCamera = undefined;
-        this.scene.activeCameras = [this.camera];
-        this.camera.viewport.x = 0;
-        this.camera.viewport.y = 0;
-        this.camera.viewport.width = 1;
-        this.camera.viewport.height = 1;
     }
 
     switchToMultiplayer(): void {
@@ -307,7 +229,6 @@ class CoreScene {
         // skybox disabled
         this.scene.autoClear = true;
         this.atom.skybox?.setEnabled(false);
-        this.removeFacialExpressionCamera();
         this._setCameraToVideoChat();
     }
     setCameraToMultiplayer(): void {

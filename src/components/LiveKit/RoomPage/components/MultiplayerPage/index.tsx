@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, type FC } from "react";
 
 import { ConnectionState, RoomEvent } from "livekit-client";
 
-import { Multiplayer3DContainer } from "./styles";
+import { FacialExpressionCanvas, Multiplayer3DContainer } from "./styles";
 
 import CoreScene from "@/3d/core/CoreScene";
 import MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
@@ -78,6 +78,7 @@ export const MultiplayerPage: FC = () => {
             <>
                 {avatar && <AvatarSpeakingHandler avatar={avatar} room={room} />}
                 <Multiplayer3DContainer ref={canvasContainer} />
+                <FacialExpressionCanvas id="pipCanvas" />
             </>
         )
     );
