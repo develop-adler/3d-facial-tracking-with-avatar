@@ -257,6 +257,12 @@ class Atom {
         // this.physicsViewer.showBody(body);
     }
 
+    toggleSkybox(force: boolean = false) {
+        if (this.skybox) {
+            this.skybox.setEnabled(force ? true : !this.skybox.isEnabled());
+        }
+    }
+
     dispose(disposeSkybox: boolean = true) {
         if (disposeSkybox) this.skybox?.dispose(false, true);
         for (const shape of this.objectPhysicsShape.values()) {

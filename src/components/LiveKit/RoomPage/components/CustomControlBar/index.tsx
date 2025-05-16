@@ -121,6 +121,22 @@ export const CustomControlBar = () => {
             <div className="lk-control-bar">
                 <div className="lk-button-group">
                     <TrackToggle
+                        id="backgroundSettingsButton"
+                        source={Track.Source.Unknown}
+                        showIcon={false}
+                        onClick={() => {
+                            useLiveKitStore.getState().toggleChangeBackgroundModal();
+                        }}
+                        style={{
+                            // fix right side borders being right angled
+                            borderTopRightRadius: "var(--lk-border-radius)",
+                            borderBottomRightRadius: "var(--lk-border-radius)",
+                            marginRight: "0.6rem",
+                        }}
+                    >
+                        Background
+                    </TrackToggle>
+                    <TrackToggle
                         source={Track.Source.Unknown}
                         showIcon={false}
                         onClick={() => {

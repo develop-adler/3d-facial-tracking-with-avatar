@@ -18,6 +18,7 @@ import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { clientSettings } from "clientSettings";
 import { ToastContainer } from "react-toastify";
+import BackgroundModal from "./components/BackgroundModal";
 
 const AvatarScene = dynamic(
     () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -67,6 +68,9 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
     const setRoomNameAndUsername = useLiveKitStore(
         (state) => state.setRoomNameAndUsername
     );
+    const openChangeBackgroundModal = useLiveKitStore(
+        (state) => state.openChangeBackgroundModal
+    );
 
     useEffect(() => {
         (async () => {
@@ -105,6 +109,7 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
             <AvatarLoadingToast />
 
             <LeftMenu />
+            {openChangeBackgroundModal && <BackgroundModal />}
 
             {!!openJoinSpaceModal && <EnterSpaceConfirmModal />}
 
