@@ -7,7 +7,7 @@ import {
 import { toast } from "react-toastify";
 
 import eventBus from "@/eventBus";
-import type { ConfirmJoinSpace, RequestJoinSpace } from "@/models/multiplayer";
+import type { ConfirmRequest, UserRequest } from "@/models/multiplayer";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 class RoomManager {
@@ -24,7 +24,9 @@ class RoomManager {
             this._onParticipantLeave.bind(this)
         );
 
-        eventBus.onWithEvent<RequestJoinSpace>(
+        // ===============================
+        // UserRequest join space stuff
+        eventBus.onWithEvent<UserRequest>(
             "multiplayer:requestJoinSpace",
             this._requestJoinSpaceEventListener.bind(this)
         );
@@ -39,7 +41,7 @@ class RoomManager {
             // empty
         }
 
-        eventBus.onWithEvent<ConfirmJoinSpace>(
+        eventBus.onWithEvent<ConfirmRequest>(
             "multiplayer:confirmJoinSpace",
             this._confirmJoinSpaceEventListener.bind(this)
         );
@@ -53,6 +55,8 @@ class RoomManager {
         } catch {
             // empty
         }
+        // End of request join space stuff
+        // ===============================
 
         // receive attribute changes from other participants
         this.room.on(
@@ -85,18 +89,12 @@ class RoomManager {
         return false;
     }
 
-    private async _requestJoinSpaceEventListener(request: RequestJoinSpace) {
-        if (
-            this.room.remoteParticipants.size === 0 &&
-            request.spaceType === "other"
-        ) {
+    private async _requestJoinSpaceEventListener(request: UserRequest) {
+        if (this.room.remoteParticipants.size === 0 && request.origin === "other") {
             return;
         }
 
-        if (
-            this.room.remoteParticipants.size === 0 &&
-            request.spaceType === "self"
-        ) {
+        if (this.room.remoteParticipants.size === 0 && request.origin === "self") {
             // no one is in space, so we can set multiplayer to true
             useLiveKitStore.getState().setIsMultiplayer(true);
             return;
@@ -109,7 +107,7 @@ class RoomManager {
                     method: "participantRequestJoinSpace",
                     payload: JSON.stringify({
                         identity: request.identity,
-                        spaceType: request.spaceType,
+                        origin: request.origin,
                         // spaceId: request.spaceId,
                     }),
                 });
@@ -120,15 +118,15 @@ class RoomManager {
     }
 
     private async _requestJoinSpaceRPC(data: RpcInvocationData) {
-        const payload = JSON.parse(data.payload) as RequestJoinSpace;
+        const payload = JSON.parse(data.payload) as UserRequest;
         useLiveKitStore.getState().setOpenJoinSpaceModal({
             identity: data.callerIdentity,
-            spaceType: payload.spaceType,
+            origin: payload.origin,
         });
         return "ok" as string;
     }
 
-    private async _confirmJoinSpaceEventListener(confirmData: ConfirmJoinSpace) {
+    private async _confirmJoinSpaceEventListener(confirmData: ConfirmRequest) {
         for (const [, participant] of this.room.remoteParticipants) {
             try {
                 const _response = await this.room.localParticipant.performRpc({
@@ -151,7 +149,7 @@ class RoomManager {
     }
 
     private async _confirmJoinSpaceRPC(data: RpcInvocationData) {
-        const payload = JSON.parse(data.payload) as ConfirmJoinSpace;
+        const payload = JSON.parse(data.payload) as ConfirmRequest;
         // we receive confirm data from other participant, so we can set multiplayer to true
         if (payload.confirm) {
             useLiveKitStore.getState().setIsMultiplayer(true);
@@ -176,7 +174,7 @@ class RoomManager {
 
     dispose(): void {
         this.room.off(RoomEvent.ParticipantDisconnected, this._onParticipantLeave);
-        this.room.off(RoomEvent.ParticipantAttributesChanged, () => { });
+        this.room.off(RoomEvent.ParticipantAttributesChanged, () => {});
         eventBus.offWithEvent(
             "multiplayer:requestJoinSpace",
             this._requestJoinSpaceEventListener

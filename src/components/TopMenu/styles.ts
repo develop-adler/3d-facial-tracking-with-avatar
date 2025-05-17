@@ -20,6 +20,10 @@ export const ButtonContainer = styled(Box)(({ theme }) => ({
 
 export const StyledButton = styled(Button)(({ theme }) => ({
     color: theme.palette.common.white,
+    backgroundColor: COLOR.brandPrimary,
+    "&:hover": {
+        backgroundColor: COLOR.brandPrimaryHover3,
+    },
 }));
 
 export const IframeModal = styled(Modal)({

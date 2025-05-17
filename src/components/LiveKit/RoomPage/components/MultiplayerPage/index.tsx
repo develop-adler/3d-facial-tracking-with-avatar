@@ -14,28 +14,46 @@ import { useEngineStore } from "@/stores/useEngineStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useSceneStore } from "@/stores/useSceneStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
+import SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 
 export const MultiplayerPage: FC = () => {
     const coreEngine = useEngineStore((state) => state.coreEngine);
-    const setScene = useSceneStore((state) => state.setScene);
     const room = useLiveKitStore((state) => state.room);
-    const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
     const avatar = useAvatarStore((state) => state.avatar);
+    const isBuildSpaceMode = useLiveKitStore(
+        (state) => state.isBuildSpaceMode
+    );
 
     const canvasContainer = useRef<HTMLDivElement>(null);
+    const multiplayerManagerRef = useRef<MultiplayerManager>(undefined);
+    const spaceBuilderRef = useRef<SpaceBuilder>(undefined);
 
     const isDisconnected = useMemo(
         () => room.state === ConnectionState.Disconnected,
         [room.state]
     );
+    
+    useEffect(() => {
+        if (!multiplayerManagerRef.current) return;
+
+        if (isBuildSpaceMode) {
+            const buildSpaceMode = new SpaceBuilder(multiplayerManagerRef.current);
+            spaceBuilderRef.current = buildSpaceMode;
+        } else {
+            spaceBuilderRef.current?.dispose();
+            spaceBuilderRef.current = undefined;
+        }
+    }, [isBuildSpaceMode]);
 
     useEffect(() => {
         if (isDisconnected) {
-            setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsBuildSpaceMode(false);
             return;
         }
         room.once(RoomEvent.Disconnected, () => {
-            setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsBuildSpaceMode(false);
         });
 
         if (canvasContainer.current)
@@ -44,12 +62,13 @@ export const MultiplayerPage: FC = () => {
         let currentCoreScene = useSceneStore.getState().coreScene;
         if (!currentCoreScene) {
             currentCoreScene = new CoreScene(room, coreEngine);
-            setScene(currentCoreScene);
+            useSceneStore.getState().setScene(currentCoreScene);
         }
         currentCoreScene.switchToMultiplayer();
         currentCoreScene.atom.load();
 
         const multiplayerManager = new MultiplayerManager(room, currentCoreScene);
+        multiplayerManagerRef.current = multiplayerManager;
 
         let elapsedTime = 0;
         const fps = 60;
@@ -63,7 +82,8 @@ export const MultiplayerPage: FC = () => {
 
         return () => {
             faceTrackObserver.remove();
-            setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsBuildSpaceMode(false);
             multiplayerManager.dispose();
             //dispose atom without disposing skybox
             currentCoreScene.atom.dispose(false);

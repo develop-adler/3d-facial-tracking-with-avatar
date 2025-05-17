@@ -19,6 +19,7 @@ import type { AvatarGender } from "@/models/3d";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useScreenControlStore } from "@/stores/useScreenControlStore";
+import { COLOR } from "constant";
 
 const TopMenu: FC = () => {
     const router = useRouter();
@@ -76,20 +77,36 @@ const TopMenu: FC = () => {
                         <StyledButton
                             variant="contained"
                             color="warning"
+                            sx={{
+                                backgroundColor: COLOR.uploadProgress,
+                                "&:hover": {
+                                    backgroundColor: COLOR.uploadProgressDark,
+                                },
+                            }}
                             onClick={() => pushRoute("/room")}
                         >
                             Join a call room
                         </StyledButton>
                         <StyledButton
                             variant="contained"
-                            color="secondary"
+                            sx={{
+                                backgroundColor: COLOR.systemWarningDark,
+                                "&:hover": {
+                                    backgroundColor: COLOR.systemWarningDark2,
+                                },
+                            }}
+                            onClick={() => pushRoute("/studio")}
+                        >
+                            Create your space
+                        </StyledButton>
+                        <StyledButton
+                            variant="contained"
                             onClick={() => setOpenIframe(true)}
                         >
                             Create new avatar
                         </StyledButton>
                         <StyledButton
                             variant="contained"
-                            color="secondary"
                             onClick={() => {
                                 const res = globalThis
                                     .prompt(
@@ -106,7 +123,6 @@ const TopMenu: FC = () => {
                         </StyledButton>
                         <StyledButton
                             variant="contained"
-                            color="secondary"
                             onClick={handleDropdownOpen}
                         >
                             Avatar presets ⬇️

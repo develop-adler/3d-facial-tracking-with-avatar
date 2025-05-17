@@ -10,8 +10,8 @@ import {
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
+import type { UserRequest, RequestOrigin } from "@/models/multiplayer";
 import eventBus from "@/eventBus";
-import type { RequestJoinSpace, SpaceType } from "@/models/multiplayer";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { COLOR } from "constant";
@@ -27,12 +27,21 @@ const LeftMenu: FC = () => {
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
     const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
 
-    const requestJoinSpace = (spaceType: SpaceType): RequestJoinSpace => {
+    const requestJoinSpace = (origin: RequestOrigin): UserRequest => {
         const obj = {
             identity: room.localParticipant.identity,
-            spaceType,
+            origin,
         };
         eventBus.emitWithEvent("multiplayer:requestJoinSpace", obj);
+        return obj;
+    };
+
+    const requestBuildSpace = (origin: RequestOrigin): UserRequest => {
+        const obj = {
+            identity: room.localParticipant.identity,
+            origin,
+        };
+        eventBus.emitWithEvent("multiplayer:requestBuildSpace", obj);
         return obj;
     };
 
@@ -72,13 +81,22 @@ const LeftMenu: FC = () => {
             >
                 <List sx={{ paddingLeft: "0.5rem", userSelect: "none" }}>
                     {isMultiplayer ? (
-                        <ListItem
-                            component="button"
-                            sx={{ cursor: "pointer" }}
-                            onClick={() => setIsMultiplayer(false)}
-                        >
-                            <ListItemText primary="Leave space" />
-                        </ListItem>
+                        <>
+                            <ListItem
+                                component="button"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() => requestBuildSpace("self")}
+                            >
+                                <ListItemText primary="Build space" />
+                            </ListItem>
+                            <ListItem
+                                component="button"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() => setIsMultiplayer(false)}
+                            >
+                                <ListItemText primary="Leave space" />
+                            </ListItem>
+                        </>
                     ) : (
                         <>
                             <ListItem

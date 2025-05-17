@@ -15,13 +15,13 @@ import earcut from "earcut";
 
 import type Avatar from "@/3d/avatar/Avatar";
 import { isAndroid } from "@/utils/browserUtils";
-import { generateRandomId } from "@/utils/functionUtils";
 
 import { clientSettings } from "clientSettings";
 import { COLOR } from "constant";
 
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
+import { v4 } from "uuid";
 
 class AvatarProfile {
     readonly avatar: Avatar;
@@ -540,7 +540,7 @@ class AvatarProfile {
             chatBubbleHeight += AvatarProfile.MESSAGE_LINE_HEIGHT;
         }
 
-        const messageId = generateRandomId();
+        const messageId = v4();
 
         // ========== Create dynamic texture to draw text ========== //
         const dynamicTexture = new DynamicTexture(

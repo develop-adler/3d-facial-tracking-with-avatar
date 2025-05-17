@@ -11,7 +11,6 @@ import RoomManager from "@/3d/multiplayer/RoomManager";
 import SpatialAudioController from "@/components/LiveKit/SpatialAudioController";
 import AvatarLoadingToast from "@/components/LiveKit/RoomPage/components/AvatarLoadingToast";
 import { CustomControlBar } from "@/components/LiveKit/RoomPage/components/CustomControlBar";
-import EnterSpaceConfirmModal from "@/components/LiveKit/RoomPage/components/EnterSpaceConfirmModal";
 import LeftMenu from "@/components/LiveKit/RoomPage/components/LeftMenu";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
@@ -19,6 +18,7 @@ import { useTrackingStore } from "@/stores/useTrackingStore";
 import { clientSettings } from "clientSettings";
 import { ToastContainer } from "react-toastify";
 import BackgroundModal from "./components/BackgroundModal";
+import Modals from "@/components/Modals";
 
 const AvatarScene = dynamic(
     () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -62,9 +62,6 @@ type Props = {
 export const RoomPage: FC<Props> = ({ roomName, name }) => {
     const room = useLiveKitStore((state) => state.room);
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
-    const openJoinSpaceModal = useLiveKitStore(
-        (state) => state.openJoinSpaceModal
-    );
     const setRoomNameAndUsername = useLiveKitStore(
         (state) => state.setRoomNameAndUsername
     );
@@ -111,7 +108,7 @@ export const RoomPage: FC<Props> = ({ roomName, name }) => {
             <LeftMenu />
             {openChangeBackgroundModal && <BackgroundModal />}
 
-            {!!openJoinSpaceModal && <EnterSpaceConfirmModal />}
+            <Modals />
 
             {!isMultiplayer && (
                 <>

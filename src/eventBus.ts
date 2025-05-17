@@ -15,6 +15,8 @@ type EventNames =
     | 'multiplayer:fetchMultiplayMessage'
     | 'multiplayer:requestJoinSpace'
     | 'multiplayer:confirmJoinSpace'
+    | 'multiplayer:requestBuildSpace'
+    | 'multiplayer:confirmBuildSpace'
     | 'avatar:changeAvatar'
     | 'avatar:set'
     | 'avatar:capsuleBodyCreated'

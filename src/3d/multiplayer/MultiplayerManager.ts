@@ -5,19 +5,25 @@ import {
     type Participant,
     type RemoteParticipant,
     type Room,
+    type RpcInvocationData,
 } from "livekit-client";
+import { toast } from "react-toastify";
 
 import Avatar from "@/3d/avatar/Avatar";
 import {
     type AvatarChangeAttributesData,
+    type ConfirmRequest,
     type SyncState,
+    type UserRequest,
 } from "@/models/multiplayer";
 import AvatarController from "@/3d/avatar/AvatarController";
 import AvatarFaceView from "@/3d/avatar/AvatarFaceView";
 import type CoreScene from "@/3d/core/CoreScene";
+import SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import eventBus from "@/eventBus";
 import type { AvatarGender } from "@/models/3d";
 import { useAvatarStore } from "@/stores/useAvatarStore";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { clientSettings } from "clientSettings";
 
@@ -52,6 +58,7 @@ class MultiplayerManager {
     positionFacialCameraObserver?: Observer<Scene>;
 
     avatarView?: AvatarFaceView;
+    spaceBuilder?: SpaceBuilder;
 
     constructor(room: Room, coreScene: CoreScene) {
         this.room = room;
@@ -136,6 +143,39 @@ class MultiplayerManager {
 
         // receive sync state data packets from other participants
         this.room.on(RoomEvent.DataReceived, this._syncRemoteAvatars.bind(this));
+
+        // ===============================
+        // UserRequest build space stuff
+        eventBus.onWithEvent<UserRequest>(
+            "multiplayer:requestBuildSpace",
+            this._requestBuildSpaceEventListener.bind(this)
+        );
+        try {
+            // unregister the method if it already exists to prevent error
+            this.room.unregisterRpcMethod("participantRequestBuildSpace");
+            this.room.registerRpcMethod(
+                "participantRequestBuildSpace",
+                this._requestBuildSpaceRPC.bind(this)
+            );
+        } catch {
+            // empty
+        }
+        eventBus.onWithEvent<ConfirmRequest>(
+            "multiplayer:confirmBuildSpace",
+            this._confirmBuildSpaceEventListener.bind(this)
+        );
+        try {
+            // unregister the method if it already exists to prevent error
+            this.room.unregisterRpcMethod("participantConfirmBuildSpace");
+            this.room.registerRpcMethod(
+                "participantConfirmBuildSpace",
+                this._confirmBuildSpaceRPC.bind(this)
+            );
+        } catch {
+            // empty
+        }
+        // End of request build space stuff
+        // ===============================
     }
 
     private _loadRoomUsers() {
@@ -268,6 +308,83 @@ class MultiplayerManager {
         }
     }
 
+    private async _requestBuildSpaceEventListener(request: UserRequest) {
+        if (this.room.remoteParticipants.size === 0 && request.origin === "other") {
+            return;
+        }
+
+        // for testing only
+        if (this.room.remoteParticipants.size === 0 && request.origin === "self") {
+            useLiveKitStore.getState().setIsBuildSpaceMode(true);
+            return;
+        }
+
+        for (const [, participant] of this.room.remoteParticipants) {
+            try {
+                const _response = await this.room.localParticipant.performRpc({
+                    destinationIdentity: participant.identity,
+                    method: "participantRequestBuildSpace",
+                    payload: JSON.stringify({
+                        identity: request.identity,
+                        origin: request.origin,
+                        // spaceId: request.spaceId,
+                    }),
+                });
+            } catch {
+                // console.error("RPC call failed:", error);
+            }
+        }
+    }
+
+    private async _requestBuildSpaceRPC(data: RpcInvocationData) {
+        const payload = JSON.parse(data.payload) as UserRequest;
+        useLiveKitStore.getState().setOpenBuildSpaceModal({
+            identity: data.callerIdentity,
+            origin: payload.origin,
+        });
+        return "ok" as string;
+    }
+
+    private async _confirmBuildSpaceEventListener(confirmData: ConfirmRequest) {
+        for (const [, participant] of this.room.remoteParticipants) {
+            try {
+                const _response = await this.room.localParticipant.performRpc({
+                    destinationIdentity: participant.identity,
+                    method: "participantConfirmBuildSpace",
+                    payload: JSON.stringify({
+                        identity: confirmData.identity,
+                        confirm: confirmData.confirm,
+                    }),
+                });
+                // we click confirm button, so we can set multiplayer to true
+                // if (confirmData.confirm) {
+                //     useLiveKitStore.getState().setIsBuildSpaceMode(true);
+                // }
+                // currently being handled in participantAttributesChanged event for better syncing
+            } catch {
+                // console.error("RPC call failed:", error);
+            }
+        }
+    }
+
+    private async _confirmBuildSpaceRPC(data: RpcInvocationData) {
+        const payload = JSON.parse(data.payload) as ConfirmRequest;
+        // we receive confirm data from other participant, so we can set multiplayer to true
+        if (payload.confirm) {
+            useLiveKitStore.getState().setIsBuildSpaceMode(true);
+        } else {
+            toast("Your request to build space was declined", {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                pauseOnFocusLoss: true,
+            });
+        }
+        return "ok" as string;
+    }
+
     private _syncRemoteAvatars(payload: Uint8Array<ArrayBufferLike>) {
         const decoder = new TextDecoder();
         const syncData = JSON.parse(decoder.decode(payload));
@@ -372,6 +489,11 @@ class MultiplayerManager {
     }
 
     dispose() {
+        eventBus.offWithEvent(
+            "multiplayer:requestBuildSpace",
+            this._requestBuildSpaceEventListener
+        );
+
         this.avatarView?.dispose();
         this.avatarView = undefined;
 

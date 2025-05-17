@@ -1,0 +1,88 @@
+import type { ObjectTransform } from "@/models/3d";
+
+export type StudioObjectType =
+  | "skyboxs"
+  | "architectures"
+  | "furnitures"
+  | "decorations"
+  | "entertainments";
+
+export type StudioObjectTypeExtended =
+  | (StudioObjectType & "sounds")
+  | "images"
+  | "objects";
+export type StudioObjectSubType =
+  | "carpet"
+  | "ceiling"
+  | "decoration"
+  | "door"
+  | "floor"
+  | "lighting"
+  | "window"
+  | "bed"
+  | "chair"
+  | "shelf"
+  | "sofa"
+  | "table"
+  | "sound_system"
+  | "wall"
+  | "picture_frame"
+  | "screen"
+  | "structure"
+  | "none";
+export type StudioObjectType3D =
+  | "wallAttached"
+  | "wall"
+  | "ground"
+  | "decoration"
+  | "floor";
+
+export type StudioSavedState = {
+  uid: string;
+  date: string;
+  type: StudioSavedStateType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+  name?: string;
+};
+export type StudioSavedStates = Array<StudioSavedState>;
+
+export type StudioSavedStateType =
+  | "select"
+  | "deselect"
+  | "add"
+  | "delete"
+  | "move"
+  | "rotate"
+  | "scale"
+  | "lock"
+  | "unlock"
+  | "duplicate"
+  | "changeSkybox";
+
+export type StudioPictureFrameImage = {
+  src: string;
+  file: File;
+};
+
+export type StudioObjectProperty = {
+  id: string;
+  type: StudioObjectType;
+  position: ObjectTransform;
+  rotation: ObjectTransform;
+  scale: ObjectTransform;
+};
+
+export type StudioMeshMetaData = {
+  id: string;
+  name: string;
+  position: ObjectTransform;
+  rotation: ObjectTransform;
+  scale: ObjectTransform;
+  type: StudioObjectType;
+  type3D: StudioObjectType3D;
+  subType: StudioObjectSubType;
+  imageContent?: StudioPictureFrameImage;
+};
+
+export type LockedStudioObjects = Array<number>;

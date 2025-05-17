@@ -183,6 +183,11 @@
   resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-8.6.1.tgz#802c30ee22685731fbfb93cfbd537c12390fe7c5"
   integrity sha512-Kv5gYJz5KNLF3txBFDrrxT77qOeHF2msKBI6dVAgRFIuJ60CaC881gWOZl3TkgMDDlUrtyzGMTd8A+coBBAIDg==
 
+"@babylonjs/materials@^8.8.5":
+  version "8.8.5"
+  resolved "https://registry.yarnpkg.com/@babylonjs/materials/-/materials-8.8.5.tgz#04e4c238fe601ad31719311245c8ced9d4b1b452"
+  integrity sha512-CgFgJ0AZX9bSFEMmEHGgu+HUCkbiodxubOGwie/2+EmysTlXM89bnZ8KkxANNL7wyTRMg8u4uclgRYiL2y9rIA==
+
 "@bufbuild/protobuf@^1.10.0", "@bufbuild/protobuf@^1.7.2":
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-1.10.1.tgz#1d76d15290c0212076c15ede94d15157ba0c6344"

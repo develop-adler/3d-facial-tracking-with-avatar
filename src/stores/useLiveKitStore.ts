@@ -2,12 +2,12 @@ import type { Room } from "livekit-client";
 import { create } from "zustand";
 
 import LiveKitRoom from "@/LiveKitRoomSingleton";
-import type { RoomAndName, SpaceType } from "@/models/multiplayer";
+import type { RoomAndName, RequestOrigin } from "@/models/multiplayer";
 import { persist } from "zustand/middleware";
 
 type OpenJoinSpaceModal = {
     identity: string;
-    spaceType: SpaceType;
+    origin: RequestOrigin;
 };
 
 type LiveKitStore = {
@@ -15,12 +15,16 @@ type LiveKitStore = {
     room: Room;
     roomNameAndUsername?: RoomAndName;
     isMultiplayer: boolean;
+    isBuildSpaceMode: boolean;
     openJoinSpaceModal?: OpenJoinSpaceModal;
+    openBuildSpaceModal?: OpenJoinSpaceModal;
     skyboxEnabled: boolean;
     openChangeBackgroundModal: boolean;
     setRoomNameAndUsername: (roomNameAndUsername?: RoomAndName) => void;
     setIsMultiplayer: (isMultiplayer: boolean) => void;
+    setIsBuildSpaceMode: (isBuildSpaceMode: boolean) => void;
     setOpenJoinSpaceModal: (openJoinSpaceModal?: OpenJoinSpaceModal) => void;
+    setOpenBuildSpaceModal: (openBuildSpaceModal?: OpenJoinSpaceModal) => void;
     setSkyboxEnabled: (skyboxEnabled: boolean) => void;
     toggleChangeBackgroundModal: (force?: boolean) => void;
 };
@@ -32,7 +36,9 @@ export const useLiveKitStore = create<LiveKitStore>()(
             room: LiveKitRoom.getInstance().room,
             roomNameAndUsername: undefined,
             isMultiplayer: false,
+            isBuildSpaceMode: false,
             openJoinSpaceModal: undefined,
+            openBuildSpaceModal: undefined,
             skyboxEnabled: false,
             openChangeBackgroundModal: false,
             setRoomNameAndUsername: (roomNameAndUsername) => set({ roomNameAndUsername }),
@@ -47,7 +53,17 @@ export const useLiveKitStore = create<LiveKitStore>()(
                 }
                 set({ isMultiplayer });
             },
+            setIsBuildSpaceMode: (isBuildSpaceMode) => {
+                const { isMultiplayer } = get();
+                // ensure that we are already in multiplayer mode
+                if (isMultiplayer) {
+                    set({ isBuildSpaceMode });
+                } else {
+                    set({ isBuildSpaceMode: false });
+                }
+            },
             setOpenJoinSpaceModal: (openJoinSpaceModal) => set({ openJoinSpaceModal }),
+            setOpenBuildSpaceModal: (openBuildSpaceModal) => set({ openBuildSpaceModal }),
             setSkyboxEnabled: (skyboxEnabled) => set({ skyboxEnabled }),
             toggleChangeBackgroundModal: (force) => {
                 const { openChangeBackgroundModal } = get();

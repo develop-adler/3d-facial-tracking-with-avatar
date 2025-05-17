@@ -5,19 +5,26 @@ import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureCon
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
 
+import Resource from "@/3d/assets/Resource";
 import type { SpaceLoadingPerformance } from "@/models/3d";
+import type { Asset } from "@/models/common";
+import type { StudioObjectType } from "@/models/studio";
 import eventBus from "@/eventBus";
 
 import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 
+type StoredAssets = {
+    [key in StudioObjectType]?: Record<string, Asset>;
+};
+
 registerBuiltInLoaders();
 
 const SafeCanvas = (() =>
-    typeof document === 'undefined' ?
-        {
-            getContext: () => {},
-        } as unknown as HTMLCanvasElement :
-        document.createElement('canvas'))();
+    typeof document === "undefined"
+        ? ({
+            getContext: () => { },
+        } as unknown as HTMLCanvasElement)
+        : document.createElement("canvas"))();
 
 export class CoreEngine {
     private static instance: CoreEngine;
@@ -26,7 +33,9 @@ export class CoreEngine {
     havok?: HavokPhysicsWithBindings;
     isSettingUpHavok: boolean = false;
 
-    spaceLoadingData: SpaceLoadingPerformance;
+    readonly spaceLoadingData: SpaceLoadingPerformance;
+    readonly cachedAssets: StoredAssets;
+    readonly assetFilePaths: Record<string, Resource>;
 
     private constructor() {
         this.spaceLoadingData = {
@@ -47,8 +56,10 @@ export class CoreEngine {
             space_uh_lod_ready: -1,
             space_fully_loaded: -1,
         };
+        this.cachedAssets = {};
+        this.assetFilePaths = {};
 
-        if (typeof document === 'undefined') {
+        if (typeof document === "undefined") {
             this.canvas = SafeCanvas;
             this.engine = new NullEngine();
             this.engine.dispose();
@@ -98,7 +109,7 @@ export class CoreEngine {
         const havok = await HavokPhysics();
         this.havok = havok;
         this.isSettingUpHavok = false;
-        eventBus.emitWithEvent('havok:ready', havok);
+        eventBus.emitWithEvent("havok:ready", havok);
         return havok;
     }
 
@@ -141,6 +152,77 @@ export class CoreEngine {
 
     resize() {
         this.engine.resize();
+    }
+
+    async loadAsset(id: string, type: StudioObjectType): Promise<Asset> {
+        // check if the asset is already in the cache
+        if (this.cachedAssets[type]) {
+            if (id in this.cachedAssets[type]) return this.cachedAssets[type][id];
+        }
+
+        // if the asset is not in the cache, load it from the JSON file
+        const assetJSONUrl: Record<StudioObjectType, string> = {
+            architectures: "@/jsons/asset_architectures.json",
+            decorations: "@/jsons/asset_decorations.json",
+            entertainments: "@/jsons/asset_entertainments.json",
+            furnitures: "@/jsons/asset_furnitures.json",
+            skyboxs: "@/jsons/asset_skyboxs.json",
+        };
+        const assetJSON = await import(assetJSONUrl[type]);
+
+        if (!assetJSON) {
+            throw new Error(`Asset JSON for type ${type} not found`);
+        }
+
+        const record: Record<string, Asset> = {};
+        for (const obj of assetJSON.results as Asset[]) {
+            record[obj.id] = obj;
+        }
+        this.cachedAssets[type] = record;
+
+        if (id in record) return record[id];
+
+        throw new Error(`Asset [id ${id}, type ${type}] not found`);
+    }
+
+    /**
+     * This checks if the asset's file is loadable and returns the asset with file path
+     * @param id - The id of the asset
+     * @returns The Resource object that has the url to the asset file
+     */
+    async getAssetFilePath(
+        id: string,
+        path: string,
+        checkAvailability: boolean = true
+    ): Promise<Resource> {
+        if (id in this.assetFilePaths) {
+            const resource = this.assetFilePaths[id];
+            if (resource.isChecking) {
+                // if the resource is already checking, wait for it to finish
+                await new Promise((resolve) => {
+                    const interval = setInterval(() => {
+                        if (!resource.isChecking) {
+                            clearInterval(interval);
+                            resolve(resource);
+                        }
+                    }, 100);
+                });
+            }
+            return resource;
+        }
+
+        const resource = new Resource(id, path);
+
+        if (checkAvailability && !resource.checkedAvailability) {
+            const available = await resource.checkAvailability();
+            if (!available) {
+                throw new Error(`Asset file [id ${id}, path ${path}] not found`);
+            }
+        }
+
+        this.assetFilePaths[id] = resource;
+
+        return resource;
     }
 
     // dispose() {

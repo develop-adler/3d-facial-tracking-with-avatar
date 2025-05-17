@@ -75,8 +75,8 @@ export const lerp = (start: number, end: number, amount: number): number => {
     return (1 - amount) * start + amount * end;
 };
 
-/**
- * Generate a random id
- * @returns {string} Random id
- */
-export const generateRandomId = (): string => Math.random().toString(36).slice(2, 9);
+export const areArraysEqual = <T>(a: Array<T>, b: Array<T>) => {
+    if (a.length != b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+};

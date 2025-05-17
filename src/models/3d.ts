@@ -5,6 +5,17 @@ import {
 
 export type ObjectTransform = [number, number, number];
 export type ObjectQuaternion = [number, number, number, number];
+export type ObjectAbsoluteTransforms = {
+  absolutePosition: [number, number, number];
+  absoluteRotationQuaternion: [number, number, number, number];
+  absoluteScaling: [number, number, number];
+};
+export type ObjectTransformType = "location" | "rotation" | "scale";
+export type GizmoTransformationType =
+  | "none"
+  | "location"
+  | "rotation"
+  | "scale";
 export type Vector2 = { x: number; y: number };
 export type AvatarGender = "male" | "female" | "other";
 export type AvatarInteractionType =
