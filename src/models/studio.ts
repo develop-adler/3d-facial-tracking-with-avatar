@@ -1,11 +1,12 @@
 import type { ObjectTransform } from "@/models/3d";
 
-export type StudioObjectType =
-  | "skyboxs"
+export type StudioObjectTypeItems =
   | "architectures"
   | "furnitures"
   | "decorations"
   | "entertainments";
+
+export type StudioObjectType = StudioObjectTypeItems | "skyboxs";
 
 export type StudioObjectTypeExtended =
   | (StudioObjectType & "sounds")

@@ -176,7 +176,7 @@ export class CoreEngine {
 
         const record: Record<string, Asset> = {};
         for (const obj of assetJSON.results as Asset[]) {
-            record[obj.id] = obj;
+            if (!(obj.id in record)) record[obj.id] = obj;
         }
         this.cachedAssets[type] = record;
 

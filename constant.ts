@@ -51,7 +51,7 @@ export const COLOR = {
   brandSecondaryActive: "#FFE9F2",
   brandSecondaryDisabled: "#FFF5F9",
   badgePrimary: "#FF2F2F",
-  notAllowedBackground: "1E1E1E",
+  notAllowedBackground: "#1E1E1E",
   tertiary: "#EEEEEE",
   tertiaryHover: "#EFEFEF",
   tertiaryActive: "#F1F1F1",
