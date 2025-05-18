@@ -69,6 +69,8 @@ class SpaceBuilder {
         this.scene = multiplayerManager.coreScene.scene;
         this.camera = multiplayerManager.coreScene.camera;
 
+        this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
+
         this.floorGrid = this._createFloorGrid();
         this.utilityLayer = this._createUtilityLayer(this.scene, this.camera);
 
@@ -936,6 +938,9 @@ class SpaceBuilder {
         this.floorGrid.dispose(false, true);
         this.utilityLayer.dispose();
         this.keyboardObservable.remove();
+        
+
+        this.multiplayerManager.avatarController.switchToThirdPersonMode(1);
     }
 }
 

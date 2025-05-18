@@ -1,4 +1,5 @@
-// import { Animation } from '@babylonjs/core/Animations/animation';
+import { Animation } from "@babylonjs/core/Animations/animation";
+import { CubicEase, EasingFunction } from "@babylonjs/core/Animations/easing";
 // import { Ray } from '@babylonjs/core/Culling/ray';
 import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 // import { Axis } from '@babylonjs/core/Maths/math.axis';
@@ -16,6 +17,7 @@ import { PhysicsShapeCylinder } from "@babylonjs/core/Physics/v2/physicsShape";
 import type Avatar from "@/3d/avatar/Avatar";
 import { Vector2 } from "@/models/3d";
 import eventBus from "@/eventBus";
+import { useAvatarStore } from "@/stores/useAvatarStore";
 // import { useGlobalModalStoreImmediate } from '@/stores/useGlobalModalStore';
 import { isMobile } from "@/utils/browserUtils";
 import { lerp } from "@/utils/functionUtils";
@@ -38,7 +40,6 @@ import type { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycas
 import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import type { Scene } from "@babylonjs/core/scene";
 import type { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
-import { useAvatarStore } from "@/stores/useAvatarStore";
 
 type JoystickAxes = Vector2;
 type CameraMode = "thirdPerson" | "firstPerson";
@@ -104,7 +105,7 @@ class AvatarController {
 
     private _isCameraOffset: boolean = false;
     private _cameraMode: CameraMode = "thirdPerson";
-    // private _isCameraModeTransitioning: boolean = false;
+    private _isCameraModeTransitioning: boolean = false;
     private _cameraBodyObserver?: Observer<Scene>;
 
     readonly movementKeys: KeyStatus = {
@@ -232,13 +233,13 @@ class AvatarController {
         //         //             this.camera.lowerRadiusLimit &&
         //         //             this.camera.radius <= this.camera.lowerRadiusLimit
         //         //         ) {
-        //         //             this._switchToFirstPersonMode();
+        //         //             this.switchToFirstPersonMode();
         //         //         }
         //         //     } else if (
         //         //         (pointerInfo.event as WheelEvent).deltaY > 0 &&
         //         //         this._cameraMode === 'firstPerson'
         //         //     ) {
-        //         //         this._switchToThirdPersonMode();
+        //         //         this.switchToThirdPersonMode();
         //         //     }
         //         //     break;
         //     }
@@ -888,11 +889,14 @@ class AvatarController {
                 this._isJumping = false;
             }, 300);
 
-            eventBus.once(`avatar:landing:${this.avatar.participant.identity}`, () => {
-                if (!this.avatar.isRunning) {
-                    this._moveSpeed = AvatarController.WALK_SPEED;
+            eventBus.once(
+                `avatar:landing:${this.avatar.participant.identity}`,
+                () => {
+                    if (!this.avatar.isRunning) {
+                        this._moveSpeed = AvatarController.WALK_SPEED;
+                    }
                 }
-            });
+            );
         }
 
         // if button is not released, jump higher when user is holding jump button for longer time
@@ -1087,10 +1091,12 @@ class AvatarController {
         const toTarget = target.subtract(this.avatar.root.position).normalize();
         const dot = Vector3.Dot(forward, toTarget);
         if (dot >= 0.2) {
-            if (!this.avatar.dontSyncHeadWithUser) this.avatar.dontSyncHeadWithUser = true;
+            if (!this.avatar.dontSyncHeadWithUser)
+                this.avatar.dontSyncHeadWithUser = true;
             this.avatar.update(target);
         } else {
-            if (this.avatar.dontSyncHeadWithUser) this.avatar.dontSyncHeadWithUser = false;
+            if (this.avatar.dontSyncHeadWithUser)
+                this.avatar.dontSyncHeadWithUser = false;
             this.avatar.currentBoneLookControllerTarget = undefined;
         }
     }
@@ -1184,7 +1190,7 @@ class AvatarController {
     // private _controlCameraMode(): void {
     //     // fix case where when zooming in super fast, camera mode doesn't switch
     //     if (this._cameraMode === 'thirdPerson' && this.camera.radius < 0.1) {
-    //         this._switchToFirstPersonMode();
+    //         this.switchToFirstPersonMode();
     //         return;
     //     }
 
@@ -1198,94 +1204,104 @@ class AvatarController {
     //         this._cameraMode === 'thirdPerson' &&
     //         this.camera.radius <= AVATAR_PARAMS.CAMERA_RADIUS_LOWER_AVATAR
     //     ) {
-    //         this._switchToFirstPersonMode();
+    //         this.switchToFirstPersonMode();
     //         return;
     //     }
 
     //     // in first person mode and user scrolls to zoom
     //     if (this._cameraMode === 'firstPerson' && this.camera.inertialRadiusOffset !== 0) {
-    //         this._switchToThirdPersonMode();
+    //         this.switchToThirdPersonMode();
     //     }
     // }
 
-    // private _switchToFirstPersonMode(): void {
-    //     if (this._isCameraModeTransitioning) return;
+    switchToFirstPersonMode(animationTime: number = 0.2): void {
+        if (this._isCameraModeTransitioning) return;
 
-    //     this._cameraMode = 'firstPerson';
-    //     this._isCameraModeTransitioning = true;
-    //     this.avatar.hide();
+        this._isCameraModeTransitioning = true;
 
-    //     this.camera.lowerBetaLimit = 0.01;
-    //     this.camera.upperBetaLimit = Math.PI * 0.99;
+        this.camera.lowerBetaLimit = 0.01;
+        this.camera.upperBetaLimit = Math.PI * 0.99;
 
-    //     Animation.CreateAndStartAnimation(
-    //         'cameraRadiusToFP',
-    //         this.camera,
-    //         'radius',
-    //         60,
-    //         60 * 0.2,
-    //         this.camera.radius,
-    //         0.001,
-    //         Animation.ANIMATIONLOOPMODE_CONSTANT,
-    //         undefined,
-    //         () => {
-    //             this._isCameraModeTransitioning = false;
-    //         }
-    //     );
-    //     const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera);
-    //     Animation.CreateAndStartAnimation(
-    //         'cameraFOVToFP',
-    //         this.camera,
-    //         'fov',
-    //         60,
-    //         60 * 0.2,
-    //         this.camera.fov,
-    //         aspectRatio > 1 ? AvatarController.FOV_FIRSTPERSON : AvatarController.FOV_FIRSTPERSON_MOBILE,
-    //         Animation.ANIMATIONLOOPMODE_CONSTANT
-    //     );
-    // }
+        const ease = new CubicEase();
+        ease.setEasingMode(EasingFunction.EASINGMODE_EASEIN);
 
-    // private _switchToThirdPersonMode(): void {
-    //     if (this._isCameraModeTransitioning) return;
+        Animation.CreateAndStartAnimation(
+            "cameraRadiusToFP",
+            this.camera,
+            "radius",
+            60,
+            60 * animationTime,
+            this.camera.radius,
+            0.001,
+            Animation.ANIMATIONLOOPMODE_CONSTANT,
+            ease,
+            () => {
+                this._isCameraModeTransitioning = false;
+                this._cameraMode = "firstPerson";
+                this.avatar.hide();
+            }
+        );
+        const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera);
+        Animation.CreateAndStartAnimation(
+            "cameraFOVToFP",
+            this.camera,
+            "fov",
+            60,
+            60 * animationTime,
+            this.camera.fov,
+            aspectRatio > 1
+                ? AvatarController.FOV_FIRSTPERSON
+                : AvatarController.FOV_FIRSTPERSON_MOBILE,
+            Animation.ANIMATIONLOOPMODE_CONSTANT,
+            ease
+        );
+    }
 
-    //     this._cameraMode = 'thirdPerson';
-    //     this._isCameraModeTransitioning = true;
-    //     this.avatar.show();
+    switchToThirdPersonMode(animationTime: number = 0.2): void {
+        if (this._isCameraModeTransitioning) return;
 
-    //     this.camera.lowerBetaLimit = AVATAR_PARAMS.CAMERA_BETA_LOWER_LIMIT_AVATAR; // looking down (divided by lower value = lower angle)
-    //     this.camera.upperBetaLimit = AVATAR_PARAMS.CAMERA_BETA_UPPER_LIMIT_AVATAR; // looking up (divided by higher value = lower angle)
-    //     this.camera.upperRadiusLimit = AVATAR_PARAMS.CAMERA_RADIUS_UPPER_AVATAR;
+        this._isCameraModeTransitioning = true;
+        this.avatar.show();
 
-    //     Animation.CreateAndStartAnimation(
-    //         'cameraRadiusToTP',
-    //         this.camera,
-    //         'radius',
-    //         60,
-    //         60 * 0.2,
-    //         this.camera.radius,
-    //         this.avatar.isCrouching
-    //             ? AVATAR_PARAMS.CROUCH_SPHERE_RADIUS * 1.75 * 2
-    //             : AVATAR_PARAMS.CAMERA_RADIUS_LOWER_AVATAR * 2,
-    //         Animation.ANIMATIONLOOPMODE_CONSTANT,
-    //         undefined,
-    //         () => {
-    //             this._isCameraModeTransitioning = false;
-    //         }
-    //     );
-    //     const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera);
-    //     Animation.CreateAndStartAnimation(
-    //         'cameraFOVToTP',
-    //         this.camera,
-    //         'fov',
-    //         60,
-    //         60 * 0.2,
-    //         this.camera.fov,
-    //         aspectRatio > 0.7
-    //             ? AvatarController.FOV_THIRDPERSON
-    //             : AvatarController.FOV_THIRDPERSON_MOBILE,
-    //         Animation.ANIMATIONLOOPMODE_CONSTANT
-    //     );
-    // }
+        this.camera.lowerBetaLimit = AVATAR_PARAMS.CAMERA_BETA_LOWER_LIMIT_AVATAR; // looking down (divided by lower value = lower angle)
+        this.camera.upperBetaLimit = AVATAR_PARAMS.CAMERA_BETA_UPPER_LIMIT_AVATAR; // looking up (divided by higher value = lower angle)
+        this.camera.upperRadiusLimit = AVATAR_PARAMS.CAMERA_RADIUS_UPPER_AVATAR;
+
+        const ease = new CubicEase();
+        ease.setEasingMode(EasingFunction.EASINGMODE_EASEOUT);
+
+        Animation.CreateAndStartAnimation(
+            "cameraRadiusToTP",
+            this.camera,
+            "radius",
+            60,
+            60 * animationTime,
+            this.camera.radius,
+            this.avatar.isCrouching
+                ? AVATAR_PARAMS.CROUCH_SPHERE_RADIUS * 1.75 * 2
+                : AVATAR_PARAMS.CAMERA_RADIUS_LOWER_AVATAR * 2,
+            Animation.ANIMATIONLOOPMODE_CONSTANT,
+            ease,
+            () => {
+                this._isCameraModeTransitioning = false;
+                this._cameraMode = "thirdPerson";
+            }
+        );
+        const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera);
+        Animation.CreateAndStartAnimation(
+            "cameraFOVToTP",
+            this.camera,
+            "fov",
+            60,
+            60 * animationTime,
+            this.camera.fov,
+            aspectRatio > 0.7
+                ? AvatarController.FOV_THIRDPERSON
+                : AvatarController.FOV_THIRDPERSON_MOBILE,
+            Animation.ANIMATIONLOOPMODE_CONSTANT,
+            ease
+        );
+    }
 
     /**
      * To be used within a render function, move camera away until
