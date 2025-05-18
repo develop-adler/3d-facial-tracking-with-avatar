@@ -913,33 +913,33 @@ class GizmoHandler {
   }
 
   private _updateGizmoAxis(
-    type: StudioObjectType,
+    _type: StudioObjectType,
     _subType: StudioObjectSubType
   ) {
     this._gizmoDragSceneRenderObservable?.remove();
     this._gizmoDragSceneRenderObservable = undefined;
 
-    // use bounding box gizmo for images type
-    if (this.gizmoManager.scaleGizmoEnabled === true) {
-      if (type === "images") {
-        this.gizmoManager.scaleGizmoEnabled = false;
-        this.gizmoManager.boundingBoxGizmoEnabled = true;
+    // // use bounding box gizmo for images type
+    // if (this.gizmoManager.scaleGizmoEnabled === true) {
+    //   if (type === "images") {
+    //     this.gizmoManager.scaleGizmoEnabled = false;
+    //     this.gizmoManager.boundingBoxGizmoEnabled = true;
 
-        // disable bounding box gizmo object relocation
-        this.gizmoManager.boundingBoxDragBehavior.detach();
-        // disable bounding box gizmo rotation
-        if (this.gizmoManager.gizmos.boundingBoxGizmo) {
-          this.gizmoManager.gizmos.boundingBoxGizmo.setEnabledRotationAxis("");
-          this.gizmoManager.gizmos.boundingBoxGizmo.rotationSphereSize = 0;
-        }
-      }
-    } else if (
-      this.gizmoManager.boundingBoxGizmoEnabled === true &&
-      type !== "images"
-    ) {
+    //     // disable bounding box gizmo object relocation
+    //     this.gizmoManager.boundingBoxDragBehavior.detach();
+    //     // disable bounding box gizmo rotation
+    //     if (this.gizmoManager.gizmos.boundingBoxGizmo) {
+    //       this.gizmoManager.gizmos.boundingBoxGizmo.setEnabledRotationAxis("");
+    //       this.gizmoManager.gizmos.boundingBoxGizmo.rotationSphereSize = 0;
+    //     }
+    //   }
+    // } else if (
+    //   this.gizmoManager.boundingBoxGizmoEnabled === true &&
+    //   type !== "images"
+    // ) {
       this.gizmoManager.scaleGizmoEnabled = true;
       this.gizmoManager.boundingBoxGizmoEnabled = false;
-    }
+    // }
 
     if (this.gizmoManager.gizmos.positionGizmo) {
       const posGizmo = this.gizmoManager.gizmos.positionGizmo;
