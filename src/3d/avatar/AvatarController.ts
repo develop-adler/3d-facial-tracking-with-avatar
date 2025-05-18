@@ -251,7 +251,7 @@ class AvatarController {
             this.scene.onBeforeRenderObservable.add(() => {
                 this._updateCharacter();
                 this._updateCharacterAnimation();
-                this._updateCharacterHead();
+                // this._updateCharacterHead();
 
                 for (const anim of Object.values(this.avatar.animations)) {
                     // fix blending speed
