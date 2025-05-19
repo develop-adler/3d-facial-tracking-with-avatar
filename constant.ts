@@ -1,3 +1,5 @@
+import type { ToastOptions } from "react-toastify";
+
 import type { AvatarInteractionType } from "@/models/3d";
 import type { StudioObjectSubType, StudioObjectType3D } from "@/models/studio";
 
@@ -191,4 +193,13 @@ export const STUDIO_OBJECT_TYPE_DICTIONARY: Record<StudioObjectSubType, StudioOb
   screen: 'decoration',
   structure: 'decoration',
   'none': 'decoration',
+};
+
+export const TOAST_TOP_OPTIONS: ToastOptions = {
+  position: "top-center",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  pauseOnFocusLoss: true,
 };

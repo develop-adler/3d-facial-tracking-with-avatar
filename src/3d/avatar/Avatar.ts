@@ -434,14 +434,7 @@ class Avatar {
       this._voiceBubble = new AvatarVoiceBubble(this);
     }
 
-    // change head node parent and camera target
-    this.customHeadNode.setAbsolutePosition(
-      new Vector3(
-        this.root.absolutePosition.x,
-        this.root.absolutePosition.y + this.headHeight,
-        this.root.absolutePosition.z
-      )
-    );
+    // update head node parent
     this.customHeadNode.parent = this.root;
 
     // if (this.post) {
@@ -467,6 +460,9 @@ class Avatar {
     const headBoneTNode = headBone?.getTransformNode();
 
     if (headBone && headBoneTNode) {
+      // update head node position to match head bone
+      this.customHeadNode.setAbsolutePosition(headBoneTNode.absolutePosition);
+
       this._boneLookController = new BoneLookController(
         headBoneTNode,
         headBone,

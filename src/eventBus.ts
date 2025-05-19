@@ -92,6 +92,9 @@ class EventBus extends EventEmitter {
     offWithEvent<T>(event: EventNames, listener: (data: T) => void) {
         this.off(event, listener);
     }
+    removeAllListenersWithEvent(event: EventNames) {
+        this.removeAllListeners(event);
+    }
 }
 
 // Create a shared instance

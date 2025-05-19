@@ -12,13 +12,12 @@ export default function RoomLayout({
     readonly children: ReactNode;
 }) {
     const liveKitRoom = useLiveKitStore((state) => state.liveKitRoom);
-    const setRoomNameAndUsername = useLiveKitStore(
-        (state) => state.setRoomNameAndUsername
-    );
 
     useEffect(() => {
         liveKitRoom.room.on("disconnected", () => {
-            setRoomNameAndUsername();
+            useLiveKitStore.getState().setIsMultiplayer(false);
+            useLiveKitStore.getState().setIsBuildSpaceMode(false);
+            useLiveKitStore.getState().setRoomNameAndUsername();
         });
         return () => {
             // dispose room when navigating away from /room route

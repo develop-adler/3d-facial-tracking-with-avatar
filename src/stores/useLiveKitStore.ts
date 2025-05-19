@@ -1,9 +1,11 @@
 import type { Room } from "livekit-client";
 import { create } from "zustand";
-
-import LiveKitRoom from "@/LiveKitRoomSingleton";
-import type { RoomAndName, RequestOrigin } from "@/models/multiplayer";
 import { persist } from "zustand/middleware";
+
+import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
+import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
+import type { RoomAndName, RequestOrigin } from "@/models/multiplayer";
+import LiveKitRoom from "@/LiveKitRoomSingleton";
 
 type OpenJoinSpaceModal = {
     identity: string;
@@ -14,6 +16,8 @@ type LiveKitStore = {
     liveKitRoom: LiveKitRoom;
     room: Room;
     roomNameAndUsername?: RoomAndName;
+    multiplayerManager?: MultiplayerManager;
+    spaceBuilder?: SpaceBuilder;
     isMultiplayer: boolean;
     isBuildSpaceMode: boolean;
     openJoinSpaceModal?: OpenJoinSpaceModal;
@@ -25,6 +29,8 @@ type LiveKitStore = {
     setIsBuildSpaceMode: (isBuildSpaceMode: boolean) => void;
     setOpenJoinSpaceModal: (openJoinSpaceModal?: OpenJoinSpaceModal) => void;
     setOpenBuildSpaceModal: (openBuildSpaceModal?: OpenJoinSpaceModal) => void;
+    setMultiplayerManager: (multiplayerManager?: MultiplayerManager) => void;
+    setSpaceBuilder: (spaceBuilder?: SpaceBuilder) => void;
     setSkyboxEnabled: (skyboxEnabled: boolean) => void;
     toggleChangeBackgroundModal: (force?: boolean) => void;
 };
@@ -41,9 +47,10 @@ export const useLiveKitStore = create<LiveKitStore>()(
             openBuildSpaceModal: undefined,
             skyboxEnabled: false,
             openChangeBackgroundModal: false,
-            setRoomNameAndUsername: (roomNameAndUsername) => set({ roomNameAndUsername }),
+            setRoomNameAndUsername: (roomNameAndUsername) =>
+                set({ roomNameAndUsername }),
             setIsMultiplayer: (isMultiplayer) => {
-                const { liveKitRoom } = get();
+                const { liveKitRoom, multiplayerManager } = get();
                 try {
                     liveKitRoom.room.localParticipant.setAttributes({
                         isInSpace: isMultiplayer ? "true" : "false",
@@ -51,19 +58,46 @@ export const useLiveKitStore = create<LiveKitStore>()(
                 } catch {
                     // empty
                 }
-                set({ isMultiplayer });
-            },
-            setIsBuildSpaceMode: (isBuildSpaceMode) => {
-                const { isMultiplayer } = get();
-                // ensure that we are already in multiplayer mode
+
                 if (isMultiplayer) {
-                    set({ isBuildSpaceMode });
+                    set({ isMultiplayer });
                 } else {
-                    set({ isBuildSpaceMode: false });
+                    multiplayerManager?.dispose();
+                    set({ isMultiplayer, multiplayerManager: undefined });
                 }
             },
-            setOpenJoinSpaceModal: (openJoinSpaceModal) => set({ openJoinSpaceModal }),
-            setOpenBuildSpaceModal: (openBuildSpaceModal) => set({ openBuildSpaceModal }),
+            setIsBuildSpaceMode: (isBuildSpaceMode) => {
+                const { liveKitRoom, isMultiplayer, spaceBuilder } = get();
+                // ensure that we are already in multiplayer mode
+                if (isMultiplayer) {
+                    try {
+                        liveKitRoom.room.localParticipant.setAttributes({
+                            isBuildingSpace: isBuildSpaceMode ? "true" : "false",
+                        });
+                    } catch {
+                        // empty
+                    }
+                    set({ isBuildSpaceMode });
+                } else {
+                    // always set to false if not in multiplayer mode
+                    try {
+                        liveKitRoom.room.localParticipant.setAttributes({
+                            isBuildingSpace: "false",
+                        });
+                    } catch {
+                        // empty
+                    }
+                    spaceBuilder?.dispose();
+                    set({ isBuildSpaceMode: false, spaceBuilder: undefined });
+                }
+            },
+            setOpenJoinSpaceModal: (openJoinSpaceModal) =>
+                set({ openJoinSpaceModal }),
+            setOpenBuildSpaceModal: (openBuildSpaceModal) =>
+                set({ openBuildSpaceModal }),
+            setMultiplayerManager: (multiplayerManager) =>
+                set({ multiplayerManager }),
+            setSpaceBuilder: (spaceBuilder) => set({ spaceBuilder }),
             setSkyboxEnabled: (skyboxEnabled) => set({ skyboxEnabled }),
             toggleChangeBackgroundModal: (force) => {
                 const { openChangeBackgroundModal } = get();

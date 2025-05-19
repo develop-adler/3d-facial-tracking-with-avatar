@@ -38,11 +38,13 @@ export const MultiplayerPage: FC = () => {
         if (!multiplayerManagerRef.current) return;
 
         if (isBuildSpaceMode) {
-            const buildSpaceMode = new SpaceBuilder(multiplayerManagerRef.current);
-            spaceBuilderRef.current = buildSpaceMode;
+            const spaceBuilder = new SpaceBuilder(multiplayerManagerRef.current);
+            spaceBuilderRef.current = spaceBuilder;
+            useLiveKitStore.getState().setSpaceBuilder(spaceBuilder);
         } else {
             spaceBuilderRef.current?.dispose();
             spaceBuilderRef.current = undefined;
+            useLiveKitStore.getState().setSpaceBuilder(undefined);
         }
     }, [isBuildSpaceMode]);
 
@@ -70,6 +72,7 @@ export const MultiplayerPage: FC = () => {
 
         const multiplayerManager = new MultiplayerManager(room, currentCoreScene);
         multiplayerManagerRef.current = multiplayerManager;
+        useLiveKitStore.getState().setMultiplayerManager(multiplayerManager);
 
         let elapsedTime = 0;
         const fps = 60;
@@ -100,7 +103,7 @@ export const MultiplayerPage: FC = () => {
                 {avatar && <AvatarSpeakingHandler avatar={avatar} room={room} />}
                 <Multiplayer3DContainer ref={canvasContainer} />
                 <FacialExpressionCanvas id="pipCanvas" />
-                <SpaceBuilderOverlay />
+                {isBuildSpaceMode && <SpaceBuilderOverlay />}
             </>
         )
     );

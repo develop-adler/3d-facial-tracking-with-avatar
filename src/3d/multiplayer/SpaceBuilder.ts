@@ -18,6 +18,7 @@ import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import GizmoHandler from "@/3d/studio/GizmoHandler";
 import KeyboardHandler from "@/3d/studio/KeyboardHandler";
 import ObjectHighlightHandler from "@/3d/studio/ObjectHighlightHandler";
+import ObjectPlacementHandler from "@/3d/studio/ObjectPlacementHandler";
 import ObjectSelectHandler from "@/3d/studio/ObjectSelectHandler";
 import SaveStateHandler from "@/3d/studio/SaveStateHandler";
 import type { ObjectAbsoluteTransforms, ObjectTransform } from "@/models/3d";
@@ -52,6 +53,8 @@ class SpaceBuilder {
     readonly saveStateHandler: SaveStateHandler;
     readonly objectHighlightHandler: ObjectHighlightHandler;
     readonly keyboardHandler: KeyboardHandler;
+    readonly objectPlacementHandler: ObjectPlacementHandler;
+
     readonly keyboardObservable: Observer<KeyboardInfo>;
 
     currentSkyboxData?: Asset;
@@ -69,24 +72,25 @@ class SpaceBuilder {
         this.scene = multiplayerManager.coreScene.scene;
         this.camera = multiplayerManager.coreScene.camera;
 
-        this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
-
-        this.floorGrid = this._createFloorGrid();
-        this.utilityLayer = this._createUtilityLayer(this.scene, this.camera);
-
-        this.gizmoHandler = new GizmoHandler(this);
-        this.objectSelectHandler = new ObjectSelectHandler(this);
-        this.saveStateHandler = new SaveStateHandler(this);
-        this.objectHighlightHandler = new ObjectHighlightHandler(this);
-        this.keyboardHandler = new KeyboardHandler(this);
-
         this.currentObjects = [];
         this.lockedObjects = [];
         this.isPreviewMode = false;
         this.isThumbnailCaptureMode = false;
         this.isEditSpawnAreaMode = false;
 
+        this.floorGrid = this._createFloorGrid();
+        this.utilityLayer = this._createUtilityLayer(this.scene, this.camera);
+
+        this.keyboardHandler = new KeyboardHandler(this);
+        this.saveStateHandler = new SaveStateHandler(this);
+        this.gizmoHandler = new GizmoHandler(this);
+        this.objectHighlightHandler = new ObjectHighlightHandler(this);
+        this.objectSelectHandler = new ObjectSelectHandler(this);
+        this.objectPlacementHandler = new ObjectPlacementHandler(this);
+
         this.keyboardObservable = this._initKeyboardHandler();
+
+        this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
     }
 
     private _createFloorGrid(): Mesh {
@@ -929,16 +933,17 @@ class SpaceBuilder {
     }
 
     dispose() {
-        this.gizmoHandler.dispose();
-        this.objectSelectHandler.dispose();
-        this.saveStateHandler.dispose();
-        this.objectHighlightHandler.dispose();
         this.keyboardHandler.dispose();
+        this.saveStateHandler.dispose();
+        this.gizmoHandler.dispose();
+        this.objectHighlightHandler.dispose();
+        this.objectSelectHandler.dispose();
+        this.objectPlacementHandler.dispose();
 
         this.floorGrid.dispose(false, true);
         this.utilityLayer.dispose();
         this.keyboardObservable.remove();
-        
+
 
         this.multiplayerManager.avatarController.switchToThirdPersonMode(1);
     }

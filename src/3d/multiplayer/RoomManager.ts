@@ -1,6 +1,7 @@
 import {
     LocalParticipant,
     RoomEvent,
+    type RemoteParticipant,
     type Room,
     type RpcInvocationData,
 } from "livekit-client";
@@ -9,6 +10,8 @@ import { toast } from "react-toastify";
 import eventBus from "@/eventBus";
 import type { ConfirmRequest, UserRequest } from "@/models/multiplayer";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
+
+import { TOAST_TOP_OPTIONS } from "constant";
 
 class RoomManager {
     readonly room: Room;
@@ -61,23 +64,7 @@ class RoomManager {
         // receive attribute changes from other participants
         this.room.on(
             RoomEvent.ParticipantAttributesChanged,
-            (changedAttribute, participant) => {
-                if (participant instanceof LocalParticipant) return;
-                console.log(
-                    "remote participant attributes changed",
-                    changedAttribute,
-                    participant
-                );
-
-                // sync in space with other participants
-                if (changedAttribute.isInSpace) {
-                    useLiveKitStore
-                        .getState()
-                        .setIsMultiplayer(
-                            changedAttribute.isInSpace === "true" ? true : false
-                        );
-                }
-            }
+            this._handleParticipantAttributesChanged.bind(this)
         );
     }
 
@@ -87,6 +74,20 @@ class RoomManager {
             if (participant.attributes.isInSpace) return true;
         }
         return false;
+    }
+
+    private _handleParticipantAttributesChanged(
+        changedAttribute: Record<string, string>,
+        participant: RemoteParticipant | LocalParticipant
+    ) {
+        if (participant instanceof LocalParticipant) return;
+
+        // sync in space with other participants
+        if (changedAttribute.isInSpace) {
+            useLiveKitStore
+                .getState()
+                .setIsMultiplayer(changedAttribute.isInSpace === "true" ? true : false);
+        }
     }
 
     private async _requestJoinSpaceEventListener(request: UserRequest) {
@@ -154,14 +155,8 @@ class RoomManager {
         if (payload.confirm) {
             useLiveKitStore.getState().setIsMultiplayer(true);
         } else {
-            toast("Your request to join space was declined", {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                pauseOnFocusLoss: true,
-            });
+            toast("Your request to join space was declined", TOAST_TOP_OPTIONS);
+            console.log("Your request to join space was declined");
         }
         return "ok" as string;
     }
@@ -173,17 +168,15 @@ class RoomManager {
     }
 
     dispose(): void {
-        this.room.off(RoomEvent.ParticipantDisconnected, this._onParticipantLeave);
-        this.room.off(RoomEvent.ParticipantAttributesChanged, () => {});
-        eventBus.offWithEvent(
-            "multiplayer:requestJoinSpace",
-            this._requestJoinSpaceEventListener
-        );
+        // this.room.off(RoomEvent.ParticipantDisconnected, this._onParticipantLeave);
+        // this.room.off(
+        //     RoomEvent.ParticipantAttributesChanged,
+        //     this._handleParticipantAttributesChanged
+        // );
+        this.room.removeAllListeners();
+        eventBus.removeAllListenersWithEvent("multiplayer:requestJoinSpace");
+        eventBus.removeAllListenersWithEvent("multiplayer:confirmJoinSpace");
         this.room.unregisterRpcMethod("participantRequestJoinSpace");
-        eventBus.offWithEvent(
-            "multiplayer:confirmJoinSpace",
-            this._confirmJoinSpaceEventListener
-        );
         this.room.unregisterRpcMethod("participantConfirmJoinSpace");
     }
 }

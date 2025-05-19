@@ -1,4 +1,5 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { ShapeCastResult } from "@babylonjs/core/Physics/shapeCastResult";
 import {
     LocalParticipant,
     RoomEvent,
@@ -26,9 +27,12 @@ import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { clientSettings } from "clientSettings";
+import { TOAST_TOP_OPTIONS } from "constant";
 
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
+import type { PhysicsShape } from "@babylonjs/core/Physics/v2/physicsShape";
+import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import type { Scene } from "@babylonjs/core/scene";
 
 const extractMorphTargetInfluences = (
@@ -106,7 +110,9 @@ class MultiplayerManager {
             async () => {
                 try {
                     // publish data takes in a Uint8Array, so we need to convert it
-                    const data = encoder.encode(JSON.stringify(this._getSelfAvatarState()));
+                    const data = encoder.encode(
+                        JSON.stringify(this._getSelfAvatarState())
+                    );
                     await this.room.localParticipant.publishData(data, {
                         reliable: true,
                         destinationIdentities: [],
@@ -120,25 +126,7 @@ class MultiplayerManager {
         // receive attribute changes from other participants
         this.room.on(
             RoomEvent.ParticipantAttributesChanged,
-            (changedAttribute, participant) => {
-                if (participant instanceof LocalParticipant) return;
-
-                console.log(
-                    "remote participant attributes changed",
-                    changedAttribute,
-                    participant
-                );
-                if ("avatarId" in changedAttribute || "gender" in changedAttribute) {
-                    const attributeData = {
-                        avatarId: changedAttribute.avatarId,
-                        gender: changedAttribute.gender as AvatarGender,
-                    };
-                    this._changeRemoteParticipantAvatarListener(
-                        attributeData,
-                        participant
-                    );
-                }
-            }
+            this._handleParticipantAttributesChanged.bind(this)
         );
 
         // receive sync state data packets from other participants
@@ -176,6 +164,32 @@ class MultiplayerManager {
         }
         // End of request build space stuff
         // ===============================
+    }
+
+
+    private _handleParticipantAttributesChanged(
+        changedAttribute: Record<string, string>,
+        participant: RemoteParticipant | LocalParticipant
+    ) {
+        if (participant instanceof LocalParticipant) return;
+
+        if ("avatarId" in changedAttribute || "gender" in changedAttribute) {
+            const attributeData = {
+                avatarId: changedAttribute.avatarId,
+                gender: changedAttribute.gender as AvatarGender,
+            };
+            this._changeRemoteParticipantAvatarListener(
+                attributeData,
+                participant
+            );
+        }
+        if ("isBuildingSpace" in changedAttribute) {
+            useLiveKitStore
+                .getState()
+                .setIsBuildSpaceMode(
+                    changedAttribute.isBuildingSpace === "true" ? true : false
+                );
+        }
     }
 
     private _loadRoomUsers() {
@@ -261,7 +275,11 @@ class MultiplayerManager {
             avatar.loadPhysicsBodies();
             avatar.showAvatarInfo();
             avatar.loadAnimations();
-            this.avatarView ??= new AvatarFaceView(this.coreScene, avatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
+            this.avatarView ??= new AvatarFaceView(
+                this.coreScene,
+                avatar,
+                document.querySelector("#pipCanvas") as HTMLCanvasElement
+            );
         });
         this.remoteAvatars.set(participant, avatar);
 
@@ -373,14 +391,7 @@ class MultiplayerManager {
         if (payload.confirm) {
             useLiveKitStore.getState().setIsBuildSpaceMode(true);
         } else {
-            toast("Your request to build space was declined", {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                pauseOnFocusLoss: true,
-            });
+            toast("Your request to build space was declined", TOAST_TOP_OPTIONS);
         }
         return "ok" as string;
     }
@@ -463,11 +474,157 @@ class MultiplayerManager {
         );
     }
 
+    teleportToRemoteAvatar(remoteAvatar?: Avatar): void {
+        const avatar = remoteAvatar ?? this.remoteAvatars.values().next().value;
+        if (!avatar) {
+            toast("No avatar to teleport to", TOAST_TOP_OPTIONS);
+            return;
+        }
+
+        const physicsEngine = this.coreScene.scene.getPhysicsEngine();
+        if (!physicsEngine) throw new Error("Scene physics engine not found");
+
+        const hk = physicsEngine.getPhysicsPlugin() as
+            | HavokPlugin
+            | null
+            | undefined;
+        if (!hk) throw new Error("Havok physics is undefined");
+
+        const teleportLocalShapeCastResult = new ShapeCastResult();
+        const teleportHitWorldShapeCastResult = new ShapeCastResult();
+
+        const checkValidPosition = (
+            to: Vector3,
+            direction: Vector3,
+            from: Vector3
+        ): boolean => {
+            // check if position has any colliding object
+            teleportLocalShapeCastResult.reset();
+            teleportHitWorldShapeCastResult.reset();
+            hk.shapeCast(
+                {
+                    shape: this.localAvatar.avatarBodyShapeFullForChecks as PhysicsShape,
+                    startPosition: from,
+                    endPosition: to,
+                    rotation: this.localAvatar.root.absoluteRotationQuaternion,
+                    shouldHitTriggers: false,
+                },
+                teleportLocalShapeCastResult,
+                teleportHitWorldShapeCastResult
+            );
+
+            // if height of collided body is higher than avatar's torso, return false
+            if (
+                teleportHitWorldShapeCastResult.hasHit &&
+                teleportHitWorldShapeCastResult.body
+            ) {
+                const bbMinMax =
+                    teleportHitWorldShapeCastResult.body.transformNode.getHierarchyBoundingVectors(
+                        true
+                    );
+                if (bbMinMax.max.y - bbMinMax.min.y > avatar.headHeight * 0.5)
+                    return false;
+            }
+
+            // cast from top to bottom to check if there's any ground to stand on
+            teleportLocalShapeCastResult.reset();
+            teleportHitWorldShapeCastResult.reset();
+            hk.shapeCast(
+                {
+                    shape: this.localAvatar.avatarBodyShapeFullForChecks as PhysicsShape,
+                    startPosition: to.add(Vector3.Up().scaleInPlace(3)),
+                    endPosition: to.add(Vector3.Down().scaleInPlace(3)),
+                    rotation: this.localAvatar.root.absoluteRotationQuaternion,
+                    shouldHitTriggers: false,
+                },
+                teleportLocalShapeCastResult,
+                teleportHitWorldShapeCastResult
+            );
+
+            // for debugging
+            // const { hitPoint } = teleportHitWorldShapeCastResult;
+            // if (!this._hitSphereDebug) {
+            //     this._hitSphereDebug = CreateSphere(
+            //         'heightHitSphere',
+            //         { diameter: 0.05, segments: 8 },
+            //         this.coreScene.scene
+            //     );
+            //     this._hitSphereDebug.setAbsolutePosition(hitPoint);
+            // } else {
+            //     this._hitSphereDebug
+            //         .createInstance('hitSphere_' + this.coreScene.scene.meshes.length)
+            //         .setAbsolutePosition(hitPoint);
+            // }
+
+            if (teleportHitWorldShapeCastResult.hasHit) {
+                const hitPoint = teleportHitWorldShapeCastResult.hitPoint.clone();
+
+                // check if the hit point is actual ground or just an obstacle
+                teleportLocalShapeCastResult.reset();
+                teleportHitWorldShapeCastResult.reset();
+                hk.shapeCast(
+                    {
+                        shape: this.localAvatar
+                            .avatarBodyShapeFullForChecks as PhysicsShape,
+                        startPosition: hitPoint.add(Vector3.Up().scaleInPlace(0.5)),
+                        endPosition: hitPoint.add(Vector3.Down().scaleInPlace(0.5)),
+                        rotation: this.localAvatar.root.absoluteRotationQuaternion,
+                        shouldHitTriggers: false,
+                        ignoreBody: this.localAvatar.capsuleBody ?? undefined,
+                    },
+                    teleportLocalShapeCastResult,
+                    teleportHitWorldShapeCastResult
+                );
+
+                // has ground
+                if (teleportHitWorldShapeCastResult.hasHit) {
+                    // teleport to other user and face them
+                    this.localAvatar.setPosition(
+                        hitPoint.add(Vector3.Up().scaleInPlace(0.5))
+                    );
+                    this.localAvatar.root.setDirection(direction);
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        };
+
+        // Try to teleport in front, right, left, or back of the other player
+        const otherPlayerPos = avatar.getPosition(true);
+        const directions = [
+            { dir: avatar.root.forward, face: avatar.root.forward.negate() },
+            { dir: avatar.root.right, face: avatar.root.right.negate() },
+            { dir: avatar.root.right.negate(), face: avatar.root.right },
+            { dir: avatar.root.forward.negate(), face: avatar.root.forward },
+        ];
+
+        const found = directions.some(({ dir, face }) =>
+            checkValidPosition(
+                otherPlayerPos.add(dir.scale(0.75)),
+                face,
+                otherPlayerPos
+            )
+        );
+
+        if (!found) {
+            toast(
+                "Could not find a valid position to teleport to",
+                TOAST_TOP_OPTIONS
+            );
+            return;
+        }
+    }
+
+    clearAllRemoteAvatars() {
+        for (const avatar of this.remoteAvatars.values()) avatar.dispose();
+        this.remoteAvatars.clear();
+    }
+
     clearAllListeners() {
         this.syncAvatarObserver?.remove();
         this.syncAvatarObserver = undefined;
 
-        this.room.off(RoomEvent.DataReceived, this._syncRemoteAvatars);
         this.room.off(
             RoomEvent.ParticipantConnected,
             this._loadRemoteParticipantAvatar
@@ -480,20 +637,21 @@ class MultiplayerManager {
             RoomEvent.ParticipantNameChanged,
             this._updateRemoteParticipantName
         );
-        this.room.unregisterRpcMethod("participantRequestJoinSpace");
-    }
-
-    clearAllRemoteAvatars() {
-        for (const avatar of this.remoteAvatars.values()) avatar.dispose();
-        this.remoteAvatars.clear();
+        this.room.off(
+            RoomEvent.ParticipantAttributesChanged,
+            this._handleParticipantAttributesChanged
+        );
+        this.room.off(
+            RoomEvent.DataReceived,
+            this._syncRemoteAvatars
+        );
+        eventBus.removeAllListenersWithEvent("multiplayer:requestBuildSpace");
+        eventBus.removeAllListenersWithEvent("multiplayer:confirmBuildSpace");
+        this.room.unregisterRpcMethod("participantRequestBuildSpace");
+        this.room.unregisterRpcMethod("participantConfirmBuildSpace");
     }
 
     dispose() {
-        eventBus.offWithEvent(
-            "multiplayer:requestBuildSpace",
-            this._requestBuildSpaceEventListener
-        );
-
         this.avatarView?.dispose();
         this.avatarView = undefined;
 

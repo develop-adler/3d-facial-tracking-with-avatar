@@ -66,12 +66,12 @@ const BuildSpaceConfirmModal: FC = () => {
                                 {openBuildSpaceModal?.origin === "self" ? (
                                     <>
                                         <b>{openBuildSpaceModal?.identity}</b> has invited you to
-                                        join their space
+                                        build space together
                                     </>
                                 ) : (
                                     <>
-                                        <b>{openBuildSpaceModal?.identity}</b> has requested to join
-                                        your space
+                                        <b>{openBuildSpaceModal?.identity}</b> has requested to
+                                        build space together
                                     </>
                                 )}
                             </Typography>
@@ -90,7 +90,7 @@ const BuildSpaceConfirmModal: FC = () => {
                                         },
                                     }}
                                 >
-                                    Enter
+                                    Build
                                 </Button>
                             </Box>
                         </Box>

@@ -1,10 +1,14 @@
-import { memo } from "react";
+import { ComponentProps, memo, type FC } from "react";
 
 import { Box, Button, Grid, Tooltip } from "@mui/material";
 
 import type { Asset } from "@/models/common";
 
-const ItemButton = ({ item }: { item: Asset }) => {
+type Props = {
+  item: Asset;
+} & ComponentProps<typeof Button>;
+
+const ItemButton: FC<Props> = ({ item, ...buttonProps }) => {
     const tooltipTitle = item.title
         .split("_")
         .slice(1)
@@ -22,21 +26,20 @@ const ItemButton = ({ item }: { item: Asset }) => {
                         padding: 0,
                         width: "32px",
                         height: "auto",
-                        aspectRatio: "1 / 1",
+                        aspectRatio: "1",
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         overflow: "hidden",
                         userSelect: "none",
                     }}
+                    {...buttonProps}
                 >
                     <Box
                         component="img"
                         src={
                             item.thumbnail
-                                ? "/static/" +
-                                  item.thumbnail.split(".jpg")[0] +
-                                  "-128x128.jpg"
+                                ? "/static/" + item.thumbnail.split(".jpg")[0] + "-128x128.jpg"
                                 : ""
                         }
                         alt={item.title}

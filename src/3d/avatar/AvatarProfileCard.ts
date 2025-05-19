@@ -149,9 +149,8 @@ class AvatarProfileCard {
     }
     dispose(): void {
         if (this.windowEventListenerCallback) {
-            eventBus.offWithEvent(
-                'multiplayer:avatarProfileCardUpdate',
-                this.windowEventListenerCallback
+            eventBus.removeAllListenersWithEvent(
+                'multiplayer:avatarProfileCardUpdate'
             );
         }
         this.sceneRenderObserver.remove();

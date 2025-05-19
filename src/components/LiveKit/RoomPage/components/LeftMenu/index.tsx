@@ -46,8 +46,8 @@ const LeftMenu: FC = () => {
     };
 
     const hasRemoteParticipants = useMemo(
-        () => room.remoteParticipants.size > 0,
-        [room.remoteParticipants]
+        () => room.numParticipants > 1,
+        [room.numParticipants]
     );
 
     return (
@@ -79,7 +79,15 @@ const LeftMenu: FC = () => {
                     alignItems: "center", // vertically center list
                 }}
             >
-                <List sx={{ paddingLeft: "0.5rem", userSelect: "none" }}>
+                <List
+                    sx={{
+                        paddingLeft: "0.5rem",
+                        userSelect: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.4rem",
+                    }}
+                >
                     {isMultiplayer ? (
                         <>
                             <ListItem
@@ -88,6 +96,17 @@ const LeftMenu: FC = () => {
                                 onClick={() => requestBuildSpace("self")}
                             >
                                 <ListItemText primary="Build space" />
+                            </ListItem>
+                            <ListItem
+                                component="button"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() => {
+                                    useLiveKitStore
+                                        .getState()
+                                        .multiplayerManager?.teleportToRemoteAvatar();
+                                }}
+                            >
+                                <ListItemText primary="Teleport to other user" />
                             </ListItem>
                             <ListItem
                                 component="button"
