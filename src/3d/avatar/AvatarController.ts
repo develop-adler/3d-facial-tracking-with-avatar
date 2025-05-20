@@ -612,25 +612,30 @@ class AvatarController {
 
             // Smoothly interpolate between the avatar's current rotation and the target yaw rotation
             const currentRotation =
-                this.avatar.root.rotationQuaternion || Quaternion.Identity();
+                this.avatar.root.rotationQuaternion ?? Quaternion.Identity();
 
-            const ray = cameraToUse.getForwardRay(0.1);
-            const forwardTarget = ray.origin.add(ray.direction.scale(10));
-            const forward = this.avatar.root.forward.normalize();
-            const toTarget = forwardTarget
-                .subtract(this.avatar.root.position)
-                .normalize();
-            const dot = Vector3.Dot(forward, toTarget);
+            // const ray = cameraToUse.getForwardRay(0.1);
+            // const forwardTarget = ray.origin.add(ray.direction.scale(10));
+            // const forward = this.avatar.root.forward.normalize();
+            // const toTarget = forwardTarget
+            //     .subtract(this.avatar.root.position)
+            //     .normalize();
+            // const dot = Vector3.Dot(forward, toTarget);
 
-            // only rotate avatar when head is turned to the shoulder
-            // and continue turning towards shoulder
-            if (dot <= 0.25) {
-                this.avatar.root.rotationQuaternion = Quaternion.Slerp(
-                    currentRotation,
-                    targetQuaternion,
-                    getSlerpValue(1 / this.scene.getAnimationRatio(), 0.05, 0.2)
-                );
-            }
+            // // only rotate avatar when head is turned to the shoulder
+            // // and continue turning towards shoulder
+            // if (dot <= 0.25) {
+            //     this.avatar.root.rotationQuaternion = Quaternion.Slerp(
+            //         currentRotation,
+            //         targetQuaternion,
+            //         getSlerpValue(1 / this.scene.getAnimationRatio(), 0.05, 0.2)
+            //     );
+            // }
+            this.avatar.root.rotationQuaternion = Quaternion.Slerp(
+                currentRotation,
+                targetQuaternion,
+                getSlerpValue(1 / this.scene.getAnimationRatio(), 0.05, 0.2)
+            );
         }
 
         // when joystick is moved
