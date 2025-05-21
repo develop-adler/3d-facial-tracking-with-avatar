@@ -23,6 +23,8 @@ type LiveKitStore = {
     openJoinSpaceModal?: OpenJoinSpaceModal;
     openBuildSpaceModal?: OpenJoinSpaceModal;
     skyboxEnabled: boolean;
+    skyboxIntensity: number;
+    currentSkybox: string;
     openChangeBackgroundModal: boolean;
     setRoomNameAndUsername: (roomNameAndUsername?: RoomAndName) => void;
     setIsMultiplayer: (isMultiplayer: boolean) => void;
@@ -32,6 +34,8 @@ type LiveKitStore = {
     setMultiplayerManager: (multiplayerManager?: MultiplayerManager) => void;
     setSpaceBuilder: (spaceBuilder?: SpaceBuilder) => void;
     setSkyboxEnabled: (skyboxEnabled: boolean) => void;
+    setSkyboxIntensity: (skyboxIntensity: number) => void;
+    setCurrentSkybox: (currentSkybox: string) => void;
     toggleChangeBackgroundModal: (force?: boolean) => void;
 };
 
@@ -46,6 +50,8 @@ export const useLiveKitStore = create<LiveKitStore>()(
             openJoinSpaceModal: undefined,
             openBuildSpaceModal: undefined,
             skyboxEnabled: false,
+            skyboxIntensity: 0.8,
+            currentSkybox: "585760691093336303",
             openChangeBackgroundModal: false,
             setRoomNameAndUsername: (roomNameAndUsername) =>
                 set({ roomNameAndUsername }),
@@ -99,6 +105,8 @@ export const useLiveKitStore = create<LiveKitStore>()(
                 set({ multiplayerManager }),
             setSpaceBuilder: (spaceBuilder) => set({ spaceBuilder }),
             setSkyboxEnabled: (skyboxEnabled) => set({ skyboxEnabled }),
+            setSkyboxIntensity: (skyboxIntensity) => set({ skyboxIntensity }),
+            setCurrentSkybox: (currentSkybox) => set({ currentSkybox }),
             toggleChangeBackgroundModal: (force) => {
                 const { openChangeBackgroundModal } = get();
                 set({ openChangeBackgroundModal: force ?? !openChangeBackgroundModal });
@@ -109,6 +117,7 @@ export const useLiveKitStore = create<LiveKitStore>()(
             version: 0.1,
             partialize: (state: LiveKitStore) => ({
                 skyboxEnabled: state.skyboxEnabled,
+                skyboxIntensity: state.skyboxIntensity,
             }),
         }
     )

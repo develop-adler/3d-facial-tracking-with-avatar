@@ -27,7 +27,6 @@ export const AvatarScene: FC = () => {
     const bjsCanvasContainer = useRef<HTMLDivElement>(null); // For 3D scene
 
     const room = useLiveKitStore((state) => state.room);
-    const skyboxEnabled = useLiveKitStore((state) => state.skyboxEnabled);
     const coreEngine = useEngineStore((state) => state.coreEngine);
     const setScene = useSceneStore((state) => state.setScene);
     const setAvatar = useAvatarStore((state) => state.setAvatar);
@@ -75,7 +74,7 @@ export const AvatarScene: FC = () => {
             );
             setAvatar(newAvatar);
 
-            currentCoreScene.atom.loadHDRSkybox(0.8, skyboxEnabled).then(() => {
+            currentCoreScene.atom.loadHDRSkybox().then(() => {
                 if (!newAvatar!.container) {
                     newAvatar!.loadAvatar(undefined, undefined, true);
                 }

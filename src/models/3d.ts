@@ -3,6 +3,8 @@ import {
   type PhysicsShapeContainer,
 } from "@babylonjs/core/Physics/v2/physicsShape";
 
+import type { Asset } from "@/models/common";
+
 export type ObjectTransform = [number, number, number];
 export type ObjectQuaternion = [number, number, number, number];
 export type ObjectAbsoluteTransforms = {
@@ -59,3 +61,5 @@ export type SpaceLoadingPerformance = {
   space_uh_lod_ready: number; // Ultra high level of detail LOD is ready.
   space_fully_loaded: number; // Indicates that the space is fully loaded and ready for interaction.
 };
+
+export type AssetJsonWithResults = { results: Asset[] };

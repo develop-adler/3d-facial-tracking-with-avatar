@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import type { AssetJsonWithResults } from "@/models/3d";
 import type { Asset } from "@/models/common";
 import type { StudioObjectType } from "@/models/studio";
 
@@ -10,7 +11,6 @@ import FurnitureAssetsJSON from "@/jsons/asset_furnitures.json";
 import SkyboxAssetsJSON from "@/jsons/asset_skyboxs.json";
 
 type AssetRecord = Record<string, Asset>;
-type AssetJsonWithResults = { results: Asset[] };
 
 const useAssets = () => {
     const [architectures, setArchitectures] = useState<AssetRecord>({});

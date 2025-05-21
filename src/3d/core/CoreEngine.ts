@@ -6,7 +6,15 @@ import { Logger } from "@babylonjs/core/Misc/logger";
 import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
 
 import Resource from "@/3d/assets/Resource";
-import type { SpaceLoadingPerformance } from "@/models/3d";
+import ArchitectureAssetsJSON from "@/jsons/asset_architectures.json";
+import DecorationAssetsJSON from "@/jsons/asset_decorations.json";
+import EntertainmentAssetsJSON from "@/jsons/asset_entertainments.json";
+import FurnitureAssetsJSON from "@/jsons/asset_furnitures.json";
+import SkyboxAssetsJSON from "@/jsons/asset_skyboxs.json";
+import type {
+    AssetJsonWithResults,
+    SpaceLoadingPerformance,
+} from "@/models/3d";
 import type { Asset } from "@/models/common";
 import type { StudioObjectType } from "@/models/studio";
 import eventBus from "@/eventBus";
@@ -14,7 +22,7 @@ import eventBus from "@/eventBus";
 import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 
 type StoredAssets = {
-    [key in StudioObjectType]?: Record<string, Asset>;
+    [key in StudioObjectType]: Record<string, Asset>;
 };
 
 registerBuiltInLoaders();
@@ -22,7 +30,7 @@ registerBuiltInLoaders();
 const SafeCanvas = (() =>
     typeof document === "undefined"
         ? ({
-            getContext: () => { },
+            getContext: () => {},
         } as unknown as HTMLCanvasElement)
         : document.createElement("canvas"))();
 
@@ -56,7 +64,7 @@ export class CoreEngine {
             space_uh_lod_ready: -1,
             space_fully_loaded: -1,
         };
-        this.cachedAssets = {};
+        this.cachedAssets = this.initAssets();
         this.assetFilePaths = {};
 
         if (typeof document === "undefined") {
@@ -154,6 +162,29 @@ export class CoreEngine {
         this.engine.resize();
     }
 
+    initAssets(): StoredAssets {
+        const storeResultsToRecord = (results: Asset[]) => {
+            const record: Record<string, Asset> = {};
+            for (const obj of results) {
+                if (!(obj.id in record)) record[obj.id] = obj;
+            }
+            return record;
+        };
+        return {
+            architectures: storeResultsToRecord(
+                ArchitectureAssetsJSON.results as Asset[]
+            ),
+            decorations: storeResultsToRecord(
+                DecorationAssetsJSON.results as Asset[]
+            ),
+            entertainments: storeResultsToRecord(
+                EntertainmentAssetsJSON.results as Asset[]
+            ),
+            furnitures: storeResultsToRecord(FurnitureAssetsJSON.results as Asset[]),
+            skyboxs: storeResultsToRecord(SkyboxAssetsJSON.results as Asset[]),
+        };
+    }
+
     async loadAsset(id: string, type: StudioObjectType): Promise<Asset> {
         // check if the asset is already in the cache
         if (this.cachedAssets[type]) {
@@ -168,14 +199,15 @@ export class CoreEngine {
             furnitures: "@/jsons/asset_furnitures.json",
             skyboxs: "@/jsons/asset_skyboxs.json",
         };
-        const assetJSON = await import(assetJSONUrl[type]);
+
+        const assetJSON: AssetJsonWithResults = await import(assetJSONUrl[type]);
 
         if (!assetJSON) {
             throw new Error(`Asset JSON for type ${type} not found`);
         }
 
         const record: Record<string, Asset> = {};
-        for (const obj of assetJSON.results as Asset[]) {
+        for (const obj of assetJSON.results) {
             if (!(obj.id in record)) record[obj.id] = obj;
         }
         this.cachedAssets[type] = record;
