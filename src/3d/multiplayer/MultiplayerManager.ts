@@ -477,7 +477,7 @@ class MultiplayerManager {
     teleportToRemoteAvatar(remoteAvatar?: Avatar): void {
         const avatar = remoteAvatar ?? this.remoteAvatars.values().next().value;
         if (!avatar) {
-            toast("No avatar to teleport to", TOAST_TOP_OPTIONS);
+            toast("No user to teleport to", TOAST_TOP_OPTIONS);
             return;
         }
 
