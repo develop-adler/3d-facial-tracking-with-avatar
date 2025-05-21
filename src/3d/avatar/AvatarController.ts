@@ -3,11 +3,7 @@ import { CubicEase, EasingFunction } from "@babylonjs/core/Animations/easing";
 // import { Ray } from '@babylonjs/core/Culling/ray';
 import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 // import { Axis } from '@babylonjs/core/Maths/math.axis';
-import {
-    Quaternion,
-    Vector2 as BJSVector2,
-    Vector3,
-} from "@babylonjs/core/Maths/math.vector";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 // import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
 import { ProximityCastResult } from "@babylonjs/core/Physics/proximityCastResult";
 import { ShapeCastResult } from "@babylonjs/core/Physics/shapeCastResult";
@@ -273,7 +269,7 @@ class AvatarController {
         // offset so that avatar stays on the left side of the screen
         if (!isMobile()) {
             this._isCameraOffset = true;
-            this.camera.targetScreenOffset = new BJSVector2(-0.45, 0);
+            this.camera.targetScreenOffset.set(-0.45, 0);
         }
 
         // make camera follow avatar and target head
@@ -327,7 +323,7 @@ class AvatarController {
 
         // remove camera target offset
         this._isCameraOffset = false;
-        this.camera.targetScreenOffset = BJSVector2.ZeroReadOnly;
+        this.camera.targetScreenOffset.set(0, 0);
 
         this._isActive = false;
 
@@ -567,7 +563,7 @@ class AvatarController {
                 -0.475,
                 this.camera.radius / AVATAR_PARAMS.CAMERA_RADIUS_UPPER_AVATAR
             );
-            this.camera.targetScreenOffset = new BJSVector2(offset, 0);
+            this.camera.targetScreenOffset.set(offset, 0);
         }
 
         this._updateRaycaster();
@@ -1224,8 +1220,10 @@ class AvatarController {
 
         this._isCameraModeTransitioning = true;
 
+        this.camera.targetScreenOffset.set(0, 0);
         this.camera.lowerBetaLimit = 0.01;
         this.camera.upperBetaLimit = Math.PI * 0.99;
+        this.camera.lowerRadiusLimit = 0;
 
         const ease = new CubicEase();
         ease.setEasingMode(EasingFunction.EASINGMODE_EASEIN);
@@ -1244,6 +1242,7 @@ class AvatarController {
                 this._isCameraModeTransitioning = false;
                 this._cameraMode = "firstPerson";
                 this.avatar.hide();
+                this.camera.upperRadiusLimit = 0.001;
             }
         );
         const aspectRatio = this.scene.getEngine().getAspectRatio(this.camera);
@@ -1266,10 +1265,12 @@ class AvatarController {
         if (this._isCameraModeTransitioning) return;
 
         this._isCameraModeTransitioning = true;
+        this.camera.targetScreenOffset.set(-0.45, 0);
         this.avatar.show();
 
         this.camera.lowerBetaLimit = AVATAR_PARAMS.CAMERA_BETA_LOWER_LIMIT_AVATAR; // looking down (divided by lower value = lower angle)
         this.camera.upperBetaLimit = AVATAR_PARAMS.CAMERA_BETA_UPPER_LIMIT_AVATAR; // looking up (divided by higher value = lower angle)
+        this.camera.lowerRadiusLimit = AVATAR_PARAMS.CAMERA_RADIUS_LOWER_AVATAR;
         this.camera.upperRadiusLimit = AVATAR_PARAMS.CAMERA_RADIUS_UPPER_AVATAR;
 
         const ease = new CubicEase();
