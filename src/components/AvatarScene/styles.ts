@@ -20,7 +20,13 @@ export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
 );
 
 export const WaitingText = styled("div")(({ theme }) => ({
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
     fontSize: theme.typography.h3.fontSize,
     color: theme.palette.common.white,
     userSelect: "none",
+    zIndex: 9999,
+    textAlign: "center",
 }));
