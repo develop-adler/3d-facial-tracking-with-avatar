@@ -191,28 +191,28 @@ export class CoreEngine {
             if (id in this.cachedAssets[type]) return this.cachedAssets[type][id];
         }
 
-        // if the asset is not in the cache, load it from the JSON file
-        const assetJSONUrl: Record<StudioObjectType, string> = {
-            architectures: "@/jsons/asset_architectures.json",
-            decorations: "@/jsons/asset_decorations.json",
-            entertainments: "@/jsons/asset_entertainments.json",
-            furnitures: "@/jsons/asset_furnitures.json",
-            skyboxs: "@/jsons/asset_skyboxs.json",
-        };
+        // // if the asset is not in the cache, load it from the JSON file
+        // const assetJSONUrl: Record<StudioObjectType, string> = {
+        //     architectures: "@/jsons/asset_architectures.json",
+        //     decorations: "@/jsons/asset_decorations.json",
+        //     entertainments: "@/jsons/asset_entertainments.json",
+        //     furnitures: "@/jsons/asset_furnitures.json",
+        //     skyboxs: "@/jsons/asset_skyboxs.json",
+        // };
 
-        const assetJSON: AssetJsonWithResults = await import(assetJSONUrl[type]);
+        // const assetJSON: AssetJsonWithResults = await import(assetJSONUrl[type]);
 
-        if (!assetJSON) {
-            throw new Error(`Asset JSON for type ${type} not found`);
-        }
+        // if (!assetJSON) {
+        //     throw new Error(`Asset JSON for type ${type} not found`);
+        // }
 
-        const record: Record<string, Asset> = {};
-        for (const obj of assetJSON.results) {
-            if (!(obj.id in record)) record[obj.id] = obj;
-        }
-        this.cachedAssets[type] = record;
+        // const record: Record<string, Asset> = {};
+        // for (const obj of assetJSON.results) {
+        //     if (!(obj.id in record)) record[obj.id] = obj;
+        // }
+        // this.cachedAssets[type] = record;
 
-        if (id in record) return record[id];
+        // if (id in record) return record[id];
 
         throw new Error(`Asset [id ${id}, type ${type}] not found`);
     }
