@@ -11,10 +11,7 @@ import DecorationAssetsJSON from "@/jsons/asset_decorations.json";
 import EntertainmentAssetsJSON from "@/jsons/asset_entertainments.json";
 import FurnitureAssetsJSON from "@/jsons/asset_furnitures.json";
 import SkyboxAssetsJSON from "@/jsons/asset_skyboxs.json";
-import type {
-    AssetJsonWithResults,
-    SpaceLoadingPerformance,
-} from "@/models/3d";
+import type { SpaceLoadingPerformance } from "@/models/3d";
 import type { Asset } from "@/models/common";
 import type { StudioObjectType } from "@/models/studio";
 import eventBus from "@/eventBus";
