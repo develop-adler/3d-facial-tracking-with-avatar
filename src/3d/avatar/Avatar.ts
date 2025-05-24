@@ -751,6 +751,10 @@ class Avatar {
     return this.loadAvatar(id, undefined, undefined, true);
   }
 
+  resetAvatarForVideoChat() {
+    this._skeleton?.returnToRest();
+  }
+
   // private _handleMorpTargets(mesh: AbstractMesh): void {
   //   // for eye blinking animation
   //   if (!mesh.morphTargetManager) return;
@@ -936,9 +940,9 @@ class Avatar {
     eventBus.emit(`avatar:animationsReady:${this.participant.identity}`, this);
   }
 
-  loadPhysicsBodies(skeleton?: Skeleton): void {
+  loadPhysicsBodies(): void {
     // load hitboxes for skeleton
-    if (skeleton) this._generateHitBoxes(skeleton);
+    if (this._skeleton) this._generateHitBoxes(this._skeleton);
 
     // capsule body always has to be generated after the physics bodies
     // otherwise the physics bodies' position will not be correct

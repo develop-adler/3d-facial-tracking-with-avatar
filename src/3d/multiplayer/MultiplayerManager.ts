@@ -658,6 +658,7 @@ class MultiplayerManager {
         this.clearAllListeners();
         this.clearAllRemoteAvatars();
 
+        this.localAvatar.resetAvatarForVideoChat();
         this.localAvatar.disposeAvatarInfo();
         this.localAvatar.stopAllAnimations();
         this.localAvatar.disposePhysicsBodies();
