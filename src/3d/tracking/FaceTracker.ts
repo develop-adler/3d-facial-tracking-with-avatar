@@ -56,6 +56,10 @@ class FaceTracker {
         }
 
         this.cameraVideoElem = document.createElement("video");
+        // prevent right click context menu
+        this.cameraVideoElem.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+        });
         this.faceDetector = new FaceDetector(this.cameraVideoElem);
         this.faceDetector.init();
         this.handDetector = new HandDetector(this.cameraVideoElem);
@@ -291,15 +295,11 @@ class FaceTracker {
         }
 
         const rotation = new Quaternion(
-            mirrored
-                ? -faceRotation.x
-                : faceRotation.x,
+            mirrored ? -faceRotation.x : faceRotation.x,
             faceRotation.y,
             faceRotation.z,
             // maintain quaternion unit rotation direction when mirrored
-            mirrored
-                ? -faceRotation.w
-                : faceRotation.w
+            mirrored ? -faceRotation.w : faceRotation.w
         );
 
         // Fix head looking down more than intended
