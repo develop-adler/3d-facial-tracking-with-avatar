@@ -9,6 +9,10 @@ import type { Scene } from "@babylonjs/core/scene";
 
 import { MULTIPLAYER_PARAMS } from "constant";
 
+/**
+ * This class is responsible for rendering the avatar's face in a picture-in-picture (PIP) canvas.
+ * It creates a dedicated camera that focuses on the avatar's face and renders it to a canvas.
+ */
 class AvatarFaceView {
     readonly coreScene: CoreScene;
     readonly avatar: Avatar;
