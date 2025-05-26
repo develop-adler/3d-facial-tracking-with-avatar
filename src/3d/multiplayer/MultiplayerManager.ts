@@ -219,41 +219,27 @@ class MultiplayerManager {
     }
 
     private initSelfAvatar() {
-        // if not already loaded, load the avatar
         if (this.localAvatar.container) {
             this.localAvatar.showAvatarInfo();
             this.localAvatar.loadAnimations();
+            this.avatarController.start();
             // for debugging
             // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
         } else {
             this.localAvatar.loadAvatar().then(() => {
                 this.localAvatar.showAvatarInfo();
                 this.localAvatar.loadAnimations();
+                this.avatarController.start();
                 // for debugging
                 // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
             });
         }
 
-        // eslint-disable-next-line unicorn/consistent-function-scoping
-        const setup = () => {
-            this.localAvatar.loadPhysicsBodies();
-            if (this.localAvatar.container) {
-                this.avatarController.start();
-            } else {
-                eventBus.once(
-                    `avatar:modelLoaded:${this.localAvatar.participant.identity}`,
-                    () => {
-                        this.avatarController.start();
-                    }
-                );
-            }
-        };
-
         if (this.coreScene.atom.isPhysicsGenerated) {
-            setup();
+            this.localAvatar.loadPhysicsBodies();
         } else {
-            eventBus.once(`space:physicsReady:${this.room.name}`, () => {
-                setup();
+            eventBus.once(`space:physicsReady:${this.coreScene.room.name}`, () => {
+                this.localAvatar.loadPhysicsBodies();
             });
         }
     }
