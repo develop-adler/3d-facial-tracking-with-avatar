@@ -15,10 +15,10 @@ import { isSafari } from "@/utils/browserUtils";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
+import eventBus from "@/eventBus";
 
 class ObjectSelectHandler {
     readonly spaceBuilder: SpaceBuilder;
-    readonly scene: Scene;
     readonly selectedMeshGroup: TransformNode;
     readonly onSetSelectedObjectObservable: Observable<
         AbstractMesh | Mesh | null
@@ -32,7 +32,6 @@ class ObjectSelectHandler {
 
     constructor(spaceBuilder: SpaceBuilder) {
         this.spaceBuilder = spaceBuilder;
-        this.scene = spaceBuilder.scene;
 
         this.selectedMeshGroup = new TransformNode(
             "selectedMeshGroup",
@@ -47,12 +46,23 @@ class ObjectSelectHandler {
             this.scene.skipPointerMovePicking = true;
             this.scene.skipPointerDownPicking = true;
             this.scene.skipPointerUpPicking = true;
+
+            if (this.spaceBuilder.coreScene.atom.isAtomFinishLoading) {
+                this.setGPUPickerPickList();
+            } else {
+                eventBus.once(`space:allLODsLoaded:${this.spaceBuilder.coreScene.room.name}`, () => {
+                    this.setGPUPickerPickList();
+                });
+            }
         }
 
         // fix weird bug where first pick with on-demand rendering doesn't work
         this.gpuPicker?.pickAsync(0, 0);
 
         this.keyboardObservable = this._initKeyboardHandler();
+    }
+    get scene(): Scene {
+        return this.spaceBuilder.scene;
     }
 
     toggleObjectLock(
@@ -305,17 +315,21 @@ class ObjectSelectHandler {
     }
 
     setGPUPickerPickList(
-        meshList?: Array<Mesh | AbstractMesh>
+        extraMeshList?: Array<Mesh | AbstractMesh>
     ): Array<Mesh | AbstractMesh> {
+        if (!this.gpuPicker) return [];
+        const existingList = this.spaceBuilder.coreScene.atom.currentSceneObjects.flatMap(
+            (root) => root.getChildMeshes()
+        );
         const importedList = this.spaceBuilder.currentObjects.flatMap((root) =>
             root.getChildMeshes()
         );
         const userImagesList = this.spaceBuilder.currentObjects.filter(
             (root) => root.metadata.type === "images"
         );
-        const list = [...importedList, ...userImagesList];
-        if (meshList) list.push(...meshList);
-        this.gpuPicker?.setPickingList(list);
+        const list = [...existingList, ...importedList, ...userImagesList];
+        if (extraMeshList) list.push(...extraMeshList);
+        this.gpuPicker.setPickingList(list);
         return list;
     }
 

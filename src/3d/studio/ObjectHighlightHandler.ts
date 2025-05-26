@@ -15,9 +15,6 @@ import type { Scene } from "@babylonjs/core/scene";
 
 class ObjectHighlightHandler {
     readonly spaceBuilder: SpaceBuilder;
-    readonly scene: Scene;
-    readonly camera: ArcRotateCamera;
-
     readonly highlightLayer: HighlightLayer;
 
     static readonly SELECT_LOCKED_COLOR = new Color3(1, 0.4, 0);
@@ -25,10 +22,15 @@ class ObjectHighlightHandler {
 
     constructor(spaceBuilder: SpaceBuilder) {
         this.spaceBuilder = spaceBuilder;
-        this.scene = spaceBuilder.scene;
-        this.camera = spaceBuilder.camera;
 
         this.highlightLayer = this._createHighlightLayer(this.camera);
+    }
+
+    get scene(): Scene {
+        return this.spaceBuilder.scene;
+    }
+    get camera(): ArcRotateCamera {
+        return this.spaceBuilder.camera;
     }
 
     private _createHighlightLayer(camera: ArcRotateCamera): HighlightLayer {

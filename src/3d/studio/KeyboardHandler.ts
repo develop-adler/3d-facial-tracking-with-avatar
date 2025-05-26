@@ -18,7 +18,6 @@ type KeyStatus = {
 
 class KeyboardHandler {
     readonly spaceBuilder: SpaceBuilder;
-    readonly scene: Scene;
     readonly keyDown = {
         escape: false,
         shift: false,
@@ -39,9 +38,11 @@ class KeyboardHandler {
 
     constructor(spaceBuilder: SpaceBuilder) {
         this.spaceBuilder = spaceBuilder;
-        this.scene = spaceBuilder.scene;
 
         this.keyboardObservable = this._initKeyboardHandler();
+    }
+    get scene(): Scene {
+        return this.spaceBuilder.scene;
     }
 
     private _initKeyboardHandler() {

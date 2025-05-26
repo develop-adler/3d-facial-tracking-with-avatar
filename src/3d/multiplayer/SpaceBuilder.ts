@@ -13,6 +13,7 @@ import { UtilityLayerRenderer } from "@babylonjs/core/Rendering/utilityLayerRend
 import { GridMaterial } from "@babylonjs/materials";
 
 import type Resource from "@/3d/assets/Resource";
+import type Avatar from "@/3d/avatar/Avatar";
 import type CoreScene from "@/3d/core/CoreScene";
 import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import GizmoHandler from "@/3d/studio/GizmoHandler";
@@ -41,9 +42,6 @@ import type { Scene } from "@babylonjs/core/scene";
 
 class SpaceBuilder {
     readonly multiplayerManager: MultiplayerManager;
-    readonly coreScene: CoreScene;
-    readonly scene: Scene;
-    readonly camera: ArcRotateCamera;
 
     readonly floorGrid: Mesh;
     readonly utilityLayer: UtilityLayerRenderer;
@@ -68,9 +66,6 @@ class SpaceBuilder {
 
     constructor(multiplayerManager: MultiplayerManager) {
         this.multiplayerManager = multiplayerManager;
-        this.coreScene = multiplayerManager.coreScene;
-        this.scene = multiplayerManager.coreScene.scene;
-        this.camera = multiplayerManager.coreScene.camera;
 
         this.currentObjects = [];
         this.lockedObjects = [];
@@ -91,6 +86,19 @@ class SpaceBuilder {
         this.keyboardObservable = this._initKeyboardHandler();
 
         this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
+    }
+
+    get coreScene(): CoreScene {
+        return this.multiplayerManager.coreScene;
+    }
+    get scene(): Scene {
+        return this.multiplayerManager.coreScene.scene;
+    }
+    get camera(): ArcRotateCamera {
+        return this.multiplayerManager.coreScene.camera;
+    }
+    get avatar(): Avatar {
+        return this.multiplayerManager.localAvatar;
     }
 
     private _createFloorGrid(): Mesh {

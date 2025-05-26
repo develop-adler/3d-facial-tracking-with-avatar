@@ -10,20 +10,19 @@ import type { Scene } from "@babylonjs/core/scene";
 
 class ObjectPlacementHandler {
     readonly spaceBuilder: SpaceBuilder;
-    readonly scene: Scene;
-    readonly camera: ArcRotateCamera;
 
     readonly placementObjectPlaceholder: Mesh;
     readonly ghostPreviewtMaterial: StandardMaterial;
 
     constructor(spaceBuilder: SpaceBuilder) {
         this.spaceBuilder = spaceBuilder;
-        this.scene = spaceBuilder.scene;
-        this.camera = spaceBuilder.camera;
 
         this.placementObjectPlaceholder = this._createPlacementObjectPlaceholder();
         this.ghostPreviewtMaterial = this._createGhostPreviewMaterial();
         this.placementObjectPlaceholder.material = this.ghostPreviewtMaterial;
+    }
+    get scene() {
+        return this.spaceBuilder.scene;
     }
 
     private _createPlacementObjectPlaceholder(): Mesh {

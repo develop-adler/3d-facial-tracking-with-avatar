@@ -44,8 +44,6 @@ type AxisGizmoDragEvent = {
 
 class GizmoHandler {
   readonly spaceBuilder: SpaceBuilder;
-  readonly scene: Scene;
-  readonly camera: ArcRotateCamera;
   readonly gizmoManager: GizmoManager;
   readonly keyboardObservable: Observer<KeyboardInfo>;
   currentGizmoType: GizmoTransformationType;
@@ -74,8 +72,6 @@ class GizmoHandler {
 
   constructor(spaceBuilder: SpaceBuilder) {
     this.spaceBuilder = spaceBuilder;
-    this.scene = spaceBuilder.scene;
-    this.camera = spaceBuilder.camera;
     this._dragCancelled = false;
     this._movedCamera = false;
     this._pannedCamera = false;
@@ -84,6 +80,13 @@ class GizmoHandler {
     this.onSetGizmoTypeObservable = new Observable<GizmoTransformationType>();
     this.setupPointerPickBehavior();
     this.keyboardObservable = this._initKeyboardHandler();
+  }
+
+  get scene(): Scene {
+    return this.spaceBuilder.scene;
+  }
+  get camera(): ArcRotateCamera {
+    return this.spaceBuilder.camera;
   }
 
   private _createGizmoManager(
@@ -937,8 +940,8 @@ class GizmoHandler {
     //   this.gizmoManager.boundingBoxGizmoEnabled === true &&
     //   type !== "images"
     // ) {
-      this.gizmoManager.scaleGizmoEnabled = true;
-      this.gizmoManager.boundingBoxGizmoEnabled = false;
+    this.gizmoManager.scaleGizmoEnabled = true;
+    this.gizmoManager.boundingBoxGizmoEnabled = false;
     // }
 
     if (this.gizmoManager.gizmos.positionGizmo) {
@@ -1362,32 +1365,32 @@ class GizmoHandler {
     }
   }
 
-  focusCameraOnObjects(
-    mesh?: Mesh | AbstractMesh,
-    onAnimationEnd?: () => void
-  ) {
-    const meshToFocus = mesh ?? this.gizmoManager.attachedMesh;
+  // focusCameraOnObjects(
+  //   mesh?: Mesh | AbstractMesh,
+  //   onAnimationEnd?: () => void
+  // ) {
+  //   const meshToFocus = mesh ?? this.gizmoManager.attachedMesh;
 
-    if (!meshToFocus) return;
+  //   if (!meshToFocus) return;
 
-    meshToFocus.computeWorldMatrix(true);
-    const minMax = meshToFocus.getHierarchyBoundingVectors(true);
+  //   meshToFocus.computeWorldMatrix(true);
+  //   const minMax = meshToFocus.getHierarchyBoundingVectors(true);
 
-    // enable built-in framing behavior
-    this.camera.useFramingBehavior = true;
-    if (this.camera.framingBehavior) {
-      this.camera.framingBehavior.framingTime = 400;
-      this.camera.framingBehavior.zoomOnBoundingInfo(
-        minMax.min,
-        minMax.max,
-        undefined,
-        () => {
-          this.camera.useFramingBehavior = false;
-          onAnimationEnd?.();
-        }
-      );
-    }
-  }
+  //   // enable built-in framing behavior
+  //   this.camera.useFramingBehavior = true;
+  //   if (this.camera.framingBehavior) {
+  //     this.camera.framingBehavior.framingTime = 400;
+  //     this.camera.framingBehavior.zoomOnBoundingInfo(
+  //       minMax.min,
+  //       minMax.max,
+  //       undefined,
+  //       () => {
+  //         this.camera.useFramingBehavior = false;
+  //         onAnimationEnd?.();
+  //       }
+  //     );
+  //   }
+  // }
 
   private _initKeyboardHandler() {
     return this.scene.onKeyboardObservable.add((kbInfo) => {
@@ -1412,10 +1415,10 @@ class GizmoHandler {
               }
               break;
             }
-            case "Period": {
-              this.focusCameraOnObjects();
-              break;
-            }
+            // case "Period": {
+            //   this.focusCameraOnObjects();
+            //   break;
+            // }
             case "KeyG": {
               // change to location gizmo
               this.setGizmoType("location");
