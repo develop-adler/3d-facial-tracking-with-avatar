@@ -31,6 +31,7 @@ import { isFirefox, isMobile, isSafari } from "@/utils/browserUtils";
 import { clientSettings } from "clientSettings";
 import { STUDIO_OBJECT_TYPE_DICTIONARY } from "constant";
 
+import type { AssetContainer, InstantiatedEntries } from "@babylonjs/core/assetContainer";
 import {
     KeyboardEventTypes,
     type KeyboardInfo,
@@ -58,6 +59,8 @@ class SpaceBuilder {
     currentSkyboxData?: Asset;
     currentObjects: Array<AbstractMesh | Mesh>;
     lockedObjects: Array<number>;
+    allObjectContainers: Array<AssetContainer | InstantiatedEntries>;
+    errorObjectContainers: Array<AssetContainer>;
     copiedMesh?: Mesh | AbstractMesh;
 
     isPreviewMode: boolean;
@@ -69,6 +72,8 @@ class SpaceBuilder {
 
         this.currentObjects = [];
         this.lockedObjects = [];
+        this.allObjectContainers = [];
+        this.errorObjectContainers = [];
         this.isPreviewMode = false;
         this.isThumbnailCaptureMode = false;
         this.isEditSpawnAreaMode = false;
@@ -330,7 +335,7 @@ class SpaceBuilder {
             }
 
             if (!resource) {
-                this.loadErrorModel(asset, position, rotation, quality);
+                this.loadErrorModel(asset, position, rotation);
                 return;
             }
 
@@ -347,7 +352,7 @@ class SpaceBuilder {
             //     } catch (error) {
             //         if (clientSettings.DEBUG)
             //             console.error("Error importing image object:", error);
-            //         this.loadErrorModel(asset, position, rotation, quality);
+            //         this.loadErrorModel(asset, position, rotation);
             //     }
             // } else {
             const rootNode = new TransformNode(id + "_rootNode", this.scene);
@@ -360,6 +365,7 @@ class SpaceBuilder {
                         pluginExtension: ".glb",
                     }
                 );
+                this.allObjectContainers.push(container);
                 container.addAllToScene();
 
                 root = rootNode;
@@ -409,7 +415,7 @@ class SpaceBuilder {
             } catch (error) {
                 if (clientSettings.DEBUG)
                     console.error("Error loading studio model:", error);
-                this.loadErrorModel(asset, position, rotation, quality);
+                this.loadErrorModel(asset, position, rotation);
             }
             // }
         }
@@ -420,6 +426,7 @@ class SpaceBuilder {
         this.currentObjects.push(root as Mesh);
 
         this.objectSelectHandler.setGPUPickerPickList();
+        this.coreScene.atom.generateCollision(root as Mesh);
 
         // this.renderScene();
 
@@ -816,8 +823,7 @@ class SpaceBuilder {
     async loadErrorModel(
         object: Asset,
         position?: ObjectTransform,
-        rotation?: ObjectTransform,
-        quality: "high" | "low" = "high"
+        rotation?: ObjectTransform
     ): Promise<void> {
         const processMeshes = (meshes: AbstractMesh[]) => {
             const root = meshes[0];
@@ -870,31 +876,22 @@ class SpaceBuilder {
             this.objectSelectHandler.setGPUPickerPickList(meshes);
         };
 
+        const qualityToLoad = isMobile() ? "low" : "high";
+
         try {
             const container = await loadAssetContainerAsync(
-                `/static/models/missing_asset_${quality}.glb`,
+                `/static/models/missing_asset_${qualityToLoad}.glb`,
                 this.scene,
                 {
                     pluginExtension: ".glb",
                 }
             );
+            this.errorObjectContainers.push(container);
             container.addAllToScene();
             processMeshes(container.meshes);
-        } catch {
-            try {
-                const container = await loadAssetContainerAsync(
-                    `/static/models/missing_asset_${quality}.glb`,
-                    this.scene,
-                    {
-                        pluginExtension: ".glb",
-                    }
-                );
-                container.addAllToScene();
-                processMeshes(container.meshes);
-            } catch (error) {
-                if (clientSettings.DEBUG)
-                    console.error("Failed to load error model:", error);
-            }
+        } catch (error) {
+            if (clientSettings.DEBUG)
+                console.error("Failed to load error object model:", error);
         }
     }
 
@@ -1065,6 +1062,8 @@ class SpaceBuilder {
     }
 
     dispose() {
+        this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
+
         this.keyboardHandler.dispose();
         this.saveStateHandler.dispose();
         this.gizmoHandler.dispose();
@@ -1076,7 +1075,24 @@ class SpaceBuilder {
         this.utilityLayer.dispose();
         this.keyboardObservable.remove();
 
+        this.lockedObjects = [];
+        for (const container of this.allObjectContainers) {
+            container.dispose();
+        }
+        this.allObjectContainers = [];
+        for (const mesh of this.currentObjects) {
+            mesh.dispose(false, true);
+        }
+        this.currentObjects = [];
+        for (const container of this.errorObjectContainers) {
+            container.dispose();
+        }
+        this.errorObjectContainers = [];
+        this.copiedMesh?.dispose(false, true);
+        this.copiedMesh = undefined;
+
         // this.multiplayerManager.avatarController.switchToThirdPersonMode(1);
+        this.scene.blockfreeActiveMeshesAndRenderingGroups = false;
     }
 }
 
