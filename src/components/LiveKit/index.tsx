@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { type FC } from "react";
+import { useEffect, type FC } from "react";
 
 import DOMPurify from 'dompurify';
 
-import type { RoomAndName } from "@/models/multiplayer";
 import { JoinRoomModal } from "@/components/LiveKit/JoinRoomModal";
+import type { RoomAndName } from "@/models/multiplayer";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { useTrackingStore } from "@/stores/useTrackingStore";
 
 const RoomPage = dynamic(
     () => import("@/components/LiveKit/RoomPage").then((p) => p.RoomPage),
@@ -25,6 +26,15 @@ export const LiveKitPage: FC = () => {
         data.name = DOMPurify.sanitize(data.name);
         setRoomNameAndUsername(data);
     };
+
+    useEffect(() => {
+        useLiveKitStore.getState().room.disconnect();
+        setRoomNameAndUsername();
+        return () => {
+            useTrackingStore.getState().faceTracker.dispose();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <>
