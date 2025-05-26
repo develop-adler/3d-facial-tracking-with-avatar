@@ -11,11 +11,13 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { Scene } from "@babylonjs/core/scene";
+import type { Room } from "livekit-client";
 
 import type { CoreEngine } from "@/3d/core/CoreEngine";
 import Atom from "@/3d/space/Atom";
 import eventBus from "@/eventBus";
 import type { AvatarPhysicsShapes } from "@/models/3d";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { isMobile } from "@/utils/browserUtils";
 import CreateAvatarPhysicsShape from "@/utils/CreateAvatarPhysicsShape";
 
@@ -31,7 +33,6 @@ import {
 // import type { Observer } from "@babylonjs/core/Misc/observable";
 // import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
-import type { Room } from "livekit-client";
 
 class CoreScene {
     readonly coreEngine: CoreEngine;
@@ -218,8 +219,8 @@ class CoreScene {
         // always inside skybox
         this.scene.autoClear = false;
 
-        this.atom.skybox?.setEnabled(true);
-        this.setCameraToMultiplayer();
+        this.atom.toggleSkybox(true);
+        this._setCameraToMultiplayer();
 
         // create physics shapes for avatars in multiplayer
         this._createAvatarPhysicsShapes();
@@ -228,10 +229,11 @@ class CoreScene {
     switchToVideoChat(): void {
         // skybox disabled
         this.scene.autoClear = true;
-        this.atom.skybox?.setEnabled(false);
+        this.atom.toggleSkybox(useLiveKitStore.getState().skyboxEnabled);
         this._setCameraToVideoChat();
     }
-    setCameraToMultiplayer(): void {
+
+    private _setCameraToMultiplayer(): void {
         this.camera.maxZ = MULTIPLAYER_PARAMS.CAMERA_MAXZ;
 
         // disable panning
