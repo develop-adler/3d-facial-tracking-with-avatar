@@ -1,7 +1,4 @@
 import { create } from "zustand";
-
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type {
     GizmoTransformationType,
     ObjectTransform,
@@ -10,6 +7,9 @@ import type {
 } from "@/models/3d";
 import type { Asset } from "@/models/common";
 import type { LockedStudioObjects, StudioSavedStates } from "@/models/studio";
+
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 type StudioStore = {
     showContextMenu: boolean;
@@ -29,12 +29,11 @@ type StudioStore = {
     isSpaceDataChanged: boolean;
     isInPostCamera: boolean;
     isEditSpawnAreaMode: boolean;
-    isItemsPanelExpanded: boolean,
-    isPropertiesPanelExpanded: boolean;
     isThumbnailModal: boolean;
     currentSkyboxAsset?: Asset;
     openCreateModal: boolean;
     scaleAspectRatioLock: boolean;
+    isPlacingObject: boolean;
 } & SpaceStoreActions;
 
 interface SpaceStoreActions {
@@ -67,7 +66,6 @@ interface SpaceStoreActions {
     setThumbnailCaptureMode: (isInPostCamera: boolean) => void;
     setEditSpawnAreaMode: (isEditSpawnAreaMode: boolean) => void;
     setIsThumbnailModal: (isThumbnailModal: boolean) => void;
-    setPropertiesPanelExpand: (isPropertiesPanelExpanded: boolean) => void;
     setCurrentSkyboxAsset: (asset: Asset) => void;
     setIsSavingDraft: (isSavingDraft: boolean) => void;
     // setThumbnails: (thumbnails: ThumbnailScreenshots) => void;
@@ -76,6 +74,7 @@ interface SpaceStoreActions {
         showContextMenu: boolean,
         contextMenuPosition?: Vector2
     ) => void;
+    setIsPlacingObject: (isPlacingObject: boolean) => void;
 }
 
 export const useStudioStore = create<StudioStore>((set, get) => ({
@@ -101,12 +100,12 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     isInPostCamera: false,
     isEditSpawnAreaMode: false,
     isThumbnailModal: false,
-    isItemsPanelExpanded: true,
     isPropertiesPanelExpanded: true,
     currentSkyboxAsset: undefined,
     openCreateModal: false,
     scaleAspectRatioLock: false,
     showContextMenu: false,
+    isPlacingObject: false,
 
     setLockedObjects(lockedObjects: LockedStudioObjects) {
         set({ lockedObjects });
@@ -215,12 +214,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     setEditSpawnAreaMode(isEditSpawnAreaMode: boolean) {
         set({ isEditSpawnAreaMode });
     },
-    setItemsPanelExpand(isItemsPanelExpanded: boolean) {
-        set({ isItemsPanelExpanded });
-    },
-    setPropertiesPanelExpand(isPropertiesPanelExpanded: boolean) {
-        set({ isPropertiesPanelExpanded });
-    },
     setIsSavingDraft(isSavingDraft: boolean) {
         set({ isSavingDraft });
     },
@@ -238,5 +231,8 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         contextMenuPosition: Vector2 | undefined
     ) {
         set({ showContextMenu, contextMenuPosition });
+    },
+    setIsPlacingObject(isPlacingObject: boolean) {
+        set({ isPlacingObject });
     },
 }));

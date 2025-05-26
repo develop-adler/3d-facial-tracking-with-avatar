@@ -33,7 +33,6 @@ type EventNames =
     | 'space:webXRChecked'
     | 'space:webXRHelperReady'
     | 'space:init'
-    | 'space:objectsLoaded'
     | 'space:physicsReady'
     | 'space:envMapReady'
     | 'space:themeLoaded'

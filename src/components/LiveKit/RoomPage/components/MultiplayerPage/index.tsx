@@ -9,7 +9,7 @@ import { FacialExpressionCanvas, Multiplayer3DContainer } from "./styles";
 import CoreScene from "@/3d/core/CoreScene";
 import MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import AvatarSpeakingHandler from "@/components/LiveKit/RoomPage/components/MultiplayerPage/components/AvatarSpeakingHandler";
-import SpaceBuilderOverlay from "@/components/LiveKit/RoomPage/components/SpaceBuilderOverlay";
+import SpaceBuilderOverlay from "@/components/SpaceBuilderOverlay";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
@@ -103,7 +103,10 @@ export const MultiplayerPage: FC = () => {
                 {avatar && <AvatarSpeakingHandler avatar={avatar} room={room} />}
                 <Multiplayer3DContainer ref={canvasContainer} />
                 <FacialExpressionCanvas id="pipCanvas" />
-                {isBuildSpaceMode && <SpaceBuilderOverlay />}
+                {isBuildSpaceMode && <SpaceBuilderOverlay categories={[
+                    "furnitures",
+                    "architectures",
+                ]} />}
             </>
         )
     );

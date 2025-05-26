@@ -4,6 +4,14 @@ import {
 } from "@babylonjs/core/Physics/v2/physicsShape";
 
 import type { Asset } from "@/models/common";
+import type {
+  StudioArchitectureObjectProperty,
+  StudioDecorationObjectProperty,
+  StudioImageObjectProperty,
+  StudioObjectProperty,
+} from "@/models/studio";
+
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 
 export type ObjectTransform = [number, number, number];
 export type ObjectQuaternion = [number, number, number, number];
@@ -63,3 +71,50 @@ export type SpaceLoadingPerformance = {
 };
 
 export type AssetJsonWithResults = { results: Asset[] };
+
+export type SoundList = {
+  music: { id: string }[];
+  shuffle: boolean;
+};
+
+export type SpaceJSON = {
+  version: number;
+  space: {
+    size: number;
+    previewCamera: {
+      fov: number;
+      position: ObjectTransform;
+      target: ObjectTransform;
+    };
+    atom: {
+      name: string;
+      description: string;
+      userSpawnInfo: {
+        corners: [
+          ObjectTransform,
+          ObjectTransform,
+          ObjectTransform,
+          ObjectTransform
+        ];
+        target: ObjectTransform;
+      };
+      models: {
+        skybox: string;
+        architectures?: StudioArchitectureObjectProperty[];
+        furnitures?: StudioObjectProperty[];
+        decorations?: StudioDecorationObjectProperty[];
+        entertainments?: StudioObjectProperty[];
+        images?: StudioImageObjectProperty[];
+        objects?: StudioObjectProperty[];
+      };
+    };
+    sounds?: SoundList;
+  };
+};
+export type ObjectQuality = 'lowest' | 'low' | 'medium' | 'high' | 'ultra';
+export type ObjectQualityWithNoTexture = 'notexture' | ObjectQuality;
+
+export type ObjectLODData = {
+  lods: Record<ObjectQualityWithNoTexture, AbstractMesh | undefined>; // low to high quality LODs order
+  currentLOD?: ObjectQualityWithNoTexture; // current LOD level (index of lods)
+};

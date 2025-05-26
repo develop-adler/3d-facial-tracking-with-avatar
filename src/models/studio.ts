@@ -87,3 +87,19 @@ export type StudioMeshMetaData = {
 };
 
 export type LockedStudioObjects = Array<number>;
+
+export type StudioArchitectureObjectProperty = StudioObjectProperty & {
+  color?: string; // optional only for wall
+};
+export type StudioDecorationObjectProperty = StudioObjectProperty & {
+  image?: string; // only applicable if subtype is picture_frame
+  color?: [number, number, number, number]; // RGBA (RGB = 0 - 255, A = 0 - 1), only applicable if subtype is pannel
+};
+
+export type StudioImageObjectProperty = {
+  id: string;
+  type: StudioObjectType;
+  position: ObjectTransform;
+  rotation: ObjectTransform;
+  scale: [number, number];
+};

@@ -1,6 +1,6 @@
 import type { ToastOptions } from "react-toastify";
 
-import type { AvatarInteractionType } from "@/models/3d";
+import type { AvatarInteractionType, ObjectQualityWithNoTexture } from "@/models/3d";
 import type { StudioObjectSubType, StudioObjectType3D } from "@/models/studio";
 
 export const COLOR = {
@@ -203,3 +203,5 @@ export const TOAST_TOP_OPTIONS: ToastOptions = {
   pauseOnHover: true,
   pauseOnFocusLoss: true,
 };
+
+export const OBJECT_LOD_LEVELS: Array<ObjectQualityWithNoTexture> = ['notexture', 'lowest', 'low', 'medium', 'high', 'ultra'];

@@ -85,7 +85,7 @@ class SpaceBuilder {
 
         this.keyboardObservable = this._initKeyboardHandler();
 
-        this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
+        // this.multiplayerManager.avatarController.switchToFirstPersonMode(1);
     }
 
     get coreScene(): CoreScene {
@@ -240,7 +240,7 @@ class SpaceBuilder {
     }
 
     async addObject(
-        object: Asset,
+        asset: Asset,
         quality: "high" | "low" = "high",
         doNotSaveState: boolean = false,
         position?: ObjectTransform,
@@ -249,10 +249,10 @@ class SpaceBuilder {
         imageName?: string,
         noClone: boolean = false
     ) {
-        const { id, path, type, title, subType } = object;
+        const { id, path, type, title, subType } = asset;
 
         if (doNotSaveState === false && clientSettings.DEBUG) {
-            if (clientSettings.DEBUG) console.log("Adding object:", object);
+            if (clientSettings.DEBUG) console.log("Adding object:", asset);
         }
 
         const existingObject = this.currentObjects.find(
@@ -270,7 +270,7 @@ class SpaceBuilder {
                 false
             )!;
             if (position) {
-                newObject.position = Vector3.FromArray(position);
+                newObject.setAbsolutePosition(Vector3.FromArray(position));
             } else {
                 if (subType === "ceiling") {
                     const bb = newObject.getHierarchyBoundingVectors();
@@ -330,14 +330,14 @@ class SpaceBuilder {
             }
 
             if (!resource) {
-                this.loadErrorModel(object, position, rotation, quality);
+                this.loadErrorModel(asset, position, rotation, quality);
                 return;
             }
 
             // if (type === "images") {
             //     try {
             //         root = await this.addFlatImageObject(
-            //             object,
+            //             asset,
             //             quality,
             //             position,
             //             rotation,
@@ -347,7 +347,7 @@ class SpaceBuilder {
             //     } catch (error) {
             //         if (clientSettings.DEBUG)
             //             console.error("Error importing image object:", error);
-            //         this.loadErrorModel(object, position, rotation, quality);
+            //         this.loadErrorModel(asset, position, rotation, quality);
             //     }
             // } else {
             const rootNode = new TransformNode(id + "_rootNode", this.scene);
@@ -409,7 +409,7 @@ class SpaceBuilder {
             } catch (error) {
                 if (clientSettings.DEBUG)
                     console.error("Error loading studio model:", error);
-                this.loadErrorModel(object, position, rotation, quality);
+                this.loadErrorModel(asset, position, rotation, quality);
             }
             // }
         }
@@ -722,7 +722,7 @@ class SpaceBuilder {
 
         // const src = `${this.postData.path}/${imageName}.${isSafari() || isFirefox() ? "jpg" : "avif"
         //     }`;
-        const src = '';
+        const src = "";
 
         try {
             const res = await fetch(src);
@@ -898,6 +898,130 @@ class SpaceBuilder {
         }
     }
 
+    // createNewStudioDraft(
+    //     spaceDraft: StudioSpaceProperty,
+    //     soundList: SoundList | null,
+    //     imageFileCallback?: (file: File) => void,
+    //     themeScale: number = 1
+    // ) {
+    //     if (!this.currentSkyboxData) {
+    //         if (clientSettings.DEBUG) console.error("No skybox data available");
+    //         return;
+    //     }
+    //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //     const newSpaceData: SpaceJSON =
+    //     {
+    //         version: 4,
+    //         space: {
+    //             size: themeScale,
+    //             // previewCamera: {
+    //             //     fov: this.thumbnailCamera!.fov,
+    //             //     position: [
+    //             //         this.thumbnailCamera!.position.x,
+    //             //         this.thumbnailCamera!.position.y,
+    //             //         this.thumbnailCamera!.position.z,
+    //             //     ],
+    //             //     target: [
+    //             //         this.thumbnailCamera!.target.x,
+    //             //         this.thumbnailCamera!.target.y,
+    //             //         this.thumbnailCamera!.target.z,
+    //             //     ],
+    //             // },
+    //             atom: {
+    //                 name: spaceDraft.title!,
+    //                 description: spaceDraft.description!,
+    //                 // userSpawnInfo: this.theme.userSpawnInfo,
+    //                 models: {
+    //                     skybox: this.currentSkyboxData.id,
+    //                     architectures: [],
+    //                     furnitures: [],
+    //                     decorations: [],
+    //                     entertainments: [],
+    //                 },
+    //             },
+    //         },
+    //     };
+
+    //     const checkDuplicate = (o1: StudioObjectProperty, o2: StudioObjectProperty) => {
+    //         // if (o1.type === 'images') {
+    //         //     return (
+    //         //         o1.id === o2.id &&
+    //         //         o1.position[0] === o2.position[0] &&
+    //         //         o1.position[1] === o2.position[1] &&
+    //         //         o1.position[2] === o2.position[2] &&
+    //         //         o1.rotation[0] === o2.rotation[0] &&
+    //         //         o1.rotation[1] === o2.rotation[1] &&
+    //         //         o1.rotation[2] === o2.rotation[2] &&
+    //         //         o1.scale[0] === o2.scale[0] &&
+    //         //         o1.scale[1] === o2.scale[1]
+    //         //     );
+    //         // } else {
+    //         return (
+    //             o1.id === o2.id &&
+    //             o1.position[0] === o2.position[0] &&
+    //             o1.position[1] === o2.position[1] &&
+    //             o1.position[2] === o2.position[2] &&
+    //             o1.rotation[0] === o2.rotation[0] &&
+    //             o1.rotation[1] === o2.rotation[1] &&
+    //             o1.rotation[2] === o2.rotation[2] &&
+    //             o1.scale[0] === o2.scale[0] &&
+    //             o1.scale[1] === o2.scale[1] &&
+    //             o1.scale[2] === o2.scale[2]
+    //         );
+    //         // }
+    //     };
+
+    //     // add objects to apropriate lists, don't add duplicates
+    //     for (const object of [...this.currentObjects, ...this.coreScene.atom.currentSceneObjects]) {
+    //         const objectMetadata = object.metadata as StudioMeshMetaData;
+    //         if (objectMetadata.imageContent) {
+    //             imageFileCallback?.(objectMetadata.imageContent.file);
+    //         }
+    //         // let objectData: StudioDecorationObjectProperty | StudioImageObjectProperty;
+    //         // if (objectMetadata.type === 'images') {
+    //         //     objectData = {
+    //         //         type: objectMetadata.type,
+    //         //         id: objectMetadata.id,
+    //         //         position: [object.position.x, object.position.y, object.position.z],
+    //         //         rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
+    //         //         scale: [object.scaling.x, object.scaling.y],
+    //         //     };
+    //         // } else {
+    //         const objectData: StudioObjectProperty = {
+    //             type: objectMetadata.type,
+    //             id: objectMetadata.id,
+    //             position: [object.position.x, object.position.y, object.position.z],
+    //             rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
+    //             scale: [object.scaling.x, object.scaling.y, object.scaling.z],
+    //         };
+    //         // if (objectMetadata.imageContent) {
+    //         //     objectData.image = objectMetadata.imageContent.file.name;
+    //         // }
+    //         // }
+
+    //         const objectModels = newSpaceData.space.atom.models[objectMetadata.type as StudioObjectTypeItems] ?? [];
+
+    //         // filter out duplicates
+    //         if (
+    //             objectModels.some((obj: StudioObjectProperty) =>
+    //                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //                 checkDuplicate(obj as any, objectData as any)
+    //             )
+    //         ) {
+    //             continue;
+    //         }
+    //         objectModels.push(objectData);
+    //     }
+
+    //     if (soundList) newSpaceData.space.sounds = soundList;
+
+    //     if (clientSettings.DEBUG) {
+    //         console.log('Saved studio draft:', newSpaceData);
+    //     }
+
+    //     return newSpaceData;
+    // };
+
     private _initKeyboardHandler() {
         // keyboard events
         return this.scene.onKeyboardObservable.add((kbInfo) => {
@@ -952,8 +1076,7 @@ class SpaceBuilder {
         this.utilityLayer.dispose();
         this.keyboardObservable.remove();
 
-
-        this.multiplayerManager.avatarController.switchToThirdPersonMode(1);
+        // this.multiplayerManager.avatarController.switchToThirdPersonMode(1);
     }
 }
 
