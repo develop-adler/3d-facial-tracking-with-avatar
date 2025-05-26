@@ -19,6 +19,7 @@ import type CoreScene from "@/3d/core/CoreScene";
 import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import GizmoHandler from "@/3d/studio/GizmoHandler";
 import KeyboardHandler from "@/3d/studio/KeyboardHandler";
+import MultiplayerEventHandler from "@/3d/studio/MultiplayerEventHandler";
 import ObjectHighlightHandler from "@/3d/studio/ObjectHighlightHandler";
 import ObjectPlacementHandler from "@/3d/studio/ObjectPlacementHandler";
 import ObjectSelectHandler from "@/3d/studio/ObjectSelectHandler";
@@ -51,6 +52,7 @@ class SpaceBuilder {
     readonly floorGrid: Mesh;
     readonly utilityLayer: UtilityLayerRenderer;
 
+    readonly multiplayerEventHandler: MultiplayerEventHandler;
     readonly gizmoHandler: GizmoHandler;
     readonly objectSelectHandler: ObjectSelectHandler;
     readonly saveStateHandler: SaveStateHandler;
@@ -60,6 +62,7 @@ class SpaceBuilder {
 
     readonly keyboardObservable: Observer<KeyboardInfo>;
 
+    placementHandlers: Array<ObjectPlacementHandler> = [];
     currentSkyboxData?: Asset;
     currentObjects: Array<AbstractMesh | Mesh>;
     lockedObjects: Array<number>;
@@ -74,6 +77,7 @@ class SpaceBuilder {
     constructor(multiplayerManager: MultiplayerManager) {
         this.multiplayerManager = multiplayerManager;
 
+        this.placementHandlers = [];
         this.currentObjects = [];
         this.lockedObjects = [];
         this.allObjectContainers = [];
@@ -85,12 +89,13 @@ class SpaceBuilder {
         this.floorGrid = this._createFloorGrid();
         this.utilityLayer = this._createUtilityLayer(this.scene, this.camera);
 
+        this.multiplayerEventHandler = new MultiplayerEventHandler(this);
         this.keyboardHandler = new KeyboardHandler(this);
         this.saveStateHandler = new SaveStateHandler(this);
         this.objectHighlightHandler = new ObjectHighlightHandler(this);
-        this.objectPlacementHandler = new ObjectPlacementHandler(this);
+        this.objectPlacementHandler = new ObjectPlacementHandler(this, this.avatar);
         this.objectSelectHandler = new ObjectSelectHandler(this);
-        this.gizmoHandler = new GizmoHandler(this); // has to be created after ObjectSelectHandler
+        this.gizmoHandler = new GizmoHandler(this); // must be created after ObjectSelectHandler
 
         this.keyboardObservable = this._initKeyboardHandler();
 
@@ -1072,6 +1077,12 @@ class SpaceBuilder {
     dispose() {
         this.scene.blockfreeActiveMeshesAndRenderingGroups = true;
 
+        for (const handler of this.placementHandlers) {
+            handler.dispose();
+        }
+        this.placementHandlers = [];
+
+        this.multiplayerEventHandler.dispose();
         this.keyboardHandler.dispose();
         this.saveStateHandler.dispose();
         this.gizmoHandler.dispose();

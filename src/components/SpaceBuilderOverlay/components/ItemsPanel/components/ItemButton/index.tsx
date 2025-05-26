@@ -39,7 +39,11 @@ const ItemButton: FC<Props> = ({ item, ...buttonProps }) => {
                         userSelect: "none",
                     }}
                     onClick={() => {
-                        spaceBuilder?.objectPlacementHandler.loadGhostPreviewObject(item);
+                        try {
+                            spaceBuilder?.objectPlacementHandler.loadGhostPreviewObject(item);
+                        } catch {
+                            // empty
+                        }
                     }}
                     {...buttonProps}
                 >

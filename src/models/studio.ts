@@ -1,4 +1,6 @@
 import type { ObjectTransform } from "@/models/3d";
+import type { Asset } from "@/models/common";
+import type { UserRequest } from "@/models/multiplayer";
 
 export type StudioObjectTypeItems =
   | "architectures"
@@ -103,3 +105,7 @@ export type StudioImageObjectProperty = {
   rotation: ObjectTransform;
   scale: [number, number];
 };
+
+export type PlaceObjectRPC = UserRequest & {
+  asset: Asset;
+}

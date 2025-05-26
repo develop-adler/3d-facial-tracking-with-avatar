@@ -55,10 +55,10 @@ class MultiplayerManager {
     readonly coreScene: CoreScene;
     readonly room: Room;
     readonly localAvatar: Avatar;
-    readonly remoteAvatars: Map<Participant, Avatar>;
+    /** Key: identity (string), value: Avatar */
+    readonly remoteAvatars: Map<string, Avatar>;
     readonly avatarController: AvatarController;
     syncAvatarObserver?: Observer<Scene>;
-    positionFacialCameraObserver?: Observer<Scene>;
 
     avatarView?: AvatarFaceView;
 
@@ -78,7 +78,7 @@ class MultiplayerManager {
             this.coreScene.camera,
             coreScene.scene
         );
-        this.remoteAvatars = new Map<Participant, Avatar>();
+        this.remoteAvatars = new Map();
 
         this._initRoomEvents();
         this._loadRoomUsers();
@@ -265,7 +265,7 @@ class MultiplayerManager {
                 document.querySelector("#pipCanvas") as HTMLCanvasElement
             );
         });
-        this.remoteAvatars.set(participant, avatar);
+        this.remoteAvatars.set(participant.identity, avatar);
 
         if (isEvent) {
             useAvatarStore.getState().setRemoteAvatarAudioPositions(
@@ -285,23 +285,23 @@ class MultiplayerManager {
         if (participant.identity === this.room.localParticipant.identity) {
             return;
         }
-        const avatar = this.remoteAvatars.get(participant);
+        const avatar = this.remoteAvatars.get(participant.identity);
         if (avatar) {
             avatar.dispose();
-            this.remoteAvatars.delete(participant);
+            this.remoteAvatars.delete(participant.identity);
         }
     }
 
     private _updateRemoteParticipantName(name: string, participant: Participant) {
-        this.remoteAvatars.get(participant)?.updateName(name);
+        this.remoteAvatars.get(participant.identity)?.updateName(name);
     }
 
     private async _changeRemoteParticipantAvatarListener(
         attribute: AvatarChangeAttributesData,
         remoteParticipant: RemoteParticipant
     ) {
-        for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.sid === remoteParticipant.sid) {
+        for (const [remoteIdentity, avatar] of this.remoteAvatars) {
+            if (remoteIdentity === remoteParticipant.identity) {
                 avatar.loadAvatar(attribute.avatarId, attribute.gender).then(() => {
                     avatar.loadAnimations();
                 });
@@ -426,8 +426,8 @@ class MultiplayerManager {
             morphTargets,
         } = syncData;
 
-        for (const [participant, avatar] of this.remoteAvatars) {
-            if (participant.identity === identity) {
+        for (const [remoteIdentity, avatar] of this.remoteAvatars) {
+            if (remoteIdentity === identity) {
                 avatar.isMoving = isMoving;
                 avatar.isGrounded = isGrounded;
                 avatar.setPosition(Vector3.FromArray(position));

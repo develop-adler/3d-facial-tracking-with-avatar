@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-type EventNames =
+export type EventNames =
     | 'havok:ready'
     | 'multiplayer:avatarProfileCardShow'
     | 'multiplayer:avatarProfileCardHide'
@@ -17,6 +17,9 @@ type EventNames =
     | 'multiplayer:confirmJoinSpace'
     | 'multiplayer:requestBuildSpace'
     | 'multiplayer:confirmBuildSpace'
+    | 'participant:placingObject'
+    | 'participant:placingObjectCancel'
+    | 'participant:placeObject'
     | 'avatar:changeAvatar'
     | 'avatar:set'
     | 'avatar:capsuleBodyCreated'

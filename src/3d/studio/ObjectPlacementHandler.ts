@@ -4,12 +4,14 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import type { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { Observer } from "@babylonjs/core/Misc/observable";
 import { toast } from "react-toastify";
 
 import type Resource from "@/3d/assets/Resource";
+import type Avatar from "@/3d/avatar/Avatar";
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import type { Asset } from "@/models/common";
 import { useStudioStore } from "@/stores/useStudioStore";
@@ -19,6 +21,8 @@ import { PHYSICS_SHAPE_FILTER_GROUPS, TOAST_TOP_OPTIONS } from "constant";
 
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
+import eventBus from "@/eventBus";
+import { PlaceObjectRPC } from "@/models/studio";
 
 const calculateBoundingInfo = (
     rootNode: AbstractMesh,
@@ -59,21 +63,22 @@ const calculateBoundingInfo = (
 
 class ObjectPlacementHandler {
     readonly spaceBuilder: SpaceBuilder;
+    readonly avatar: Avatar;
 
     readonly placementObjectSceneObserver: Observer<Scene>;
-    readonly placementObjectPlaceholder: Mesh;
+    readonly placementObjectPlaceholder: Mesh | InstancedMesh;
     readonly ghostPreviewMaterial: StandardMaterial;
 
     isPlacingObject: boolean = false;
     placementObjectAsset?: Asset;
-    placementObjectRootNode?: AssetContainer;
+    placementObjectContainer?: AssetContainer;
 
-    constructor(spaceBuilder: SpaceBuilder) {
+    constructor(spaceBuilder: SpaceBuilder, avatar: Avatar) {
         this.spaceBuilder = spaceBuilder;
+        this.avatar = avatar;
 
-        this.placementObjectPlaceholder = this._createPlacementObjectPlaceholder();
         this.ghostPreviewMaterial = this._createGhostPreviewMaterial();
-        this.placementObjectPlaceholder.material = this.ghostPreviewMaterial;
+        this.placementObjectPlaceholder = this._createPlacementObjectPlaceholder(); // must be created after material is created
 
         // check at 45FPS
         let elapsedTime = 0;
@@ -94,17 +99,32 @@ class ObjectPlacementHandler {
         return this.spaceBuilder.scene;
     }
 
-    private _createPlacementObjectPlaceholder(): Mesh {
+    private _createPlacementObjectPlaceholder(): Mesh | InstancedMesh {
+        const existing = this.scene.getMeshByName("ghostPreviewBox");
+        if (existing) {
+            const instance = (existing as Mesh).createInstance("ghostPreviewBoxInstance");
+            instance.setEnabled(false);
+            return instance;
+        }
         const placeholder = CreateBox("ghostPreviewBox", { size: 1 }, this.scene);
         placeholder.isPickable = false;
         placeholder.renderingGroupId = 1;
         placeholder.setEnabled(false);
+        placeholder.material = this.ghostPreviewMaterial;
         return placeholder;
     }
 
     private _createGhostPreviewMaterial(): StandardMaterial {
-        // ghostMaterial (shared or per-instance)
-        const ghostMaterial = new StandardMaterial("ghostPreviewMat", this.scene);
+        const existingMaterial = this.scene.getMaterialByName(
+            "ghostPreviewMaterial"
+        );
+        if (existingMaterial) {
+            return existingMaterial as StandardMaterial;
+        }
+        const ghostMaterial = new StandardMaterial(
+            "ghostPreviewMaterial",
+            this.scene
+        );
         ghostMaterial.alpha = 0.4;
         ghostMaterial.diffuseColor = new Color3(0.7, 0.9, 1); // soft bluish
         ghostMaterial.emissiveColor = new Color3(0.2, 0.3, 0.5);
@@ -115,11 +135,23 @@ class ObjectPlacementHandler {
     }
 
     async loadGhostPreviewObject(asset: Asset) {
-        this.placementObjectRootNode?.dispose();
-        this.placementObjectRootNode = undefined;
+        this.placementObjectContainer?.dispose();
+        this.placementObjectContainer = undefined;
 
         this.isPlacingObject = true;
         useStudioStore.getState().setIsPlacingObject(true);
+
+        if (
+            this.avatar.participant.identity ===
+            this.spaceBuilder.multiplayerManager.room.localParticipant.identity
+        ) {
+            eventBus.emitWithEvent<PlaceObjectRPC>("participant:placingObject", {
+                identity:
+                    this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
+                origin: "self",
+                asset,
+            });
+        }
 
         const { id, path } = asset;
 
@@ -171,7 +203,7 @@ class ObjectPlacementHandler {
                 }
             }
             this.placementObjectAsset = asset;
-            this.placementObjectRootNode = container;
+            this.placementObjectContainer = container;
         } catch (error) {
             if (clientSettings.DEBUG)
                 console.error("Error loading studio model:", error);
@@ -191,18 +223,16 @@ class ObjectPlacementHandler {
     }
 
     private _updatePlacementObjectPosition() {
-        if (!this.isPlacingObject || !this.placementObjectRootNode) return;
+        if (!this.isPlacingObject || !this.placementObjectContainer) return;
 
         const physicsEngine = this.scene.getPhysicsEngine();
 
         if (!physicsEngine) return;
 
-        const rootNode = this.placementObjectRootNode.meshes[0];
+        const rootNode = this.placementObjectContainer.meshes[0];
 
-        const forward = this.spaceBuilder.avatar.root.forward.normalize();
-        const startPosition = this.spaceBuilder.avatar
-            .getPosition(true)
-            .add(forward);
+        const forward = this.avatar.root.forward.normalize();
+        const startPosition = this.avatar.getPosition(true).add(forward);
         const rayOrigin = startPosition.add(new Vector3(0, 1, 0)); // in front & slightly above
         const rayDirection = Vector3.Down();
         const rayLength = 3; // length of the ray
@@ -238,32 +268,48 @@ class ObjectPlacementHandler {
     }
 
     placeObject() {
-        if (!this.placementObjectAsset || !this.placementObjectRootNode) {
-            toast("An error occurred while placing object, please try again", TOAST_TOP_OPTIONS);
+        if (!this.placementObjectAsset || !this.placementObjectContainer) {
+            toast(
+                "An error occurred while placing object, please try again",
+                TOAST_TOP_OPTIONS
+            );
             return;
         }
 
         this.isPlacingObject = false;
         useStudioStore.getState().setIsPlacingObject(false);
+        if (
+            this.avatar.participant.identity ===
+            this.spaceBuilder.multiplayerManager.room.localParticipant.identity
+        ) {
+            eventBus.emitWithEvent<PlaceObjectRPC>("participant:placeObject", {
+                identity:
+                    this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
+                origin: "self",
+                asset: this.placementObjectAsset,
+            });
+        }
 
-        const placementPosition = this.placementObjectRootNode.meshes[0].getAbsolutePosition();
+        const placementPosition =
+            this.placementObjectContainer.meshes[0].getAbsolutePosition();
 
-        this.placementObjectRootNode.dispose();
-        this.placementObjectRootNode = undefined;
+        this.placementObjectContainer.dispose();
+        this.placementObjectContainer = undefined;
         this.placementObjectPlaceholder.setEnabled(false);
 
         this.spaceBuilder.addObject(
             this.placementObjectAsset,
             "low",
             undefined,
-            placementPosition?.asArray(),
+            placementPosition?.asArray()
         );
+        this.placementObjectAsset = undefined;
     }
 
     dispose(): void {
         this.isPlacingObject = false;
-        this.placementObjectRootNode?.dispose();
-        this.placementObjectRootNode = undefined;
+        this.placementObjectContainer?.dispose();
+        this.placementObjectContainer = undefined;
         this.placementObjectSceneObserver.remove();
         this.placementObjectPlaceholder.dispose(false, true);
         this.ghostPreviewMaterial.dispose();
