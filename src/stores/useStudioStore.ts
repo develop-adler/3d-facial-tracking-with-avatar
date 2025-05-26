@@ -14,7 +14,7 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 type StudioStore = {
     showContextMenu: boolean;
     contextMenuPosition?: Vector2;
-    currentlySelectedObject?: Mesh | AbstractMesh;
+    selectedObject?: Mesh | AbstractMesh;
     objectTransforms: Record<ObjectTransformType, ObjectTransform>;
     updateObjectTransformsFrom3D: boolean;
     currentGizmoTransformationType: GizmoTransformationType;
@@ -38,15 +38,7 @@ type StudioStore = {
 
 interface SpaceStoreActions {
     setLockedObjects: (lockedObjects: LockedStudioObjects) => void;
-    setSavedStateAndIndex: (
-        savedStates: StudioSavedStates,
-        currentStateIndex: number
-    ) => void;
-    saveStateAndIncrementChange: (
-        savedStates: StudioSavedStates,
-        currentStateIndex: number
-    ) => void;
-    setSelectedObject: (object: Mesh | AbstractMesh | undefined) => void;
+    setSelectedObject: (object?: Mesh | AbstractMesh) => void;
     setObjectTransformsFrom3D: (
         transforms: StudioStore["objectTransforms"]
     ) => void;
@@ -61,6 +53,10 @@ interface SpaceStoreActions {
     ) => void;
     resetTotalChanges: () => void;
     incrementTotalChanges: () => void;
+    saveStateAndIncrementChange: (
+        savedStates: StudioSavedStates,
+        currentStateIndex: number
+    ) => void;
     setJSONDataChanged: () => void;
     setIsPublished: (isPublished: boolean) => void;
     setThumbnailCaptureMode: (isInPostCamera: boolean) => void;
@@ -78,7 +74,7 @@ interface SpaceStoreActions {
 }
 
 export const useStudioStore = create<StudioStore>((set, get) => ({
-    currentlySelectedObject: undefined,
+    selectedObject: undefined,
     objectTransforms: {
         location: [0, 0, 0] as ObjectTransform,
         rotation: [0, 0, 0] as ObjectTransform,
@@ -107,46 +103,19 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     showContextMenu: false,
     isPlacingObject: false,
 
-    setLockedObjects(lockedObjects: LockedStudioObjects) {
+    setLockedObjects(lockedObjects) {
         set({ lockedObjects });
     },
-    setCurrentSkyboxAsset(asset: Asset) {
+    setCurrentSkyboxAsset(asset) {
         set({ currentSkyboxAsset: asset });
     },
-    setSavedStateAndIndex(
-        savedStates: StudioSavedStates,
-        currentStateIndex: number
-    ) {
-        // do [...savedStates] to allow useEffect to detect that it's updated
-        set({
-            savedStates: [...savedStates],
-            currentStateIndex: currentStateIndex,
-        });
+    setSelectedObject(object) {
+        set({ selectedObject: object });
     },
-    saveStateAndIncrementChange(
-        savedStates: StudioSavedStates,
-        currentStateIndex: number
-    ) {
-        // do [...savedStates] to allow useEffect to detect that it's updated
-        set(({ totalChanges }) => ({
-            savedStates: [...savedStates],
-            currentStateIndex: currentStateIndex,
-            totalChanges: totalChanges + 1,
-            isJSONDataChanged: true,
-        }));
-    },
-    setSelectedObject(object: Mesh | AbstractMesh | undefined) {
-        set({ currentlySelectedObject: object });
-    },
-    setObjectTransformsFrom3D(transforms: StudioStore["objectTransforms"]) {
+    setObjectTransformsFrom3D(transforms) {
         set({ updateObjectTransformsFrom3D: true, objectTransforms: transforms });
     },
-    setObjectTransformsForAxis(
-        transformType: ObjectTransformType,
-        axis: "x" | "y" | "z",
-        value: number,
-        uniformScaling?: boolean
-    ) {
+    setObjectTransformsForAxis(transformType, axis, value, uniformScaling?) {
         const { objectTransforms } = get();
 
         // uniform scaling
@@ -183,12 +152,12 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
             objectTransforms: { ...objectTransforms },
         });
     },
-    setGizmoTransformationType(gizmoTransformationType: GizmoTransformationType) {
+    setGizmoTransformationType(gizmoTransformationType) {
         set({ currentGizmoTransformationType: gizmoTransformationType });
     },
-    setPreviewMode(isPreviewMode: boolean) {
-        set({ isPreviewMode });
-    },
+    // setPreviewMode(isPreviewMode) {
+    //     set({ isPreviewMode });
+    // },
     resetTotalChanges() {
         set({
             totalChanges: 0,
@@ -202,37 +171,43 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
             isJSONDataChanged: true,
         }));
     },
+    saveStateAndIncrementChange(savedStates, currentStateIndex) {
+        // do [...savedStates] to allow useEffect to detect that it's updated
+        set(({ totalChanges }) => ({
+            savedStates: [...savedStates],
+            currentStateIndex: currentStateIndex,
+            totalChanges: totalChanges + 1,
+            isJSONDataChanged: true,
+        }));
+    },
     setJSONDataChanged() {
         set({ isJSONDataChanged: true });
     },
-    setIsPublished(isPublished: boolean) {
+    setIsPublished(isPublished) {
         set({ isPublished });
     },
-    setThumbnailCaptureMode(isInPostCamera: boolean) {
+    setThumbnailCaptureMode(isInPostCamera) {
         set({ isInPostCamera });
     },
-    setEditSpawnAreaMode(isEditSpawnAreaMode: boolean) {
+    setEditSpawnAreaMode(isEditSpawnAreaMode) {
         set({ isEditSpawnAreaMode });
     },
-    setIsSavingDraft(isSavingDraft: boolean) {
+    setIsSavingDraft(isSavingDraft) {
         set({ isSavingDraft });
     },
-    setIsThumbnailModal(isThumbnailModal: boolean) {
+    setIsThumbnailModal(isThumbnailModal) {
         set({ isThumbnailModal });
     },
-    // setThumbnails(thumbnails: ThumbnailScreenshots) {
+    // setThumbnails(thumbnails) {
     //     set({ thumbnails });
     // },
-    setScaleAspectRatioLock(scaleAspectRatioLock: boolean) {
+    setScaleAspectRatioLock(scaleAspectRatioLock) {
         set({ scaleAspectRatioLock });
     },
-    setShowContextMenu(
-        showContextMenu: boolean,
-        contextMenuPosition: Vector2 | undefined
-    ) {
+    setShowContextMenu(showContextMenu, contextMenuPosition) {
         set({ showContextMenu, contextMenuPosition });
     },
-    setIsPlacingObject(isPlacingObject: boolean) {
+    setIsPlacingObject(isPlacingObject) {
         set({ isPlacingObject });
     },
 }));

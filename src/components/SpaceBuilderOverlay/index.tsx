@@ -1,11 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { type FC } from "react";
 
-import ItemsPanel, { type Category } from "@/components/SpaceBuilderOverlay/components/ItemsPanel";
-import PlaceItemOverlay from "@/components/SpaceBuilderOverlay/components/PlaceItemOverlay";
-import TransformMenu from "@/components/SpaceBuilderOverlay/components/TransformMenu";
-// import PropertiesPanel from "@/components/SpaceBuilderOverlay/components/PropertiesPanel";
+import { type Category } from "@/components/SpaceBuilderOverlay/components/ItemsPanel";
+
+const ItemsPanel = dynamic(() => import('@/components/SpaceBuilderOverlay/components/ItemsPanel'), {
+    ssr: false,
+});
+const PlaceItemOverlay = dynamic(() => import('@/components/SpaceBuilderOverlay/components/PlaceItemOverlay'), {
+    ssr: false,
+});
+const TransformMenu = dynamic(() => import('@/components/SpaceBuilderOverlay/components/TransformMenu'), {
+    ssr: false,
+});
+// const PropertiesPanel = dynamic(() => import('@/components/SpaceBuilderOverlay/components/PropertiesPanel'), {
+//     ssr: false,
+// });
 
 type Props = {
     categories?: Category[];

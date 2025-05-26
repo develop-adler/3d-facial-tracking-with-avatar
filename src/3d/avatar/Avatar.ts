@@ -15,7 +15,6 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import {
   PhysicsShapeBox,
-  PhysicsShapeCapsule,
   PhysicsShapeContainer,
   PhysicsShapeSphere,
 } from "@babylonjs/core/Physics/v2/physicsShape";
@@ -114,7 +113,6 @@ const DEFAULT_AVATAR_ID = "67fe6f7713b3fb7e8aa0328c";
 
 class Avatar {
   readonly coreScene: CoreScene;
-  readonly scene: Scene;
   readonly participant: LocalParticipant | RemoteParticipant;
   gender: AvatarGender;
   readonly isSelf: boolean;
@@ -201,15 +199,11 @@ class Avatar {
     participant: LocalParticipant | RemoteParticipant,
     gender: AvatarGender,
     isSelf: boolean = false,
-    physicsShapes?: {
-      normal: PhysicsShapeCapsule;
-      crouch: PhysicsShapeCapsule;
-    },
     position?: Vector3 | ObjectTransform,
     rotation?: Quaternion | ObjectQuaternion
   ) {
     this.coreScene = coreScene;
-    this.scene = coreScene.scene;
+
     this.gender = gender;
     this.participant = participant;
     this.isSelf = isSelf;
@@ -262,6 +256,9 @@ class Avatar {
     // this.physicsViewer = new PhysicsViewer(scene);
   }
 
+  get scene(): Scene {
+    return this.coreScene.scene;
+  }
   // get highlightLayer(): HighlightLayer | undefined {
   //   return this.post?.atom3DObjects?.highlightLayer;
   // }

@@ -11,6 +11,7 @@ import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { UtilityLayerRenderer } from "@babylonjs/core/Rendering/utilityLayerRenderer";
 import { GridMaterial } from "@babylonjs/materials";
+import { toast } from "react-toastify";
 
 import type Resource from "@/3d/assets/Resource";
 import type Avatar from "@/3d/avatar/Avatar";
@@ -29,9 +30,12 @@ import eventBus from "@/eventBus";
 import { isFirefox, isMobile, isSafari } from "@/utils/browserUtils";
 
 import { clientSettings } from "clientSettings";
-import { STUDIO_OBJECT_TYPE_DICTIONARY } from "constant";
+import { STUDIO_OBJECT_TYPE_DICTIONARY, TOAST_TOP_OPTIONS } from "constant";
 
-import type { AssetContainer, InstantiatedEntries } from "@babylonjs/core/assetContainer";
+import type {
+    AssetContainer,
+    InstantiatedEntries,
+} from "@babylonjs/core/assetContainer";
 import {
     KeyboardEventTypes,
     type KeyboardInfo,
@@ -83,10 +87,10 @@ class SpaceBuilder {
 
         this.keyboardHandler = new KeyboardHandler(this);
         this.saveStateHandler = new SaveStateHandler(this);
-        this.gizmoHandler = new GizmoHandler(this);
         this.objectHighlightHandler = new ObjectHighlightHandler(this);
-        this.objectSelectHandler = new ObjectSelectHandler(this);
         this.objectPlacementHandler = new ObjectPlacementHandler(this);
+        this.objectSelectHandler = new ObjectSelectHandler(this);
+        this.gizmoHandler = new GizmoHandler(this); // has to be created after ObjectSelectHandler
 
         this.keyboardObservable = this._initKeyboardHandler();
 
@@ -451,7 +455,10 @@ class SpaceBuilder {
     }
 
     pasteObjects() {
-        if (!this.copiedMesh) return;
+        if (!this.copiedMesh) {
+            toast("Nothing to paste, copy an object first.", TOAST_TOP_OPTIONS);
+            return;
+        }
         this.duplicateObjects(this.copiedMesh);
     }
 
@@ -465,99 +472,100 @@ class SpaceBuilder {
         )
             return;
 
-        if (meshToClone === this.objectSelectHandler.selectedMeshGroup) {
-            const children = meshToClone.getChildren();
-            const clones: Array<AbstractMesh> = [];
-            for (const child of children as Array<AbstractMesh>) {
-                const clone = child.clone(
-                    child.name + "_" + this.currentObjects.length,
+        switch (true) {
+            // if is a group node, clone all children
+            case meshToClone === this.objectSelectHandler.selectedMeshGroup: {
+                const children = meshToClone.getChildren();
+                const clones: Array<AbstractMesh> = [];
+                for (const child of children as Array<AbstractMesh>) {
+                    const clone = child.clone(
+                        child.name + "_" + this.currentObjects.length,
+                        // eslint-disable-next-line unicorn/no-null
+                        null,
+                        false
+                    )!;
+                    clone.metadata = child.metadata;
+
+                    clones.push(clone);
+                    this.currentObjects.push(clone);
+                }
+
+                // remove old children from group node and set new children
+                // eslint-disable-next-line unicorn/no-null
+                for (const child of children) (child as AbstractMesh).setParent(null);
+                for (const clone of clones)
+                    clone.setParent(this.objectSelectHandler.selectedMeshGroup);
+
+                this.gizmoHandler.attachGizmoToGroupNode();
+                this.objectSelectHandler.setGPUPickerPickList();
+
+                // show outline for all objects in group
+                this.objectHighlightHandler.showObjectOutlineForGroup(
+                    this.objectSelectHandler.selectedMeshGroup.getChildren()
+                );
+
+                this.saveStateHandler.saveState("duplicate", {
+                    meshes: clones,
+                    priorSelectedMeshes: children,
+                });
+
+                // this.onObjectDuplicateObservable.notifyObservers(clones);
+
+                break;
+            }
+            // if is picture frame and don't have image content, don't clone
+            case meshToClone.metadata.subType === "picture_frame" &&
+                !meshToClone.metadata.imageContent: {
+                    (async () => {
+                        const asset = await this.coreScene.coreEngine.loadAsset(
+                            meshToClone.metadata.id,
+                            meshToClone.metadata.type
+                        );
+                        if (!asset) {
+                            if (clientSettings.DEBUG)
+                                console.error(
+                                    `Failed to load studio painting asset ${meshToClone.metadata.id}`
+                                );
+                            return;
+                        }
+                        this.addObject(
+                            asset,
+                            isMobile() ? "low" : "high",
+                            false,
+                            meshToClone.position.asArray(),
+                            meshToClone.rotation.asArray(),
+                            meshToClone.scaling.asArray(),
+                            undefined,
+                            true
+                        );
+                    })();
+
+                    break;
+                }
+            default: {
+                const clone = meshToClone.clone(
+                    meshToClone.name + "_" + this.currentObjects.length,
                     // eslint-disable-next-line unicorn/no-null
                     null,
                     false
                 )!;
-                clone.metadata = child.metadata;
+                clone.metadata = meshToClone.metadata;
 
-                clones.push(clone);
+                this.objectHighlightHandler.hideObjectOutline(meshToClone);
+                this.gizmoHandler.gizmoManager.attachToMesh(clone);
+
                 this.currentObjects.push(clone);
+
+                this.objectSelectHandler.setGPUPickerPickList();
+
+                this.saveStateHandler.saveState("duplicate", {
+                    mesh: clone,
+                    priorSelectedMesh: meshToClone,
+                });
+
+                break;
             }
-
-            // remove old children from group node, set new children
-            // eslint-disable-next-line unicorn/no-null
-            for (const child of children) (child as AbstractMesh).setParent(null);
-            for (const clone of clones)
-                clone.setParent(this.objectSelectHandler.selectedMeshGroup);
-
-            this.gizmoHandler.attachGizmoToGroupNode();
-            this.objectSelectHandler.setGPUPickerPickList();
-
-            // show outline for all objects in group
-            this.objectHighlightHandler.showObjectOutlineForGroup(
-                this.objectSelectHandler.selectedMeshGroup.getChildren()
-            );
-
-            this.saveStateHandler.saveState("duplicate", {
-                meshes: clones,
-                priorSelectedMeshes: children,
-            });
-
-            // this.onObjectDuplicateObservable.notifyObservers(clones);
-
-            return;
         }
-
-        // if is picture frame and don't have image content, don't clone
-        if (
-            meshToClone.metadata.subType === "picture_frame" &&
-            !meshToClone.metadata.imageContent
-        ) {
-            (async () => {
-                const asset = await this.coreScene.coreEngine.loadAsset(
-                    meshToClone.metadata.id,
-                    meshToClone.metadata.type
-                );
-                if (!asset) {
-                    if (clientSettings.DEBUG)
-                        console.error(
-                            `Failed to load studio painting asset ${meshToClone.metadata.id}`
-                        );
-                    return;
-                }
-                this.addObject(
-                    asset,
-                    isMobile() ? "low" : "high",
-                    false,
-                    meshToClone.position.asArray(),
-                    meshToClone.rotation.asArray(),
-                    meshToClone.scaling.asArray(),
-                    undefined,
-                    true
-                );
-            })();
-
-            return;
-        }
-
-        const clone = meshToClone.clone(
-            meshToClone.name + "_" + this.currentObjects.length,
-            // eslint-disable-next-line unicorn/no-null
-            null,
-            false
-        )!;
-        clone.metadata = meshToClone.metadata;
-
-        this.objectHighlightHandler.hideObjectOutline(meshToClone);
-        this.gizmoHandler.gizmoManager.attachToMesh(clone);
-
-        this.currentObjects.push(clone);
-
-        this.objectSelectHandler.setGPUPickerPickList();
-
-        this.saveStateHandler.saveState("duplicate", {
-            mesh: clone,
-            priorSelectedMesh: meshToClone,
-        });
-
-        // this.onObjectDuplicateObservable.notifyObservers(clone);
     }
 
     deleteObjects() {

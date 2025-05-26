@@ -49,7 +49,6 @@ type ImportedObject = {
 
 class Atom {
     readonly coreScene: CoreScene;
-    readonly scene: Scene;
     readonly skybox: Mesh;
     readonly defaultMaterial: PBRMaterial;
 
@@ -76,7 +75,7 @@ class Atom {
 
     constructor(coreScene: CoreScene) {
         this.coreScene = coreScene;
-        this.scene = coreScene.scene;
+
         this.isPhysicsGenerated = false;
         this.isAtomFinishLoading = false;
         this.isLoadingLODs = false;
@@ -92,6 +91,10 @@ class Atom {
 
         this.skybox = this._createSkyboxMesh();
         this.defaultMaterial = this._createDefaultMaterial(this.scene);
+    }
+
+    get scene(): Scene {
+        return this.coreScene.scene;
     }
 
     private _createSkyboxMesh() {

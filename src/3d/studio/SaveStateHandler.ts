@@ -6,6 +6,7 @@ import { v4 } from "uuid";
 
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import type { StudioSavedStates, StudioSavedStateType } from "@/models/studio";
+import { useStudioStore } from "@/stores/useStudioStore";
 
 import { clientSettings } from "clientSettings";
 
@@ -62,6 +63,8 @@ class SaveStateHandler {
             this.savedStates[this.currentStateIndex].name = data.name;
         }
 
+        useStudioStore.getState().saveStateAndIncrementChange(this.savedStates, this.currentStateIndex);
+
         // truncate all after current index
         if (this.currentStateIndex < this.savedStates.length - 1) {
             this.savedStates.splice(this.currentStateIndex + 1);
@@ -69,6 +72,21 @@ class SaveStateHandler {
 
         if (this.savedStates.length < SaveStateHandler.MAX_UNDO_REDO_COUNT) {
             this.lastStateIndex = this.currentStateIndex++;
+        }
+
+        switch (type) {
+            case "select": {
+                useStudioStore.getState().setSelectedObject(data.mesh);
+                break;
+            }
+            case "deselect": {
+                useStudioStore.getState().setSelectedObject();
+                break;
+            }
+            case "delete": {
+                useStudioStore.getState().setSelectedObject();
+                break;
+            }
         }
 
         if (clientSettings.DEBUG) console.log("Saved states:", this.savedStates);
@@ -430,6 +448,7 @@ class SaveStateHandler {
         this.currentStateIndex = 0;
         this.lastStateIndex = -1;
         // this.onSaveStateObservable.clear();
+        useStudioStore.getState().resetTotalChanges();
     }
 
 }

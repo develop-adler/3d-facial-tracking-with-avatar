@@ -20,7 +20,6 @@ import {
 import AvatarController from "@/3d/avatar/AvatarController";
 import AvatarFaceView from "@/3d/avatar/AvatarFaceView";
 import type CoreScene from "@/3d/core/CoreScene";
-import SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import eventBus from "@/eventBus";
 import type { AvatarGender } from "@/models/3d";
 import { useAvatarStore } from "@/stores/useAvatarStore";
@@ -62,7 +61,6 @@ class MultiplayerManager {
     positionFacialCameraObserver?: Observer<Scene>;
 
     avatarView?: AvatarFaceView;
-    spaceBuilder?: SpaceBuilder;
 
     constructor(room: Room, coreScene: CoreScene) {
         this.room = room;

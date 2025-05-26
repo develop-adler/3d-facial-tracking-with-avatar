@@ -13,6 +13,7 @@ import type {
   ObjectAbsoluteTransforms,
 } from "@/models/3d";
 import type { StudioMeshMetaData, StudioObjectSubType, StudioObjectType } from "@/models/studio";
+import { useStudioStore } from "@/stores/useStudioStore";
 import { isMobile } from "@/utils/browserUtils";
 import { areArraysEqual } from "@/utils/functionUtils";
 
@@ -100,7 +101,7 @@ class GizmoHandler {
 
     gizmoManager.utilityLayer.utilityLayerScene.autoClearDepthAndStencil = true;
 
-    // set custom gizmo meshes
+    // doing this to set custom gizmo meshes
     gizmoManager.positionGizmoEnabled = true;
     gizmoManager.rotationGizmoEnabled = true;
     gizmoManager.scaleGizmoEnabled = true;
@@ -656,6 +657,8 @@ class GizmoHandler {
     this.gizmoManager.positionGizmoEnabled = gizmoType === "location";
     this.gizmoManager.rotationGizmoEnabled = gizmoType === "rotation";
     this.gizmoManager.scaleGizmoEnabled = gizmoType === "scale";
+
+    useStudioStore.getState().setGizmoTransformationType(gizmoType);
 
     if (
       this.gizmoManager.attachedMesh?.metadata &&

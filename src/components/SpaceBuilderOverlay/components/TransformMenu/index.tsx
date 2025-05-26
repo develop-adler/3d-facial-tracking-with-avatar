@@ -1,36 +1,36 @@
 "use client";
 
-import Image from 'next/image';
-import { type FC, type MouseEvent, useEffect } from 'react';
+import Image from "next/image";
+import { type FC, type MouseEvent, useEffect } from "react";
 
-import * as S from './styles';
+import * as S from "./styles";
 
-import type { GizmoTransformationType } from '@/models/3d';
-import { useLiveKitStore } from '@/stores/useLiveKitStore';
-import { useStudioStore } from '@/stores/useStudioStore';
+import type { GizmoTransformationType } from "@/models/3d";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
+import { useStudioStore } from "@/stores/useStudioStore";
 
 // import studioDuplicateIcon from '#/static/icons/studioDuplicateIcon.svg';
-import StudioMoveIcon from '#/static/icons/studioMoveIcon.svg';
+import StudioMoveIcon from "#/static/icons/studioMoveIcon.svg";
 // import StudioPanIcon from '#/static/icons/studioPanIcon.svg';
-import StudioRotateIcon from '#/static/icons/studioRotateIcon.svg';
-import StudioScaleIcon from '#/static/icons/studioScaleIcon.svg';
+import StudioRotateIcon from "#/static/icons/studioRotateIcon.svg";
+import StudioScaleIcon from "#/static/icons/studioScaleIcon.svg";
 
 const TransformMenu: FC = () => {
-    const currentlySelectedObject = useStudioStore(
-        state => state.currentlySelectedObject
+    const selectedObject = useStudioStore(
+        (state) => state.selectedObject
     );
     const currentGizmoTransformationType = useStudioStore(
-        state => state.currentGizmoTransformationType
+        (state) => state.currentGizmoTransformationType
     );
     const setGizmoTransformationType = useStudioStore(
-        state => state.setGizmoTransformationType
+        (state) => state.setGizmoTransformationType
     );
 
-    const spaceBuilder = useLiveKitStore(state => state.spaceBuilder);
+    const spaceBuilder = useLiveKitStore((state) => state.spaceBuilder);
 
     const MenuItemsList = [
         {
-            id: 'location',
+            id: "location",
             title: "Location",
             icon: StudioMoveIcon,
             properties: {
@@ -39,7 +39,7 @@ const TransformMenu: FC = () => {
             },
         },
         {
-            id: 'rotation',
+            id: "rotation",
             title: "Rotation",
             icon: StudioRotateIcon,
             properties: {
@@ -48,7 +48,7 @@ const TransformMenu: FC = () => {
             },
         },
         {
-            id: 'scale',
+            id: "scale",
             title: "Scale",
             icon: StudioScaleIcon,
             properties: {
@@ -68,8 +68,11 @@ const TransformMenu: FC = () => {
     ];
 
     const handleMenuItemSelection = (e: MouseEvent<HTMLDivElement>) => {
-        if (e.currentTarget.id === 'duplicate' && currentlySelectedObject !== null) {
-            spaceBuilder?.duplicateObjects(currentlySelectedObject);
+        if (
+            e.currentTarget.id === "duplicate" &&
+            selectedObject !== null
+        ) {
+            spaceBuilder?.duplicateObjects(selectedObject);
             return;
         }
         setGizmoTransformationType(e.currentTarget.id as GizmoTransformationType);
@@ -79,18 +82,26 @@ const TransformMenu: FC = () => {
         spaceBuilder?.gizmoHandler.setGizmoType(currentGizmoTransformationType);
     }, [spaceBuilder, currentGizmoTransformationType]);
 
+    // eslint-disable-next-line unicorn/no-null
+    if (!selectedObject) return null;
+
     return (
         <S.MenuItemsBackground>
             <S.MenuItemsContainer>
-                {MenuItemsList.map(item => {
+                {MenuItemsList.map((item) => {
                     return (
                         <S.MenuItemButton
                             key={item.id}
                             id={item.id}
                             isSelected={currentGizmoTransformationType === item.id}
-                            onClick={handleMenuItemSelection}>
+                            onClick={handleMenuItemSelection}
+                        >
                             <S.MenuItemIcon>
-                                <Image src={item.icon} alt={item.title + " icon"} />
+                                <Image
+                                    src={item.icon}
+                                    alt={item.title + " icon"}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                />
                             </S.MenuItemIcon>
                         </S.MenuItemButton>
                     );
