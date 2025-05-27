@@ -13,7 +13,9 @@ import { toast } from "react-toastify";
 import type Resource from "@/3d/assets/Resource";
 import type Avatar from "@/3d/avatar/Avatar";
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
+import eventBus from "@/eventBus";
 import type { Asset } from "@/models/common";
+import { PlaceObjectRPC } from "@/models/multiplayer";
 import { useStudioStore } from "@/stores/useStudioStore";
 
 import { clientSettings } from "clientSettings";
@@ -21,8 +23,6 @@ import { PHYSICS_SHAPE_FILTER_GROUPS, TOAST_TOP_OPTIONS } from "constant";
 
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
-import eventBus from "@/eventBus";
-import { PlaceObjectRPC } from "@/models/studio";
 
 const calculateBoundingInfo = (
     rootNode: AbstractMesh,
@@ -73,12 +73,18 @@ class ObjectPlacementHandler {
     placementObjectAsset?: Asset;
     placementObjectContainer?: AssetContainer;
 
+    private _isSelf: boolean;
+
     constructor(spaceBuilder: SpaceBuilder, avatar: Avatar) {
         this.spaceBuilder = spaceBuilder;
         this.avatar = avatar;
 
         this.ghostPreviewMaterial = this._createGhostPreviewMaterial();
         this.placementObjectPlaceholder = this._createPlacementObjectPlaceholder(); // must be created after material is created
+
+        this._isSelf =
+            this.avatar.participant.identity ===
+            this.spaceBuilder.multiplayerManager.room.localParticipant.identity;
 
         // check at 45FPS
         let elapsedTime = 0;
@@ -139,12 +145,9 @@ class ObjectPlacementHandler {
         this.placementObjectContainer = undefined;
 
         this.isPlacingObject = true;
-        useStudioStore.getState().setIsPlacingObject(true);
 
-        if (
-            this.avatar.participant.identity ===
-            this.spaceBuilder.multiplayerManager.room.localParticipant.identity
-        ) {
+        if (this._isSelf) {
+            useStudioStore.getState().setIsPlacingObject(true);
             eventBus.emitWithEvent<PlaceObjectRPC>("participant:placingObject", {
                 identity:
                     this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
@@ -277,11 +280,8 @@ class ObjectPlacementHandler {
         }
 
         this.isPlacingObject = false;
-        useStudioStore.getState().setIsPlacingObject(false);
-        if (
-            this.avatar.participant.identity ===
-            this.spaceBuilder.multiplayerManager.room.localParticipant.identity
-        ) {
+        if (this._isSelf) {
+            useStudioStore.getState().setIsPlacingObject(false);
             eventBus.emitWithEvent<PlaceObjectRPC>("participant:placeObject", {
                 identity:
                     this.spaceBuilder.multiplayerManager.room.localParticipant.identity,

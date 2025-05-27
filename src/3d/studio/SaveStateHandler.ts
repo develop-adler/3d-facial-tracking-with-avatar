@@ -21,20 +21,33 @@ import { clientSettings } from "clientSettings";
 import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
+import type { SaveStateRPC } from "@/models/multiplayer";
+import type { LocalParticipant, RemoteParticipant } from "livekit-client";
 
 class SaveStateHandler {
     readonly spaceBuilder: SpaceBuilder;
+    readonly participant: LocalParticipant | RemoteParticipant;
+    keyboardObservable?: Observer<KeyboardInfo>;
 
     savedStates: StudioSavedStates = [];
     currentStateIndex: number = 0;
-    lastStateIndex: number = -1;
-    readonly keyboardObservable: Observer<KeyboardInfo>;
+
+    private _isSelf: boolean;
 
     static readonly MAX_UNDO_REDO_COUNT = 50;
 
-    constructor(spaceBuilder: SpaceBuilder) {
+    constructor(
+        spaceBuilder: SpaceBuilder,
+        participant: LocalParticipant | RemoteParticipant
+    ) {
         this.spaceBuilder = spaceBuilder;
-        this.keyboardObservable = this._initKeyboardHandler();
+        this.participant = participant;
+        this._isSelf =
+            this.participant.identity ===
+            this.spaceBuilder.multiplayerManager.room.localParticipant.identity;
+        if (this._isSelf) {
+            this.keyboardObservable = this._initKeyboardHandler();
+        }
     }
     get scene(): Scene {
         return this.spaceBuilder.scene;
@@ -65,10 +78,6 @@ class SaveStateHandler {
             this.savedStates.splice(this.currentStateIndex + 1);
         }
 
-        if (this.savedStates.length < SaveStateHandler.MAX_UNDO_REDO_COUNT) {
-            this.lastStateIndex = this.currentStateIndex;
-        }
-
         // processing for UI
         if (Object.hasOwn(data, "mesh") && data.mesh) {
             const mesh = this.scene.getMeshByUniqueId(data.mesh);
@@ -83,20 +92,22 @@ class SaveStateHandler {
 
         this.currentStateIndex++;
 
-        useStudioStore
-            .getState()
-            .saveStateAndIncrementChange(this.savedStates, this.currentStateIndex);
-        eventBus.emitWithEvent("studio:saveState", {
-            savedStates: this.savedStates,
-            currentStateIndex: this.currentStateIndex,
-        });
+        if (this._isSelf) {
+            useStudioStore
+                .getState()
+                .saveStateAndIncrementChange(this.savedStates, this.currentStateIndex);
+            eventBus.emitWithEvent<SaveStateRPC>("studio:saveState", {
+                identity:
+                    this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
+                origin: "self",
+                savedStates: this.savedStates,
+                currentStateIndex: this.currentStateIndex,
+            });
+        }
 
-        if (clientSettings.DEBUG) console.log("Saved states:", this.savedStates);
-
-        // this.onSaveStateObservable.notifyObservers({
-        //     savedStates: this.savedStates,
-        //     currentStateIndex: this.currentStateIndex,
-        // });
+        if (clientSettings.DEBUG) {
+            console.log(this.participant.identity, "saved states:", this.savedStates);
+        }
 
         // this.renderScene();
     }
@@ -108,8 +119,9 @@ class SaveStateHandler {
 
         const step = this.savedStates[lastStep];
 
-        if (clientSettings.DEBUG) console.log("undo:", step);
-
+        if (clientSettings.DEBUG) {
+            console.log(this.participant.identity, "undo:", step);
+        }
         // revert changes based on step type
         switch (step.type) {
             case "select": {
@@ -356,6 +368,16 @@ class SaveStateHandler {
 
         this.currentStateIndex--;
 
+        if (this._isSelf) {
+            eventBus.emitWithEvent<SaveStateRPC>("studio:undo", {
+                identity:
+                    this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
+                origin: "self",
+                savedStates: this.savedStates,
+                currentStateIndex: this.currentStateIndex,
+            });
+        }
+
         // this.renderScene();
     }
 
@@ -368,8 +390,9 @@ class SaveStateHandler {
 
         const step = this.savedStates[this.currentStateIndex];
 
-        if (clientSettings.DEBUG) console.log("redo:", step);
-
+        if (clientSettings.DEBUG) {
+            console.log(this.participant.identity, "redo:", step);
+        }
         // revert changes based on step type
         switch (step.type) {
             case "select": {
@@ -575,6 +598,16 @@ class SaveStateHandler {
 
         this.currentStateIndex++;
 
+        if (this._isSelf) {
+            eventBus.emitWithEvent<SaveStateRPC>("studio:redo", {
+                identity:
+                    this.spaceBuilder.multiplayerManager.room.localParticipant.identity,
+                origin: "self",
+                savedStates: this.savedStates,
+                currentStateIndex: this.currentStateIndex,
+            });
+        }
+
         // this.renderScene();
     }
 
@@ -616,12 +649,11 @@ class SaveStateHandler {
     }
 
     dispose() {
-        this.keyboardObservable.remove();
+        this.keyboardObservable?.remove();
+        this.keyboardObservable = undefined;
         this.savedStates = [];
         this.currentStateIndex = 0;
-        this.lastStateIndex = -1;
-        // this.onSaveStateObservable.clear();
-        useStudioStore.getState().resetTotalChanges();
+        if (this._isSelf) useStudioStore.getState().resetTotalChanges();
     }
 }
 

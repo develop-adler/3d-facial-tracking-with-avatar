@@ -1,4 +1,6 @@
-import type { AvatarGender, ObjectQuaternion, ObjectTransform } from "./3d";
+import type { AvatarGender, ObjectQuaternion, ObjectTransform } from "@/models/3d";
+import type { Asset } from "@/models/common";
+import type { StudioSavedStates } from "@/models/studio";
 
 export type RoomAndName = {
     room: string;
@@ -47,3 +49,12 @@ export type ConfirmRequest = {
     identity: string;
     confirm: boolean;
 };
+
+export type PlaceObjectRPC = UserRequest & {
+  asset: Asset;
+}
+
+export type SaveStateRPC = UserRequest & {
+  savedStates: StudioSavedStates;
+  currentStateIndex: number;
+}

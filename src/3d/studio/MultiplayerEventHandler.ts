@@ -2,20 +2,29 @@ import type { Room, RpcInvocationData } from "livekit-client";
 
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import ObjectPlacementHandler from "@/3d/studio/ObjectPlacementHandler";
+import SaveStateHandler from "@/3d/studio/SaveStateHandler";
 import eventBus, { EventNames } from "@/eventBus";
-import type { PlaceObjectRPC, StudioSavedStates } from "@/models/studio";
+import type { PlaceObjectRPC, SaveStateRPC, UserRequest } from "@/models/multiplayer";
 
 class MultiplayerEventHandler {
     readonly spaceBuilder: SpaceBuilder;
 
     /** Key: participant identity (string), value: ObjectPlacementHandler */
-    placeObjectHandlers: Map<string, ObjectPlacementHandler>;
-    remoteAvatarSavedStates: Map<string, StudioSavedStates>;
+    remotePlaceObjectHandlers: Map<string, ObjectPlacementHandler>;
+    remoteSaveStateHandlers: Map<string, SaveStateHandler>;
 
     constructor(spaceBuilder: SpaceBuilder) {
         this.spaceBuilder = spaceBuilder;
-        this.placeObjectHandlers = new Map<string, ObjectPlacementHandler>();
-        this.remoteAvatarSavedStates = new Map<string, StudioSavedStates>();
+        this.remotePlaceObjectHandlers = new Map<string, ObjectPlacementHandler>();
+        this.remoteSaveStateHandlers = new Map<string, SaveStateHandler>();
+
+        for (const [, remoteParticipant] of this.spaceBuilder.multiplayerManager.room.remoteParticipants) {
+            const saveStateHandler = new SaveStateHandler(
+                this.spaceBuilder,
+                remoteParticipant
+            );
+            this.remoteSaveStateHandlers.set(remoteParticipant.identity, saveStateHandler);
+        }
 
         this.init();
     }
@@ -36,11 +45,28 @@ class MultiplayerEventHandler {
             "participantPlaceObject",
             this._placeObjectRPC
         );
+        this._registerEvent(
+            "studio:saveState",
+            this._saveStudioStateEventListener,
+            "participantSaveStudioState",
+            this._saveStudioStateRPC
+        );
+        this._registerEvent(
+            "studio:undo",
+            this._undoStudioEventListener,
+            "participantUndoStudio",
+            this._undoStudioStateRPC
+        );
+        this._registerEvent(
+            "studio:redo",
+            this._redoStudioEventListener,
+            "participantRedoStudio",
+            this._redoStudioStateRPC
+        );
     }
 
     /**
-     * Registers an event listener and an RPC method for placing objects in the studio.
-     * This method is used to handle events with eventBus and to register the corresponding RPC methods.
+     * Registers an event listener and an RPC method.
      * @param eventName - The name of the event to listen for.
      * @param eventListener - The listener function that will be called when the event is triggered.
      * @param rpcMethod - The name of the RPC method to register.
@@ -63,6 +89,42 @@ class MultiplayerEventHandler {
         }
     }
 
+    private async _broadcastEvent(
+        method: string,
+        request: UserRequest
+    ) {
+        if (request.origin === "other" && this.room.remoteParticipants.size === 0)
+            return;
+
+        for (const [, participant] of this.room.remoteParticipants) {
+            try {
+                await this.room.localParticipant.performRpc({
+                    destinationIdentity: participant.identity,
+                    method,
+                    payload: JSON.stringify(request),
+                });
+            } catch {
+                // skip errors
+            }
+        }
+    }
+
+    private _saveStudioStateEventListener(request: SaveStateRPC) {
+        this._broadcastEvent("participantSaveStudioState", request);
+    }
+    private _undoStudioEventListener(request: SaveStateRPC) {
+        this._broadcastEvent("participantUndoStudio", request);
+    }
+    private _redoStudioEventListener(request: SaveStateRPC) {
+        this._broadcastEvent("participantRedoStudio", request);
+    }
+    private _placingObjectEventListener(request: PlaceObjectRPC) {
+        this._broadcastEvent("participantPlacingObject", request);
+    }
+    private _placeObjectEventListener(request: PlaceObjectRPC) {
+        this._broadcastEvent("participantPlaceObject", request);
+    }
+
     /**
      * RPC method to handle placing objects in the studio.
      * This method is called by remote participants when they place an object.
@@ -76,7 +138,7 @@ class MultiplayerEventHandler {
         );
         if (!remoteAvatar) return "error" as string;
 
-        let existingPlacementHandler = this.placeObjectHandlers.get(
+        let existingPlacementHandler = this.remotePlaceObjectHandlers.get(
             data.callerIdentity
         );
         if (!existingPlacementHandler) {
@@ -84,7 +146,7 @@ class MultiplayerEventHandler {
                 this.spaceBuilder,
                 remoteAvatar
             );
-            this.placeObjectHandlers.set(
+            this.remotePlaceObjectHandlers.set(
                 data.callerIdentity,
                 existingPlacementHandler
             );
@@ -111,10 +173,8 @@ class MultiplayerEventHandler {
         );
         if (!remoteAvatar) return "error" as string;
 
-        const placementHandler = this.placeObjectHandlers.get(data.callerIdentity);
-        if (!placementHandler) {
-            return "error" as string;
-        }
+        const placementHandler = this.remotePlaceObjectHandlers.get(data.callerIdentity);
+        if (!placementHandler) return "error" as string;
 
         try {
             placementHandler.placeObject();
@@ -125,40 +185,50 @@ class MultiplayerEventHandler {
         return "ok" as string;
     }
 
-    private _placingObjectEventListener(request: PlaceObjectRPC) {
-        this._broadcastPlaceObjectEvent("participantPlacingObject", request);
+    private async _saveStudioStateRPC(data: RpcInvocationData) {
+        const handler = this.remoteSaveStateHandlers.get(data.callerIdentity);
+        if (!handler) return "error" as string;
+        const payload = JSON.parse(data.payload) as SaveStateRPC;
+        handler.savedStates = payload.savedStates;
+        handler.currentStateIndex = payload.currentStateIndex;
+        return "ok" as string;
     }
-
-    private _placeObjectEventListener(request: PlaceObjectRPC) {
-        this._broadcastPlaceObjectEvent("participantPlaceObject", request);
+    private async _undoStudioStateRPC(data: RpcInvocationData) {
+        const handler = this.remoteSaveStateHandlers.get(data.callerIdentity);
+        if (!handler) return "error" as string;
+        handler.undo();
+        const payload = JSON.parse(data.payload) as SaveStateRPC;
+        handler.savedStates = payload.savedStates;
+        handler.currentStateIndex = payload.currentStateIndex;
+        return "ok" as string;
     }
-
-    private async _broadcastPlaceObjectEvent(
-        method: string,
-        request: PlaceObjectRPC
-    ) {
-        if (request.origin === "other" && this.room.remoteParticipants.size === 0)
-            return;
-
-        for (const [, participant] of this.room.remoteParticipants) {
-            try {
-                await this.room.localParticipant.performRpc({
-                    destinationIdentity: participant.identity,
-                    method,
-                    payload: JSON.stringify(request),
-                });
-            } catch {
-                // skip errors
-            }
-        }
+    private async _redoStudioStateRPC(data: RpcInvocationData) {
+        const handler = this.remoteSaveStateHandlers.get(data.callerIdentity);
+        if (!handler) return "error" as string;
+        handler.redo();
+        const payload = JSON.parse(data.payload) as SaveStateRPC;
+        handler.savedStates = payload.savedStates;
+        handler.currentStateIndex = payload.currentStateIndex;
+        return "ok" as string;
     }
 
     dispose() {
         eventBus.removeAllListeners("participant:placingObject");
         eventBus.removeAllListeners("participant:placeObject");
+        eventBus.removeAllListeners("studio:saveState");
+        eventBus.removeAllListeners("studio:undo");
+        eventBus.removeAllListeners("studio:redo");
+
         this.room.unregisterRpcMethod("participantPlacingObject");
         this.room.unregisterRpcMethod("participantPlaceObject");
-        for (const [, handler] of this.placeObjectHandlers) handler.dispose();
+        this.room.unregisterRpcMethod("participantSaveStudioState");
+        this.room.unregisterRpcMethod("participantUndoStudio");
+        this.room.unregisterRpcMethod("participantRedoStudio");
+
+        for (const [, handler] of this.remoteSaveStateHandlers) handler.dispose();
+        this.remoteSaveStateHandlers.clear();
+        for (const [, handler] of this.remotePlaceObjectHandlers) handler.dispose();
+        this.remotePlaceObjectHandlers.clear();
     }
 }
 

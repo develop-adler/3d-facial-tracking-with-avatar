@@ -91,7 +91,10 @@ class SpaceBuilder {
 
         this.multiplayerEventHandler = new MultiplayerEventHandler(this);
         this.keyboardHandler = new KeyboardHandler(this);
-        this.saveStateHandler = new SaveStateHandler(this);
+        this.saveStateHandler = new SaveStateHandler(
+            this,
+            this.multiplayerManager.room.localParticipant
+        );
         this.objectHighlightHandler = new ObjectHighlightHandler(this);
         this.objectPlacementHandler = new ObjectPlacementHandler(this, this.avatar);
         this.objectSelectHandler = new ObjectSelectHandler(this);
@@ -510,8 +513,8 @@ class SpaceBuilder {
                 );
 
                 this.saveStateHandler.saveState("duplicate", {
-                    meshes: clones.map(clone => clone.uniqueId),
-                    priorSelectedMeshes: children.map(child => child.uniqueId),
+                    meshes: clones.map((clone) => clone.uniqueId),
+                    priorSelectedMeshes: children.map((child) => child.uniqueId),
                 });
 
                 // this.onObjectDuplicateObservable.notifyObservers(clones);
@@ -592,7 +595,7 @@ class SpaceBuilder {
             this.objectSelectHandler.setGPUPickerPickList();
             this.gizmoHandler.detachMeshFromGizmo();
             this.saveStateHandler.saveState("delete", {
-                meshes: children.map(child => child.uniqueId),
+                meshes: children.map((child) => child.uniqueId),
             });
         } else {
             const meshToRemove = this.gizmoHandler.gizmoManager.attachedMesh;

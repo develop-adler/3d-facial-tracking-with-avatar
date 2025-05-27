@@ -1330,9 +1330,7 @@ class GizmoHandler {
       if (clientSettings.DEBUG) {
         console.log(
           "Saved transform state for group",
-          this.spaceBuilder.saveStateHandler.savedStates.at(
-            this.spaceBuilder.saveStateHandler.lastStateIndex
-          )
+          this.spaceBuilder.saveStateHandler.savedStates.at(-1)
         );
       }
     } else {
