@@ -50,22 +50,6 @@ export type EventNames =
     | 'studio:undo'
     | 'studio:redo';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Extra = any;
-export type SpaceEvent = {
-    postId: string;
-    atomData?: Extra;
-    atom3DObjects?: Extra;
-    scene?: Extra;
-    camera?: Extra;
-    physics?: Extra;
-    webXRChecked?: Extra;
-    webXRHelper?: Extra;
-    theme?: Extra;
-    texture?: Extra;
-    studioRoom?: Extra;
-}
-
 // TODO: update this to use EventTarget instead of EventEmitter
 // eslint-disable-next-line unicorn/prefer-event-target
 class EventBus extends EventEmitter {
