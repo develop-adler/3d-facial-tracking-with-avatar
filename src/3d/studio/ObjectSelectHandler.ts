@@ -4,25 +4,25 @@ import {
     type KeyboardInfo,
 } from "@babylonjs/core/Events/keyboardEvents";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Observable, type Observer } from "@babylonjs/core/Misc/observable";
+import { type Observer } from "@babylonjs/core/Misc/observable";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import ObjectHighlightHandler from "@/3d/studio/ObjectHighlightHandler";
+import eventBus from "@/eventBus";
 import type { ObjectAbsoluteTransforms } from "@/models/3d";
 import { isSafari } from "@/utils/browserUtils";
 
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
-import eventBus from "@/eventBus";
 
 class ObjectSelectHandler {
     readonly spaceBuilder: SpaceBuilder;
     readonly selectedMeshGroup: TransformNode;
-    readonly onSetSelectedObjectObservable: Observable<
-        AbstractMesh | Mesh | null
-    > = new Observable();
+    // readonly onSetSelectedObjectObservable: Observable<
+    //     AbstractMesh | Mesh | null
+    // > = new Observable();
     readonly keyboardObservable: Observer<KeyboardInfo>;
 
     gpuPicker?: GPUPicker;
@@ -107,7 +107,7 @@ class ObjectSelectHandler {
                 );
 
                 this.spaceBuilder.saveStateHandler.saveState("unlock", {
-                    mesh: mesh,
+                    mesh: mesh.uniqueId,
                 });
             } else {
                 // lock object
@@ -118,7 +118,7 @@ class ObjectSelectHandler {
                 this.spaceBuilder.lockedObjects.push(mesh.uniqueId);
 
                 this.spaceBuilder.saveStateHandler.saveState("lock", {
-                    mesh: mesh,
+                    mesh: mesh.uniqueId,
                 });
             }
         }
@@ -195,7 +195,7 @@ class ObjectSelectHandler {
                 this.spaceBuilder.gizmoHandler.setGizmoType();
 
                 this.spaceBuilder.saveStateHandler.saveState("lock", {
-                    meshes,
+                    meshes: meshes.map((mesh) => mesh.uniqueId),
                 });
             } else {
                 // lock
@@ -215,7 +215,7 @@ class ObjectSelectHandler {
                 }
 
                 this.spaceBuilder.saveStateHandler.saveState("lock", {
-                    meshes,
+                    meshes: meshes.map((mesh) => mesh.uniqueId),
                 });
             }
         }
@@ -274,7 +274,7 @@ class ObjectSelectHandler {
             const children = [...this.selectedMeshGroup.getChildren()];
             if (saveState) {
                 this.spaceBuilder.saveStateHandler.saveState("deselect", {
-                    meshes: children,
+                    meshes: children.map((mesh) => mesh.uniqueId),
                 });
             }
             this.setSelectedGroupObjects([]);
@@ -286,7 +286,7 @@ class ObjectSelectHandler {
             this.spaceBuilder.gizmoHandler.detachGizmoFromMesh(attachedMesh);
             if (saveState) {
                 this.spaceBuilder.saveStateHandler.saveState("deselect", {
-                    mesh: attachedMesh,
+                    mesh: attachedMesh.uniqueId,
                 });
             }
         }

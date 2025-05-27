@@ -123,20 +123,22 @@ class GizmoHandler {
 
     gizmoManager.onAttachedToMeshObservable.add((mesh) => {
       if (!mesh) {
-        this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
-          // eslint-disable-next-line unicorn/no-null
-          null
-        );
+        useStudioStore.getState().setSelectedObject();
+        // this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
+        //   // eslint-disable-next-line unicorn/no-null
+        //   null
+        // );
         // this.renderScene();
         return;
       }
 
       if (mesh === this.spaceBuilder.objectSelectHandler.selectedMeshGroup) {
         this.setGizmoType(this.currentGizmoType);
-        this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
-          // eslint-disable-next-line unicorn/no-null
-          null
-        );
+        useStudioStore.getState().setSelectedObject(mesh);
+        // this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
+        //   // eslint-disable-next-line unicorn/no-null
+        //   null
+        // );
         return;
       }
 
@@ -148,9 +150,10 @@ class GizmoHandler {
       // handle object lock/unlock state
       this.spaceBuilder.objectSelectHandler.handleObjectLockState(mesh);
 
-      this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
-        mesh
-      );
+      useStudioStore.getState().setSelectedObject(mesh);
+      // this.spaceBuilder.objectSelectHandler.onSetSelectedObjectObservable.notifyObservers(
+      //   mesh
+      // );
       this.spaceBuilder.updateObjectTransformUI(mesh);
 
       // this.renderScene();
@@ -427,7 +430,7 @@ class GizmoHandler {
                 this.gizmoManager.attachToMesh(meshToAttach);
 
                 this.spaceBuilder.saveStateHandler.saveState("select", {
-                  mesh: meshToAttach,
+                  mesh: meshToAttach.uniqueId,
                 });
               };
 
@@ -478,7 +481,8 @@ class GizmoHandler {
 
                   this.spaceBuilder.saveStateHandler.saveState("select", {
                     meshes:
-                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren(),
+                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren()
+                        .map((child) => child.uniqueId),
                   });
 
                   // position group node at the center of all children
@@ -540,7 +544,8 @@ class GizmoHandler {
 
                   this.spaceBuilder.saveStateHandler.saveState("select", {
                     meshes:
-                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren(),
+                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren()
+                        .map((child) => child.uniqueId),
                   });
                 } else {
                   // if selected mesh is single mesh, add to group node and attach gizmo to group node
@@ -575,7 +580,8 @@ class GizmoHandler {
 
                   this.spaceBuilder.saveStateHandler.saveState("select", {
                     meshes:
-                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren(),
+                      this.spaceBuilder.objectSelectHandler.selectedMeshGroup.getChildren()
+                        .map((child) => child.uniqueId),
                   });
                 }
 
@@ -1175,7 +1181,7 @@ class GizmoHandler {
     this.gizmoManager.attachToMesh(null);
   }
 
-  detachGizmoFromMesh(mesh: AbstractMesh | Mesh) {
+  detachGizmoFromMesh(mesh: AbstractMesh | Mesh | null) {
     this.spaceBuilder.objectHighlightHandler.hideObjectOutline(mesh);
     this.detachMeshFromGizmo();
   }
@@ -1316,7 +1322,7 @@ class GizmoHandler {
       }
 
       this.spaceBuilder.saveStateHandler.saveState(state, {
-        meshes: children,
+        meshes: children.map((child) => child.uniqueId),
         old: this.spaceBuilder.objectSelectHandler.storedMultiMeshTransforms,
         new: newTransforms,
       });
@@ -1361,7 +1367,7 @@ class GizmoHandler {
       }
 
       this.spaceBuilder.saveStateHandler.saveState(state, {
-        mesh: attachedMesh,
+        mesh: attachedMesh.uniqueId,
         old: this.spaceBuilder.objectSelectHandler.storedMeshTransforms,
         new: newTransforms,
       });

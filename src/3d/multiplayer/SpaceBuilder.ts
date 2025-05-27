@@ -442,12 +442,12 @@ class SpaceBuilder {
         // add to savedStep for undo/redo
         if (doNotSaveState === false) {
             this.saveStateHandler.saveState("add", {
-                mesh: root,
+                mesh: root.uniqueId,
             });
 
             this.gizmoHandler.gizmoManager.attachToMesh(root as Mesh);
             this.saveStateHandler.saveState("select", {
-                mesh: root,
+                mesh: root.uniqueId,
             });
         }
     }
@@ -510,8 +510,8 @@ class SpaceBuilder {
                 );
 
                 this.saveStateHandler.saveState("duplicate", {
-                    meshes: clones,
-                    priorSelectedMeshes: children,
+                    meshes: clones.map(clone => clone.uniqueId),
+                    priorSelectedMeshes: children.map(child => child.uniqueId),
                 });
 
                 // this.onObjectDuplicateObservable.notifyObservers(clones);
@@ -564,8 +564,8 @@ class SpaceBuilder {
                 this.objectSelectHandler.setGPUPickerPickList();
 
                 this.saveStateHandler.saveState("duplicate", {
-                    mesh: clone,
-                    priorSelectedMesh: meshToClone,
+                    mesh: clone.uniqueId,
+                    priorSelectedMesh: meshToClone.uniqueId,
                 });
 
                 break;
@@ -592,7 +592,7 @@ class SpaceBuilder {
             this.objectSelectHandler.setGPUPickerPickList();
             this.gizmoHandler.detachMeshFromGizmo();
             this.saveStateHandler.saveState("delete", {
-                meshes: children,
+                meshes: children.map(child => child.uniqueId),
             });
         } else {
             const meshToRemove = this.gizmoHandler.gizmoManager.attachedMesh;
@@ -602,7 +602,7 @@ class SpaceBuilder {
             this.gizmoHandler.detachMeshFromGizmo();
 
             this.saveStateHandler.saveState("delete", {
-                mesh: meshToRemove,
+                mesh: meshToRemove.uniqueId,
             });
         }
     }
@@ -827,7 +827,7 @@ class SpaceBuilder {
         };
 
         this.saveStateHandler.saveState("scale", {
-            mesh: object,
+            mesh: object.uniqueId,
             old: storedMeshTransforms,
             new: newTransforms,
         });

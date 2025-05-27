@@ -45,7 +45,10 @@ export type EventNames =
     | 'space:mediumLoaded'
     | 'space:highLoaded'
     | 'space:ultraLoaded'
-    | 'space:allLODsLoaded';
+    | 'space:allLODsLoaded'
+    | 'studio:saveState'
+    | 'studio:undo'
+    | 'studio:redo';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Extra = any;

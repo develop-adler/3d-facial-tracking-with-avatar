@@ -1,4 +1,4 @@
-import type { ObjectTransform } from "@/models/3d";
+import type { ObjectAbsoluteTransforms, ObjectTransform } from "@/models/3d";
 import type { Asset } from "@/models/common";
 import type { UserRequest } from "@/models/multiplayer";
 
@@ -40,12 +40,21 @@ export type StudioObjectType3D =
   | "decoration"
   | "floor";
 
+export type StudioSaveStateData = {
+  name?: string; // for UI
+  mesh?: number; // uniqueId of mesh
+  meshes?: Array<number>;
+  old?: string | ObjectAbsoluteTransforms | Record<string, ObjectAbsoluteTransforms>;
+  new?: string | ObjectAbsoluteTransforms | Record<string, ObjectAbsoluteTransforms>;
+  priorSelectedMesh?: number; // uniqueId
+  priorSelectedMeshes?: Array<number>; // uniqueIds
+};
+
 export type StudioSavedState = {
   uid: string;
   date: string;
   type: StudioSavedStateType;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  data: StudioSaveStateData;
   name?: string;
 };
 export type StudioSavedStates = Array<StudioSavedState>;
