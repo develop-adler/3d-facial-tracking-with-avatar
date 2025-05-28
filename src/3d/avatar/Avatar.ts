@@ -431,9 +431,6 @@ class Avatar {
       this._voiceBubble = new AvatarVoiceBubble(this);
     }
 
-    // update head node parent
-    this.customHeadNode.parent = this.root;
-
     // if (this.post) {
     //   const pickingList = [...this.post.gpuPickerPickingList, ...this._meshes.map(mesh => mesh.getChildMeshes()).flat()];
     //   console.log('GPU picker picking list:', pickingList);
@@ -459,6 +456,9 @@ class Avatar {
     if (headBone && headBoneTNode) {
       // update head node position to match head bone
       this.customHeadNode.setAbsolutePosition(headBoneTNode.absolutePosition);
+
+      // update head node parent
+      this.customHeadNode.setParent(this.root);
 
       this._boneLookController = new BoneLookController(
         headBoneTNode,

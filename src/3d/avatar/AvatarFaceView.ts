@@ -88,15 +88,41 @@ class AvatarFaceView {
 
     private _positionCameraObserver() {
         let avatarIdleTime = 0;
+        // set camera position to be in front of the avatar's face and always point at it
         return this.coreScene.scene.onBeforeRenderObservable.add(() => {
-            // set camera position to be in front of the avatar's face and always point at it
-            const target = this.avatar.customHeadNode.absolutePosition;
-            const inFrontOfFace = target.add(
-                this.avatar.root.forward.normalize().scaleInPlace(0.65)
-            );
-            this.camera.setPosition(inFrontOfFace);
-            target.y -= 0.1; // point camera down a bit
-            this.camera.target = target;
+            const leftEyeTNode = this.avatar.skeleton?.bones
+                .find((bone) => bone.name === "LeftEye")
+                ?.getTransformNode();
+            const rightEyeTNode = this.avatar.skeleton?.bones
+                .find((bone) => bone.name === "RightEye")
+                ?.getTransformNode();
+
+            if (leftEyeTNode && rightEyeTNode) {
+                const target = new Vector3(
+                    (leftEyeTNode.absolutePosition.x + rightEyeTNode.absolutePosition.x) /
+                    2,
+                    (leftEyeTNode.absolutePosition.y + rightEyeTNode.absolutePosition.y) /
+                    2,
+                    (leftEyeTNode.absolutePosition.z + rightEyeTNode.absolutePosition.z) /
+                    2
+                ).addInPlaceFromFloats(0, 0.1, 0);
+                const inFrontOfFace = target.add(
+                    this.avatar.root.forward.normalize().scaleInPlace(0.65)
+                );
+                this.camera.setPosition(inFrontOfFace);
+                target.y -= 0.1; // point camera down a bit
+                this.camera.target = target;
+            } else {
+                const target = this.avatar.root.absolutePosition.add(
+                    new Vector3(0, this.avatar.headHeight, 0)
+                );
+                const inFrontOfFace = target.add(
+                    this.avatar.root.forward.normalize().scaleInPlace(0.65)
+                );
+                this.camera.setPosition(inFrontOfFace);
+                target.y -= 0.1; // point camera down a bit
+                this.camera.target = target;
+            }
 
             // check avatar animation, only show canvas if avatar has stood idle for 1 second
             if (
