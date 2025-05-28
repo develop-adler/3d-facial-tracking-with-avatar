@@ -192,6 +192,7 @@ class Avatar {
 
   interaction?: AvatarInteraction;
   isAnimationsReady: boolean = false;
+  /** Will be true when avatar model is loaded */
   isReady: boolean = false;
 
   constructor(
@@ -481,6 +482,8 @@ class Avatar {
         }
       );
     }
+
+    this.isReady = true;
 
     // if (this.isAnimationsReady === true) {
     //   this.isReady = true;

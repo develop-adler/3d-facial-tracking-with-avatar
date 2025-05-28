@@ -126,6 +126,7 @@ class AvatarFaceView {
 
             // check avatar animation, only show canvas if avatar has stood idle for 1 second
             if (
+                this.avatar.isReady &&
                 !this.avatar.isMoving &&
                 !this.avatar.isCrouching &&
                 this.avatar.isGrounded
