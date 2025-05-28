@@ -13,6 +13,7 @@ import {
   ListItem,
   Typography,
 } from "@mui/material";
+import CheckIcon from "@mui/icons-material/Check";
 
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
@@ -61,20 +62,31 @@ const Page = () => {
         }}
       >
         <Fade in timeout={1000}>
-          <Typography
-            variant="h1"
-            sx={{
-              userSelect: "none",
-              fontSize: {
-                xs: "7vh", // extra-small screens
-                sm: "9vh", // small screens
-                md: "10vh", // medium screens
-                // lg: "5rem",     // large screens
-              },
-            }}
-          >
-            Welcome to 3D video chat demo
-          </Typography>
+          <Box>
+            <Typography
+              variant="h1"
+              sx={{
+                userSelect: "none",
+                fontSize: {
+                  xs: "7vh", // extra-small screens
+                  sm: "9vh", // small screens
+                  md: "10vh", // medium screens
+                  // lg: "5rem",     // large screens
+                },
+              }}
+            >
+              Welcome to 3D video chat demo
+            </Typography>
+            <Typography
+              variant="h4"
+              sx={{
+                userSelect: "none",
+                marginTop: "2rem",
+              }}
+            >
+              by Gavin Quach
+            </Typography>
+          </Box>
         </Fade>
       </Box>
       {/* <ScreenControlButtons /> */}
@@ -128,12 +140,9 @@ const Page = () => {
             }}
           >
             Please enable and allow camera access to use 3D avatar facial
-            tracking. This application is{" "}
+            tracking. This application{" "}
             <b>
-              <i>
-                currently all on-device and does not have any server-side
-                processing
-              </i>
+              <i>currently does not have any server-side processing</i>
             </b>
             . Video and voice call, messaging, and multiplayer service is
             powered by{" "}
@@ -144,14 +153,15 @@ const Page = () => {
               underline="hover"
             >
               LiveKit
-            </Link>{" "}
-            using WebRTC.
+            </Link>
+            .
           </Typography>
           <br />
           <br />
           <br />
           <Typography
             sx={{
+              fontWeight: "bold",
               fontSize: {
                 xs: "5vw",
                 sm: "4vw",
@@ -164,30 +174,26 @@ const Page = () => {
           <List
             sx={{
               fontSize: {
-                xs: "4vw",
-                sm: "3vw",
-                md: "1.25vw",
+                xs: "4.4vw",
+                sm: "3.4vw",
+                md: "1.45vw",
               },
             }}
           >
-            <ListItem>
-              • Call room: Create/Join video and voice chat room
-            </ListItem>
-            <ListItem>
-              • Avatar: Create Ready Player Me avatar and use the custom avatar
-              for video chat, you may also select an avatar from list of preset
-              avatars
-            </ListItem>
-            <ListItem>
-              • Multiplayer: Enter 3D space with users within the room
-            </ListItem>
-            <ListItem>
-              • Messaging: You can send messages to other users within the room
-            </ListItem>
-            <ListItem>
-              • Spatial audio voice chat: While in 3D space, voice chatting will
-              be 3D spatial audio
-            </ListItem>
+            {[
+              "Anonymous: You can use this demo without signing up or logging in, nothing is stored!",
+              "Avatar: Create Ready Player Me avatar and use the custom avatar for video chat, you may also select an avatar from list of available preset avatars",
+              "Face tracking: Use your webcam to track your face and apply the facial expressions to your avatar. Your webcam video feed is not directly accessed. It is processed by the browser and only the processed data is sent to the server.",
+              "Call room: Create/Join video and voice call room. Enter the same room name to join the same call room with other users.",
+              "Multiplayer: Enter 3D space with users within the room (right now when 1 accepts, all",
+              "Spatial audio voice chat: While in 3D space, voice chatting will be 3D spatial audio!",
+              "Messaging: You can send messages to other users within the room (they're non-persistent and are not saved to any database, they're only relayed to existing users within the room, meaning you will not see previously sent messages when you join the room)",
+              "3D space: Enter a 3D space with other users, within the space, you can enter 'Space Builder' mode and place objects, interact with objects, and more! (work in progress)",
+            ].map((item, index) => (
+              <ListItem key={index} sx={{ my: 2 }}>
+                <CheckIcon sx={{ marginRight: 2 }} /> {item}
+              </ListItem>
+            ))}
           </List>
         </Box>
 
@@ -219,7 +225,7 @@ const Page = () => {
               useTrackingStore.getState().faceTracker.getUserVideoStream();
             }}
           >
-            Try now!
+            Try avatar face tracker!
           </Button>
         )}
         <Typography
