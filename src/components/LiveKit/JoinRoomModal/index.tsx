@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type FC } from "react";
 
-import { Modal, Backdrop, Fade, Box } from "@mui/material";
+import { Fade, Box } from "@mui/material";
 
 import {
     ModalTextField,
@@ -43,20 +43,21 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
     }, [room, name, onSubmit]);
 
     return (
-        <Modal
-            open={open}
-            closeAfterTransition
-            slots={{ backdrop: Backdrop }}
-            slotProps={{
-                backdrop: {
-                    timeout: 500,
-                    sx: {
-                        backdropFilter: "blur(2px)",
-                        backgroundColor: "rgba(0,0,0,0.4)",
-                    },
-                },
-            }}
-        >
+        // <Modal
+        //     open={open}
+        //     closeAfterTransition
+        //     slots={{ backdrop: Backdrop }}
+        //     slotProps={{
+        //         backdrop: {
+        //             timeout: 500,
+        //             sx: {
+        //                 backdropFilter: "blur(2px)",
+        //                 backgroundColor: "rgba(0,0,0,0.4)",
+        //             },
+        //         },
+        //     }}
+        // >
+        <Box sx={{ userSelect: "none" }}>
             <Fade in={open}>
                 <Box
                     component="form"
@@ -108,6 +109,6 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                     </SubmitButton>
                 </Box>
             </Fade>
-        </Modal>
+        </Box>
     );
 };
