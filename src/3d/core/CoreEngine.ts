@@ -1,5 +1,6 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { DracoCompression } from "@babylonjs/core/Meshes/Compression/dracoCompression";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { Logger } from "@babylonjs/core/Misc/logger";
@@ -146,6 +147,7 @@ export class CoreEngine {
     }
 
     insertCanvasToDOM(container: HTMLElement) {
+        this.engine.clear(new Color4(0, 0, 0, 0), true, true, true);
         container.append(this.canvas);
         // call resize to fix the canvas size
         this.resize();
@@ -153,6 +155,7 @@ export class CoreEngine {
 
     removeCanvasFromDOM() {
         this.canvas.remove();
+        this.engine.clear(new Color4(0, 0, 0, 0), true, true, true);
     }
 
     resize() {
