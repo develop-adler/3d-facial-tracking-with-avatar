@@ -101,6 +101,16 @@ class RoomManager {
             return;
         }
 
+        toast("Request sent, waiting for other user respond to request", {
+            toastId: "waiting-confirm-toast",
+            position: "top-center",
+            autoClose: false,
+            closeOnClick: true,
+            draggable: false,
+            pauseOnHover: false,
+            isLoading: true,
+        });
+
         for (const [, participant] of this.room.remoteParticipants) {
             try {
                 const _response = await this.room.localParticipant.performRpc({
@@ -150,13 +160,15 @@ class RoomManager {
     }
 
     private async _confirmJoinSpaceRPC(data: RpcInvocationData) {
+        toast.dismiss("waiting-confirm-toast");
+
         const payload = JSON.parse(data.payload) as ConfirmRequest;
         // we receive confirm data from other participant, so we can set multiplayer to true
         if (payload.confirm) {
+            toast("Your request to join space together was accepted", TOAST_TOP_OPTIONS);
             useLiveKitStore.getState().setIsMultiplayer(true);
         } else {
-            toast("Your request to join space was declined", TOAST_TOP_OPTIONS);
-            console.log("Your request to join space was declined");
+            toast("Your request to join space together was declined", TOAST_TOP_OPTIONS);
         }
         return "ok" as string;
     }
