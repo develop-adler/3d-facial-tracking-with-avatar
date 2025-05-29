@@ -57,7 +57,7 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
         //         },
         //     }}
         // >
-        <Box sx={{ userSelect: "none" }}>
+        <div style={{ userSelect: "none" }}>
             <Fade in={open}>
                 <Box
                     component="form"
@@ -109,6 +109,6 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                     </SubmitButton>
                 </Box>
             </Fade>
-        </Box>
+        </div>
     );
 };
