@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import {
   Box,
@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 
+import FadeInOnScroll from "@/components/HomePage/components/FadeInOnScroll";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { COLOR, TOP_MENU_HEIGHT } from "constant";
@@ -39,22 +40,12 @@ const Page = () => {
   const [started, setStarted] = useState<boolean>(false);
 
   return (
-    <div
-      style={{
-        marginTop: TOP_MENU_HEIGHT,
-        height: `calc(100vh - ${TOP_MENU_HEIGHT})`,
-        width: "100vw",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        textAlign: "center",
-      }}
-    >
+    <>
       <Box
         sx={{
-          marginTop: "15vh",
-          height: `calc(70vh - ${TOP_MENU_HEIGHT})`,
-          minHeight: `calc(70vh - ${TOP_MENU_HEIGHT})`,
+          marginTop: TOP_MENU_HEIGHT,
+          height: `calc(100vh - ${TOP_MENU_HEIGHT})`,
+          minHeight: `calc(100vh - ${TOP_MENU_HEIGHT})`,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -90,7 +81,63 @@ const Page = () => {
           </Box>
         </Fade>
       </Box>
-      {/* <ScreenControlButtons /> */}
+
+      <Box sx={{
+        position: "relative", // to stick text at the bottom
+        marginBottom: { md: "8rem" },
+      }}>
+        <Box
+          sx={{
+            p: 2,
+            width: "100%",
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            justifyContent: "center",
+            marginBottom: { md: "8rem" },
+          }}
+        >
+          {[
+            ["Secure", "Encrypted video and audio calls"],
+            ["Anonymous", "No account! No servers!*"],
+            ["Simple", "Straightforward, easy-to-use"],
+          ].map((item, index) => (
+            <Fragment key={index}>
+              <Box
+                sx={{
+                  flex: 1,
+                  textAlign: "center",
+                  boxSizing: "border-box",
+                  my: { xs: "4rem", md: 0 },
+                  marginTop: { md: `calc(${index} * 35vh)` },
+                }}
+              >
+                <FadeInOnScroll>
+                  <Typography variant="h2">{item[0]}</Typography>
+                  <Typography variant="h5" sx={{ fontStyle: "italic" }}>
+                    {item[1]}
+                  </Typography>
+                </FadeInOnScroll>
+              </Box>
+            </Fragment>
+          ))}
+        </Box>
+        <Typography
+          sx={{
+            // position: "absolute",
+            // bottom: 0,
+            // left: "50%",
+            // transform: "translateX(-50%)",
+            fontSize: "0.9rem",
+            fontStyle: "italic",
+            width: "40vw",
+            marginLeft: "auto",
+            marginRight: 0,
+          }}
+        >
+          *Calls are handled by LiveKit using WebRTC and their LiveKit Cloud
+          service, this application does not have any backend server of its own.
+        </Typography>
+      </Box>
 
       <Box
         sx={{
@@ -263,7 +310,8 @@ const Page = () => {
           Create / Join a call room
         </Button>
       </Box>
-    </div>
+      {/* <ScreenControlButtons /> */}
+    </>
   );
 };
 
