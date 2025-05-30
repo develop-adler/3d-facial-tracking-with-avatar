@@ -182,13 +182,15 @@ const Page = () => {
             }}
           >
             {[
-              "Anonymous: You can use this demo without signing up or logging in, nothing is stored!",
+              "Anonymous: You can use this demo without signing up or logging in.",
+              "Encrypted: Video and voice call is end-to-end encrypted.",
               "Avatar: Create Ready Player Me avatar and use the custom avatar for video chat, you may also select an avatar from list of available preset avatars",
-              "Face tracking: Use your webcam to track your face and apply the facial expressions to your avatar. Your webcam video feed is not directly accessed. It is processed by the browser and only the processed data is sent to the server.",
+              "Face tracking: Use your webcam to track your face and apply the facial expressions to your avatar. Your webcam video feed is not directly accessed.",
               "Call room: Create/Join video and voice call room. Enter the same room name to join the same call room with other users.",
               "Multiplayer: Enter 3D space with users within the room (right now when 1 accepts, all",
               "Spatial audio voice chat: While in 3D space, voice chatting will be 3D spatial audio!",
-              "Messaging: You can send messages to other users within the room (they're non-persistent and are not saved to any database, they're only relayed to existing users within the room, meaning you will not see previously sent messages when you join the room)",
+              "Mic effects: Apply mic effects to your voice, such as pitch shifting, reverb, and more! (work in progress)",
+              "Messaging: You can chat with other users within the room (they're non-persistent and are not saved to any database, meaning you will not see previously sent messages when you join/rejoin the room)",
               "3D space: Enter a 3D space with other users, within the space, you can enter 'Space Builder' mode and place objects, interact with objects, and more! (work in progress)",
             ].map((item, index) => (
               <ListItem key={index} sx={{ my: 2 }}>
