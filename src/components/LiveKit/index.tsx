@@ -3,10 +3,10 @@
 import dynamic from "next/dynamic";
 import { useEffect, type FC } from "react";
 
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 import { JoinRoomModal } from "@/components/LiveKit/JoinRoomModal";
-import type { RoomAndName } from "@/models/multiplayer";
+import type { RoomJoinInfo } from "@/models/multiplayer";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
@@ -18,18 +18,18 @@ const RoomPage = dynamic(
 );
 
 export const LiveKitPage: FC = () => {
-    const roomNameAndUsername = useLiveKitStore((state) => state.roomNameAndUsername);
-    const setRoomNameAndUsername = useLiveKitStore((state) => state.setRoomNameAndUsername);
+    const roomJoinInfo = useLiveKitStore((state) => state.roomJoinInfo);
+    const setRoomJoinInfo = useLiveKitStore((state) => state.setRoomJoinInfo);
 
-    const handleFormSubmit = (data: RoomAndName) => {
+    const handleFormSubmit = (data: RoomJoinInfo) => {
         data.room = DOMPurify.sanitize(data.room);
         data.name = DOMPurify.sanitize(data.name);
-        setRoomNameAndUsername(data);
+        data.passphrase = DOMPurify.sanitize(data.passphrase);
+        setRoomJoinInfo(data);
     };
 
     useEffect(() => {
-        useLiveKitStore.getState().room.disconnect();
-        setRoomNameAndUsername();
+        setRoomJoinInfo();
         return () => {
             useTrackingStore.getState().faceTracker.dispose();
         };
@@ -38,10 +38,8 @@ export const LiveKitPage: FC = () => {
 
     return (
         <>
-            <JoinRoomModal open={!roomNameAndUsername} onSubmit={handleFormSubmit} />
-            {roomNameAndUsername && (
-                <RoomPage roomName={roomNameAndUsername.room} name={roomNameAndUsername.name} />
-            )}
+            <JoinRoomModal open={!roomJoinInfo} onSubmit={handleFormSubmit} />
+            {roomJoinInfo && <RoomPage roomJoinInfo={roomJoinInfo} />}
         </>
     );
 };

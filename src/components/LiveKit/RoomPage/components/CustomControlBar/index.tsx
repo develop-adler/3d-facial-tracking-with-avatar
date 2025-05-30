@@ -28,10 +28,11 @@ import { useVoiceChangerStore } from "@/stores/useVoiceChangerStore";
 /**
  * Basically a copy of the ControlBar prefab, but with removed camera device selector
  */
-export const CustomControlBar = () => {
+const CustomControlBar = () => {
     const browserSupportsScreenSharing = supportsScreenSharing();
 
-    const { cameraTrack } = useLocalParticipant();
+    const { localParticipant, cameraTrack } = useLocalParticipant();
+
     const hasAvatarTrack = cameraTrack?.trackName === "avatar_video";
 
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
@@ -106,14 +107,14 @@ export const CustomControlBar = () => {
         const latestMessage = chatMessages.at(-1);
         if (!latestMessage) return;
         if (
-            latestMessage.from !== useLiveKitStore.getState().room.localParticipant &&
+            latestMessage.from !== localParticipant &&
             !useChatToggleStore.getState().isChatOpen
         ) {
             useChatToggleStore
                 .getState()
                 .setUnreadCount(useChatToggleStore.getState().unreadCount + 1);
         }
-    }, [chatMessages]);
+    }, [chatMessages, localParticipant]);
 
     return (
         <LayoutContextProvider>
@@ -239,3 +240,5 @@ export const CustomControlBar = () => {
         </LayoutContextProvider>
     );
 };
+
+export default CustomControlBar;

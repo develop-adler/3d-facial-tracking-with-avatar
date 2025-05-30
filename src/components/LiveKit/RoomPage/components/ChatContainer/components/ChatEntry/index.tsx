@@ -1,9 +1,9 @@
 import { useMemo, type FC, type ReactNode } from "react";
 
 import type { ReceivedChatMessage } from "@livekit/components-core";
+import { useRoomContext } from "@livekit/components-react";
 // import { Box, Typography, Paper } from "@mui/material";
 
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { COLOR } from "constant";
 
 type Props = {
@@ -12,6 +12,8 @@ type Props = {
 };
 
 const ChatEntry: FC<Props> = ({ entry, messageFormatter }) => {
+    const room = useRoomContext();
+
     const formattedMessage = useMemo(() => {
         return messageFormatter ? messageFormatter(entry.message) : entry.message;
     }, [entry.message, messageFormatter]);
@@ -23,7 +25,6 @@ const ChatEntry: FC<Props> = ({ entry, messageFormatter }) => {
 
     const identity = entry.from?.identity;
 
-    const room = useLiveKitStore((state) => state.room);
     const isOwnMessage = room.localParticipant.identity === identity;
 
     const timeStr = time.toLocaleTimeString(locale, { timeStyle: "short" });

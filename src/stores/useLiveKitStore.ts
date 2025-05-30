@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 
 import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
-import type { RoomAndName, RequestOrigin } from "@/models/multiplayer";
+import type { RoomJoinInfo, RequestOrigin } from "@/models/multiplayer";
 import LiveKitRoom from "@/LiveKitRoomSingleton";
 
 type OpenJoinSpaceModal = {
@@ -15,7 +15,7 @@ type OpenJoinSpaceModal = {
 type LiveKitStore = {
     liveKitRoom: LiveKitRoom;
     room: Room;
-    roomNameAndUsername?: RoomAndName;
+    roomJoinInfo?: RoomJoinInfo;
     multiplayerManager?: MultiplayerManager;
     spaceBuilder?: SpaceBuilder;
     isMultiplayer: boolean;
@@ -26,7 +26,8 @@ type LiveKitStore = {
     skyboxIntensity: number;
     currentSkybox: string;
     openChangeBackgroundModal: boolean;
-    setRoomNameAndUsername: (roomNameAndUsername?: RoomAndName) => void;
+    setNewRoom(room: Room): void;
+    setRoomJoinInfo: (roomJoinInfo?: RoomJoinInfo) => void;
     setIsMultiplayer: (isMultiplayer: boolean) => void;
     setIsBuildSpaceMode: (isBuildSpaceMode: boolean) => void;
     setOpenJoinSpaceModal: (openJoinSpaceModal?: OpenJoinSpaceModal) => void;
@@ -44,7 +45,7 @@ export const useLiveKitStore = create<LiveKitStore>()(
         (set, get) => ({
             liveKitRoom: LiveKitRoom.getInstance(),
             room: LiveKitRoom.getInstance().room,
-            roomNameAndUsername: undefined,
+            roomJoinInfo: undefined,
             isMultiplayer: false,
             isBuildSpaceMode: false,
             openJoinSpaceModal: undefined,
@@ -53,8 +54,13 @@ export const useLiveKitStore = create<LiveKitStore>()(
             skyboxIntensity: 0.8,
             currentSkybox: "585760691093336303",
             openChangeBackgroundModal: false,
-            setRoomNameAndUsername: (roomNameAndUsername) =>
-                set({ roomNameAndUsername }),
+            setNewRoom: (room) => {
+                const { liveKitRoom } = get();
+                liveKitRoom.setRoom(room);
+                set({ liveKitRoom, room });
+            },
+            setRoomJoinInfo: (roomJoinInfo) =>
+                set({ roomJoinInfo }),
             setIsMultiplayer: (isMultiplayer) => {
                 const { liveKitRoom, multiplayerManager } = get();
                 try {

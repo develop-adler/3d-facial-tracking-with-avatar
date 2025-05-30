@@ -18,6 +18,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import { useTrackingStore } from "@/stores/useTrackingStore";
 
 import { COLOR, TOP_MENU_HEIGHT } from "constant";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 const AvatarScene = dynamic(
   () => import("@/components/AvatarScene").then((p) => p.AvatarScene),
@@ -206,7 +207,7 @@ const Page = () => {
             }}
           >
             <LoadingBar />
-            <AvatarScene />
+            <AvatarScene room={useLiveKitStore.getState().room} />
           </Box>
         ) : (
           <Button

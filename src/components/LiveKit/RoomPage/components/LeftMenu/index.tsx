@@ -1,4 +1,5 @@
 import { useMemo, useState, type FC } from "react";
+import { useRoomContext } from "@livekit/components-react";
 import {
     Box,
     List,
@@ -20,10 +21,11 @@ const drawerWidth = 200;
 const buttonHeight = 48;
 
 const LeftMenu: FC = () => {
+    const room = useRoomContext();
+
     const [open, setOpen] = useState<boolean>(false);
     const [override, setOverride] = useState<boolean>(false);
 
-    const room = useLiveKitStore((state) => state.room);
     const isMultiplayer = useLiveKitStore((state) => state.isMultiplayer);
     const setIsMultiplayer = useLiveKitStore((state) => state.setIsMultiplayer);
 

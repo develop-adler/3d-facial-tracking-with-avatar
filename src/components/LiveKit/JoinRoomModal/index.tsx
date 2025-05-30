@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type FC } from "react";
 
-import { Fade, Box } from "@mui/material";
+import { Fade, Box, Typography } from "@mui/material";
 
 import {
     ModalTextField,
@@ -12,18 +12,19 @@ import {
     SubmitButton,
 } from "./styles";
 
-import type { RoomAndName } from "@/models/multiplayer";
+import type { RoomJoinInfo } from "@/models/multiplayer";
 
 import { COLOR } from "constant";
 
 type Props = {
     open: boolean;
-    onSubmit: (data: RoomAndName) => void;
+    onSubmit: (data: RoomJoinInfo) => void;
 };
 
 export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
-    const [room, setRoom] = useState("");
-    const [name, setName] = useState("");
+    const [room, setRoom] = useState<string>("");
+    const [name, setName] = useState<string>("");
+    const [sharedPassphrase, setSharedPassphrase] = useState<string>("");
     const [errors, setErrors] = useState({ room: false, name: false });
 
     const handleRandomName = useCallback(() => {
@@ -38,9 +39,9 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
         };
         setErrors(hasError);
         if (!hasError.room && !hasError.name) {
-            onSubmit({ room: room.trim(), name: name.trim() });
+            onSubmit({ room: room.trim(), name: name.trim(), passphrase: sharedPassphrase.trim() });
         }
-    }, [room, name, onSubmit]);
+    }, [room, name, sharedPassphrase, onSubmit]);
 
     return (
         // <Modal
@@ -72,7 +73,6 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                         height: "auto",
                         backgroundColor: COLOR.white,
                         borderRadius: "1rem",
-                        boxShadow: "",
                         padding: "1rem",
                         gap: "0.5rem",
                         display: "flex",
@@ -84,9 +84,13 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                         e.preventDefault();
                     }}
                 >
-                    <ModalTitle>Please input room and name</ModalTitle>
+                    <ModalTitle>Input room name, username, and room passphrase</ModalTitle>
+                    <Typography color="primary" sx={{ color: COLOR.black }}>
+                        
+                    </Typography>
                     <ModalTextFieldContainer>
                         <ModalTextField
+                            type="text"
                             label="Room"
                             value={room}
                             onChange={(e) => setRoom(e.target.value)}
@@ -94,6 +98,13 @@ export const JoinRoomModal: FC<Props> = ({ open, onSubmit }) => {
                             helperText={errors.room ? "Room is required" : ""}
                         />
                         <ModalTextField
+                            type="password"
+                            label="Shared Passphrase (for end-to-end encryption)"
+                            value={sharedPassphrase}
+                            onChange={(e) => setSharedPassphrase(e.target.value)}
+                        />
+                        <ModalTextField
+                            type="text"
                             label="Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}

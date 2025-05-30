@@ -1,30 +1,34 @@
 import { type FC } from "react";
 
+import { useRoomContext } from "@livekit/components-react";
 import { Modal, Box, Typography, Button, Fade } from "@mui/material";
 
-import { COLOR } from "constant";
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import eventBus from "@/eventBus";
+import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
-const EnterSpaceConfirmModal: FC = () => {
-    const openJoinSpaceModal = useLiveKitStore(
-        (state) => state.openJoinSpaceModal
+import { COLOR } from "constant";
+
+const BuildSpaceConfirmModal: FC = () => {
+    const room = useRoomContext();
+
+    const openBuildSpaceModal = useLiveKitStore(
+        (state) => state.openBuildSpaceModal
     );
 
-    const onEnter = () => {
-        eventBus.emitWithEvent("multiplayer:confirmJoinSpace", {
-            identity: useLiveKitStore.getState().room.localParticipant.identity,
+    const onConfirm = () => {
+        eventBus.emitWithEvent("multiplayer:confirmBuildSpace", {
+            identity: room.localParticipant.identity,
             confirm: true,
         });
-        useLiveKitStore.getState().setOpenJoinSpaceModal();
+        useLiveKitStore.getState().setOpenBuildSpaceModal();
     };
 
     const onDeny = () => {
-        eventBus.emitWithEvent("multiplayer:confirmJoinSpace", {
-            identity: useLiveKitStore.getState().room.localParticipant.identity,
+        eventBus.emitWithEvent("multiplayer:confirmBuildSpace", {
+            identity: room.localParticipant.identity,
             confirm: false,
         });
-        useLiveKitStore.getState().setOpenJoinSpaceModal();
+        useLiveKitStore.getState().setOpenBuildSpaceModal();
     };
 
     return (
@@ -43,8 +47,8 @@ const EnterSpaceConfirmModal: FC = () => {
                     }
             `}
             </style>
-            <Modal open={!!openJoinSpaceModal} onClose={onDeny} closeAfterTransition>
-                <Fade in={!!openJoinSpaceModal}>
+            <Modal open={!!openBuildSpaceModal} onClose={onDeny} closeAfterTransition>
+                <Fade in={!!openBuildSpaceModal}>
                     <Box
                         display="flex"
                         alignItems="center"
@@ -63,15 +67,15 @@ const EnterSpaceConfirmModal: FC = () => {
                             }}
                         >
                             <Typography variant="h5" mb={3} color="textPrimary">
-                                {openJoinSpaceModal?.origin === "self" ? (
+                                {openBuildSpaceModal?.origin === "self" ? (
                                     <>
-                                        <b>{openJoinSpaceModal?.identity}</b> has invited you to
-                                        join their space
+                                        <b>{openBuildSpaceModal?.identity}</b> has invited you to
+                                        build space together
                                     </>
                                 ) : (
                                     <>
-                                        <b>{openJoinSpaceModal?.identity}</b> has requested to join
-                                        your space
+                                        <b>{openBuildSpaceModal?.identity}</b> has requested to
+                                        build space together
                                     </>
                                 )}
                             </Typography>
@@ -81,7 +85,7 @@ const EnterSpaceConfirmModal: FC = () => {
                                 </Button>
                                 <Button
                                     variant="contained"
-                                    onClick={onEnter}
+                                    onClick={onConfirm}
                                     sx={{
                                         bgcolor: COLOR.brandPrimary,
                                         color: COLOR.white,
@@ -90,7 +94,7 @@ const EnterSpaceConfirmModal: FC = () => {
                                         },
                                     }}
                                 >
-                                    Enter
+                                    Build
                                 </Button>
                             </Box>
                         </Box>
@@ -101,4 +105,4 @@ const EnterSpaceConfirmModal: FC = () => {
     );
 };
 
-export default EnterSpaceConfirmModal;
+export default BuildSpaceConfirmModal;

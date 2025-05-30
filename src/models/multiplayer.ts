@@ -2,9 +2,10 @@ import type { AvatarGender, ObjectQuaternion, ObjectTransform } from "@/models/3
 import type { Asset } from "@/models/common";
 import type { StudioSavedStates } from "@/models/studio";
 
-export type RoomAndName = {
+export type RoomJoinInfo = {
     room: string;
     name: string;
+    passphrase: string;
 };
 
 export type SyncState = {

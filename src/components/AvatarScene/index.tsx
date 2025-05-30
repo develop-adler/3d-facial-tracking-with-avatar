@@ -1,10 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, type FC } from "react";
 
 import { useMediaDevices, useTrackToggle } from "@livekit/components-react";
-import { ConnectionState, Track } from "livekit-client";
+import { ConnectionState, Track, type Room } from "livekit-client";
 
 import { CanvasStyled, WaitingText } from "./styles";
 
@@ -20,13 +19,16 @@ import { useScreenControlStore } from "@/stores/useScreenControlStore";
 import { clientSettings } from "clientSettings";
 import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
 
-export const AvatarScene: FC = () => {
-    const pathName = usePathname();
+type Props = {
+    isRoomPage?: boolean;
+    room: Room;
+};
+
+export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
     const videoDevices = useMediaDevices({ kind: "videoinput" });
 
     const bjsCanvasContainer = useRef<HTMLDivElement>(null); // For 3D scene
 
-    const room = useLiveKitStore((state) => state.room);
     const coreEngine = useEngineStore((state) => state.coreEngine);
     const setScene = useSceneStore((state) => state.setScene);
     const setAvatar = useAvatarStore((state) => state.setAvatar);
@@ -82,7 +84,7 @@ export const AvatarScene: FC = () => {
         }
 
         // Create MediaStream to pass to LiveKit
-        if (pathName === "/room") {
+        if (isRoomPage) {
             updateMediaStream(coreEngine.canvas.captureStream(60));
 
             // Publish 3D babylon.js canvas as camera stream
@@ -190,7 +192,7 @@ export const AvatarScene: FC = () => {
             <CanvasStyled
                 id="avatar-canvas"
                 ref={bjsCanvasContainer}
-                $isForRoom={pathName === "/room"}
+                $isForRoom={isRoomPage}
             />
         </>
     );

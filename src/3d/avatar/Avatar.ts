@@ -113,7 +113,7 @@ const DEFAULT_AVATAR_ID = "67fe6f7713b3fb7e8aa0328c";
 
 class Avatar {
   readonly coreScene: CoreScene;
-  readonly participant: LocalParticipant | RemoteParticipant;
+  private _participant: LocalParticipant | RemoteParticipant;
   gender: AvatarGender;
   readonly isSelf: boolean;
   readonly headHeight: number = AVATAR_PARAMS.CAMERA_HEAD_HEIGHT_MALE;
@@ -206,7 +206,7 @@ class Avatar {
     this.coreScene = coreScene;
 
     this.gender = gender;
-    this.participant = participant;
+    this._participant = participant;
     this.isSelf = isSelf;
     this.avatarPhysicsShapes = {
       male: {},
@@ -260,6 +260,9 @@ class Avatar {
   get scene(): Scene {
     return this.coreScene.scene;
   }
+  get participant(): LocalParticipant | RemoteParticipant {
+    return this._participant;
+  }
   // get highlightLayer(): HighlightLayer | undefined {
   //   return this.post?.atom3DObjects?.highlightLayer;
   // }
@@ -307,6 +310,11 @@ class Avatar {
     return this._isCapsuleBodyColliding;
   }
 
+  setParticipant(participant: LocalParticipant | RemoteParticipant): this {
+    this._participant = participant;
+    return this;
+  }
+
   /**
    * Load avatar from avatar id
    */
@@ -331,9 +339,9 @@ class Avatar {
     this.isLoadingAvatar = true;
     useAvatarLoadingStore.getState().setStartLoading();
 
-    if (this.participant instanceof LocalParticipant) {
+    if (this._participant instanceof LocalParticipant) {
       try {
-        this.participant.setAttributes({
+        this._participant.setAttributes({
           avatarId: id,
           gender: this.gender,
         });
@@ -415,7 +423,7 @@ class Avatar {
       mesh.layerMask = Math.trunc(1); // visible on layer 1
 
       // skip frustum culling check if is own avatar
-      if (this.participant && this.isSelf) {
+      if (this._participant && this.isSelf) {
         mesh.alwaysSelectAsActiveMesh = true;
       } else {
         mesh.renderingGroupId = 1;
@@ -426,7 +434,7 @@ class Avatar {
     });
 
     this.isLoadingAvatar = false;
-    eventBus.emit(`avatar:modelLoaded:${this.participant.identity}`, container);
+    eventBus.emit(`avatar:modelLoaded:${this._participant.identity}`, container);
 
     if (!this._voiceBubble) {
       this._voiceBubble = new AvatarVoiceBubble(this);
@@ -443,7 +451,7 @@ class Avatar {
     // this.scene.onBeforeRenderObservable.add(() => {
     //   if (!this._rootMesh) return;
     //   if (this._rootMesh.getChildMeshes().every(mesh => mesh.isOccluded === true)) {
-    //     console.log(`avatar ${this.participant.identity} is occluded`);
+    //     console.log(`avatar ${this._participant.identity} is occluded`);
     //   }
     // });
 
@@ -487,11 +495,11 @@ class Avatar {
 
     // if (this.isAnimationsReady === true) {
     //   this.isReady = true;
-    //   eventBus.emit(`avatar:ready:${this.participant.identity}`, this);
+    //   eventBus.emit(`avatar:ready:${this._participant.identity}`, this);
     // } else {
-    //   eventBus.once(`avatar:animationsReady:${this.participant.identity}`, () => {
+    //   eventBus.once(`avatar:animationsReady:${this._participant.identity}`, () => {
     //     this.isReady = true;
-    //     eventBus.emit(`avatar:ready:${this.participant.identity}`, this);
+    //     eventBus.emit(`avatar:ready:${this._participant.identity}`, this);
     //   });
     // }
 
@@ -653,7 +661,7 @@ class Avatar {
                     ({ default: AvatarProfileCard }) => {
                       this._multiplayProfile = new AvatarProfileCard(
                         this,
-                        this.participant
+                        this._participant
                       );
                       this._multiplayProfile?.show(undefined, false);
                     }
@@ -915,7 +923,7 @@ class Avatar {
         importedAnimation.blendingSpeed = 0.05;
 
         // rename animation to have user's id
-        importedAnimation.name = `${animName}_${this.participant.identity}`;
+        importedAnimation.name = `${animName}_${this._participant.identity}`;
 
         this._animations[importedAnimation.name] = importedAnimation;
 
@@ -937,7 +945,7 @@ class Avatar {
 
     this.playingAnimation = undefined;
     this.isAnimationsReady = true;
-    eventBus.emit(`avatar:animationsReady:${this.participant.identity}`, this);
+    eventBus.emit(`avatar:animationsReady:${this._participant.identity}`, this);
   }
 
   loadPhysicsBodies(): void {
@@ -952,7 +960,7 @@ class Avatar {
 
     if (clientSettings.DEBUG) {
       console.log(
-        `Physics bodies created for ${this.participant.identity}:`,
+        `Physics bodies created for ${this._participant.identity}:`,
         this._physicsBodies.map((body) => body.transformNode.name)
       );
     }
@@ -998,7 +1006,7 @@ class Avatar {
 
     if (!this._capsuleBodyNode) {
       this._capsuleBodyNode = new TransformNode(
-        "avatarCapsuleBodyNode_" + this.participant.identity,
+        "avatarCapsuleBodyNode_" + this._participant.identity,
         this.scene
       );
     }
@@ -1042,7 +1050,7 @@ class Avatar {
     });
 
     eventBus.emit(
-      `avatar:capsuleBodyCreated:${this.participant.identity}`,
+      `avatar:capsuleBodyCreated:${this._participant.identity}`,
       body
     );
 
@@ -1087,7 +1095,7 @@ class Avatar {
       if (!bone) return;
 
       const bodyNode = new TransformNode(
-        bone.name + "_node_" + this.participant.identity,
+        bone.name + "_node_" + this._participant.identity,
         this.scene
       );
       bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
@@ -1143,7 +1151,7 @@ class Avatar {
       if (!bone) return;
 
       const bodyNode = new TransformNode(
-        bone.name + "_node_" + this.participant.identity,
+        bone.name + "_node_" + this._participant.identity,
         this.scene
       );
       bodyNode.position = bone.getAbsolutePosition(this._rootMesh);
@@ -1421,7 +1429,7 @@ class Avatar {
 
   private _createGroundCheckBody(): void {
     const bodyNode = new TransformNode(
-      "groundCheckBody_node_" + this.participant.identity,
+      "groundCheckBody_node_" + this._participant.identity,
       this.scene
     );
     bodyNode.setAbsolutePosition(this.root.getAbsolutePosition());
@@ -1459,7 +1467,7 @@ class Avatar {
           }
           // this means character is landing
           if (!this.isGrounded) {
-            eventBus.emit(`avatar:landing:${this.participant.identity}`, this);
+            eventBus.emit(`avatar:landing:${this._participant.identity}`, this);
           }
           this.isGrounded = true;
           break;
@@ -1518,7 +1526,7 @@ class Avatar {
 
     this._isCreatingProfileCard = true;
     import("./AvatarProfileCard").then(({ default: AvatarProfileCard }) => {
-      this._multiplayProfile = new AvatarProfileCard(this, this.participant);
+      this._multiplayProfile = new AvatarProfileCard(this, this._participant);
       this._isCreatingProfileCard = false;
     });
   }
@@ -1533,7 +1541,7 @@ class Avatar {
   }
 
   async updateName(name: string): Promise<void> {
-    this.participant.name = name;
+    this._participant.name = name;
     this._profile?.dispose();
     const { default: AvatarProfile } = await import("./AvatarProfile");
     this._profile = new AvatarProfile(this);
@@ -1555,8 +1563,8 @@ class Avatar {
     if (typeof animation === "string") {
       let animationName = animation;
       // if missing user identity, append it to animation name
-      if (!animationName.includes(`_${this.participant.identity}`)) {
-        animationName = animationName + "_" + this.participant.identity;
+      if (!animationName.includes(`_${this._participant.identity}`)) {
+        animationName = animationName + "_" + this._participant.identity;
       }
 
       if (
@@ -1574,7 +1582,7 @@ class Avatar {
       );
 
       // if (clientSettings.DEBUG) {
-      //   console.log('Playing animation from name for ', this.participant.identity, ':', animationName);
+      //   console.log('Playing animation from name for ', this._participant.identity, ':', animationName);
       // }
     } else {
       if (this.playingAnimation === animation) return;
@@ -1590,7 +1598,7 @@ class Avatar {
       // if (clientSettings.DEBUG) {
       //   console.log(
       //     'Playing animation from animGroup for ',
-      //     this.participant.identity,
+      //     this._participant.identity,
       //     ':',
       //     animation.name
       //   );
@@ -1678,7 +1686,7 @@ class Avatar {
       );
     }
     if (clientSettings.DEBUG) {
-      console.log("Show avatar for user:", this.participant.identity);
+      console.log("Show avatar for user:", this._participant.identity);
     }
   }
 
@@ -1696,7 +1704,7 @@ class Avatar {
       this._isCapsuleBodyColliding = false;
     }
     if (clientSettings.DEBUG) {
-      console.log("Hide avatar for user:", this.participant.identity);
+      console.log("Hide avatar for user:", this._participant.identity);
     }
   }
 

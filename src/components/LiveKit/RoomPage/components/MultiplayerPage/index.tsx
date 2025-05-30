@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, type FC } from "react";
 
+import { useRoomContext } from "@livekit/components-react";
+
 import { ConnectionState, RoomEvent } from "livekit-client";
 
 import { FacialExpressionCanvas, Multiplayer3DContainer } from "./styles";
@@ -18,8 +20,9 @@ import { useTrackingStore } from "@/stores/useTrackingStore";
 import SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 
 export const MultiplayerPage: FC = () => {
+    const room = useRoomContext();
+
     const coreEngine = useEngineStore((state) => state.coreEngine);
-    const room = useLiveKitStore((state) => state.room);
     const avatar = useAvatarStore((state) => state.avatar);
     const isBuildSpaceMode = useLiveKitStore(
         (state) => state.isBuildSpaceMode
