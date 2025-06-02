@@ -18,7 +18,7 @@ import type { RoomJoinInfo } from "@/models/multiplayer";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
-import useE2EE from "@/utils/useE2EE";
+import generateE2EEKey from "@/utils/generateE2EEKey";
 
 import { clientSettings } from "clientSettings";
 
@@ -56,8 +56,7 @@ const RoomAudioRenderer = dynamic(
     }
 );
 const SpatialAudioController = dynamic(
-    () =>
-        import("@/components/LiveKit/SpatialAudioController"),
+    () => import("@/components/LiveKit/SpatialAudioController"),
     {
         ssr: false,
     }
@@ -111,8 +110,10 @@ export const RoomPage: FC<Props> = ({ roomJoinInfo }) => {
 
     const [e2eeSetupComplete, setE2eeSetupComplete] = useState<boolean>(false);
 
-    const { keyProvider, worker, e2eePassphrase } = useE2EE(
-        roomJoinInfo.passphrase
+    const { keyProvider, worker, e2eePassphrase } = useMemo(
+        () => generateE2EEKey(roomJoinInfo.passphrase),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
     );
     const e2eeEnabled = !!(e2eePassphrase && worker);
 
@@ -186,7 +187,11 @@ export const RoomPage: FC<Props> = ({ roomJoinInfo }) => {
     useEffect(() => {
         room.on("disconnected", () => {
             // update participant property of avatar
-            useAvatarStore.getState().avatar?.setParticipant(useLiveKitStore.getState().room.localParticipant);
+            useAvatarStore
+                .getState()
+                .avatar?.setParticipant(
+                    useLiveKitStore.getState().room.localParticipant
+                );
 
             useLiveKitStore.getState().setIsMultiplayer(false);
             useLiveKitStore.getState().setIsBuildSpaceMode(false);
@@ -199,8 +204,8 @@ export const RoomPage: FC<Props> = ({ roomJoinInfo }) => {
 
         const roomManager = new RoomManager(room);
         return () => {
-            room.disconnect();
             worker?.terminate();
+            room.disconnect();
             roomManager.dispose();
             useTrackingStore.getState().faceTracker.dispose();
 

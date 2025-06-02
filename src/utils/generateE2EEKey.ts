@@ -1,6 +1,6 @@
 import { ExternalE2EEKeyProvider } from "livekit-client";
 
-const useE2EE = (passPhrase: string) => {
+const generateE2EEKey = (passPhrase: string) => {
     const keyProvider = new ExternalE2EEKeyProvider();
     const e2eePassphrase =
         // eslint-disable-next-line unicorn/no-typeof-undefined
@@ -17,4 +17,4 @@ const useE2EE = (passPhrase: string) => {
     return { keyProvider, worker, e2eePassphrase };
 };
 
-export default useE2EE;
+export default generateE2EEKey;
