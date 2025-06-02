@@ -219,7 +219,7 @@ class CoreScene {
         // always inside skybox
         this.scene.autoClear = false;
 
-        this.atom.toggleSkybox(true);
+        this.atom.skybox.toggle(true);
         this._setCameraToMultiplayer();
 
         // create physics shapes for avatars in multiplayer
@@ -229,7 +229,7 @@ class CoreScene {
     switchToVideoChat(): void {
         // skybox disabled
         this.scene.autoClear = true;
-        this.atom.toggleSkybox(useLiveKitStore.getState().skyboxEnabled);
+        this.atom.skybox.toggle(useLiveKitStore.getState().skyboxEnabled);
         this._setCameraToVideoChat();
     }
 

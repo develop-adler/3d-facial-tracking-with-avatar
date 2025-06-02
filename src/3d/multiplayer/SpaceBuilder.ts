@@ -230,7 +230,7 @@ class SpaceBuilder {
         this.scene.environmentTexture = envMapTexture;
 
         // update skybox material
-        const skyboxMaterial = this.coreScene.atom.skybox?.material as PBRMaterial;
+        const skyboxMaterial = this.coreScene.atom.skybox.mesh.material as PBRMaterial;
         skyboxMaterial.reflectionTexture?.dispose();
         skyboxMaterial.reflectionTexture = skyboxReflectionTexture;
         skyboxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;

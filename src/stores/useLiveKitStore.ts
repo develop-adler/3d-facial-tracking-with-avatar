@@ -24,7 +24,7 @@ type LiveKitStore = {
     openBuildSpaceModal?: OpenJoinSpaceModal;
     skyboxEnabled: boolean;
     skyboxIntensity: number;
-    currentSkybox: string;
+    skyboxId: string;
     openChangeBackgroundModal: boolean;
     setNewRoom(room: Room): void;
     setRoomJoinInfo: (roomJoinInfo?: RoomJoinInfo) => void;
@@ -35,8 +35,9 @@ type LiveKitStore = {
     setMultiplayerManager: (multiplayerManager?: MultiplayerManager) => void;
     setSpaceBuilder: (spaceBuilder?: SpaceBuilder) => void;
     setSkyboxEnabled: (skyboxEnabled: boolean) => void;
+    setSkyboxId: (skyboxId: string) => void;
     setSkyboxIntensity: (skyboxIntensity: number) => void;
-    setCurrentSkybox: (currentSkybox: string) => void;
+    setCurrentSkybox: (skyboxId: string) => void;
     toggleChangeBackgroundModal: (force?: boolean) => void;
 };
 
@@ -52,7 +53,7 @@ export const useLiveKitStore = create<LiveKitStore>()(
             openBuildSpaceModal: undefined,
             skyboxEnabled: false,
             skyboxIntensity: 0.8,
-            currentSkybox: "585760691093336303",
+            skyboxId: "585760691093336303",
             openChangeBackgroundModal: false,
             setNewRoom: (room) => {
                 const { liveKitRoom } = get();
@@ -111,8 +112,9 @@ export const useLiveKitStore = create<LiveKitStore>()(
                 set({ multiplayerManager }),
             setSpaceBuilder: (spaceBuilder) => set({ spaceBuilder }),
             setSkyboxEnabled: (skyboxEnabled) => set({ skyboxEnabled }),
+            setSkyboxId: (skyboxId) => set({ skyboxId }),
             setSkyboxIntensity: (skyboxIntensity) => set({ skyboxIntensity }),
-            setCurrentSkybox: (currentSkybox) => set({ currentSkybox }),
+            setCurrentSkybox: (skyboxId) => set({ skyboxId }),
             toggleChangeBackgroundModal: (force) => {
                 const { openChangeBackgroundModal } = get();
                 set({ openChangeBackgroundModal: force ?? !openChangeBackgroundModal });
@@ -123,6 +125,7 @@ export const useLiveKitStore = create<LiveKitStore>()(
             version: 0.1,
             partialize: (state: LiveKitStore) => ({
                 skyboxEnabled: state.skyboxEnabled,
+                skyboxId: state.skyboxId,
                 skyboxIntensity: state.skyboxIntensity,
             }),
         }

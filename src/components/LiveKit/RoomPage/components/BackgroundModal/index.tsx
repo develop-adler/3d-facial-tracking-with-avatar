@@ -17,63 +17,6 @@ import { useLiveKitStore } from "@/stores/useLiveKitStore";
 
 import { COLOR } from "constant";
 
-const BackgroundIntensitySlider: FC<{ coreScene?: CoreScene }> = ({
-  coreScene,
-}) => {
-  const [intensity, setIntensity] = useState<number>(
-    useLiveKitStore.getState().skyboxIntensity
-  );
-  const setSkyboxIntensity = useLiveKitStore(
-    (state) => state.setSkyboxIntensity
-  );
-
-  const updateSkyboxIntensity = useRef<globalThis.NodeJS.Timeout | null>(null);
-
-  const handleSliderChange = (_: Event, value: number | number[]) => {
-    if (typeof value === "number") {
-      setIntensity(value);
-      coreScene?.atom.setSkyboxIntensity?.(value); // smooth update for 3D effect
-
-      // Throttle store write
-      if (updateSkyboxIntensity.current) {
-        clearTimeout(updateSkyboxIntensity.current);
-      }
-      updateSkyboxIntensity.current = setTimeout(() => {
-        setSkyboxIntensity(value);
-      }, 150); // Delay in ms — tune this
-    }
-  };
-
-  return (
-    <>
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 1 }}
-      >
-        <Typography sx={{ color: COLOR.white, fontSize: 14 }}>
-          Intensity
-        </Typography>
-        <Typography sx={{ color: COLOR.white, fontSize: 14 }}>
-          {intensity.toFixed(2)}
-        </Typography>
-      </Box>
-      <Slider
-        value={intensity}
-        min={0.1}
-        max={1}
-        step={0.01}
-        onChange={handleSliderChange}
-        sx={{
-          color: COLOR.brandPrimary,
-          mb: 2,
-        }}
-      />
-    </>
-  );
-};
-
 const BackgroundModal: FC = () => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +24,9 @@ const BackgroundModal: FC = () => {
 
   const coreScene = useSceneStore((state) => state.coreScene);
   const skyboxEnabled = useLiveKitStore((state) => state.skyboxEnabled);
+  const skyboxId = useLiveKitStore((state) => state.skyboxId);
   const setSkyboxEnabled = useLiveKitStore((state) => state.setSkyboxEnabled);
+  const setSkyboxId = useLiveKitStore((state) => state.setSkyboxId);
   const toggleChangeBackgroundModal = useLiveKitStore(
     (state) => state.toggleChangeBackgroundModal
   );
@@ -97,6 +42,16 @@ const BackgroundModal: FC = () => {
     const rect = buttonEl.getBoundingClientRect();
     return { top: rect.top, left: rect.left };
   });
+
+  const changeSkybox = (assetId: string) => {
+    coreScene?.atom.skybox.load(
+      assetId,
+      undefined,
+      undefined,
+      true
+    );
+    setSkyboxId(assetId);
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -151,7 +106,10 @@ const BackgroundModal: FC = () => {
               <Button
                 variant="text"
                 sx={{
+                  border: skyboxId === asset.id ? `4px solid ${COLOR.brandPrimary}` : "none",
                   borderRadius: 2,
+                  borderCollapse: "separate",
+                  borderSpacing: 0,
                   padding: 0,
                   width: "32px",
                   height: "auto",
@@ -163,12 +121,7 @@ const BackgroundModal: FC = () => {
                   userSelect: "none",
                 }}
                 onClick={() => {
-                  coreScene?.atom.loadHDRSkybox(
-                    asset.id,
-                    undefined,
-                    undefined,
-                    true
-                  );
+                  changeSkybox(asset.id);
                 }}
               >
                 <Box
@@ -185,7 +138,6 @@ const BackgroundModal: FC = () => {
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    borderRadius: 2,
                   }}
                   onDrag={(event) => event.preventDefault()}
                   onDragStart={(event) => event.preventDefault()}
@@ -210,7 +162,7 @@ const BackgroundModal: FC = () => {
             checked={skyboxEnabled}
             onChange={(e) => {
               setSkyboxEnabled(e.target.checked);
-              coreScene?.atom.toggleSkybox(e.target.checked);
+              coreScene?.atom.skybox.toggle(e.target.checked);
             }}
           />
         }
@@ -218,6 +170,63 @@ const BackgroundModal: FC = () => {
         labelPlacement="end"
       />
     </Box>
+  );
+};
+
+const BackgroundIntensitySlider: FC<{ coreScene?: CoreScene }> = ({
+  coreScene,
+}) => {
+  const [intensity, setIntensity] = useState<number>(
+    useLiveKitStore.getState().skyboxIntensity
+  );
+  const setSkyboxIntensity = useLiveKitStore(
+    (state) => state.setSkyboxIntensity
+  );
+
+  const updateSkyboxIntensity = useRef<globalThis.NodeJS.Timeout | null>(null);
+
+  const handleSliderChange = (_: Event, value: number | number[]) => {
+    if (typeof value === "number") {
+      setIntensity(value);
+      coreScene?.atom.skybox.setIntensity?.(value); // smooth update for 3D effect
+
+      // Throttle store write
+      if (updateSkyboxIntensity.current) {
+        clearTimeout(updateSkyboxIntensity.current);
+      }
+      updateSkyboxIntensity.current = setTimeout(() => {
+        setSkyboxIntensity(value);
+      }, 150); // Delay in ms — tune this
+    }
+  };
+
+  return (
+    <>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 1 }}
+      >
+        <Typography sx={{ color: COLOR.white, fontSize: 14 }}>
+          Intensity
+        </Typography>
+        <Typography sx={{ color: COLOR.white, fontSize: 14 }}>
+          {intensity.toFixed(2)}
+        </Typography>
+      </Box>
+      <Slider
+        value={intensity}
+        min={0.1}
+        max={1}
+        step={0.01}
+        onChange={handleSliderChange}
+        sx={{
+          color: COLOR.brandPrimary,
+          mb: 2,
+        }}
+      />
+    </>
   );
 };
 

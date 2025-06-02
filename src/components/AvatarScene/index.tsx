@@ -76,7 +76,7 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
             );
             setAvatar(newAvatar);
 
-            currentCoreScene.atom.loadHDRSkybox().then(() => {
+            currentCoreScene.atom.skybox.load().then(() => {
                 if (!newAvatar!.container) {
                     newAvatar!.loadAvatar(undefined, undefined, true);
                 }
