@@ -200,6 +200,7 @@ export const RoomPage: FC<Props> = ({ roomJoinInfo }) => {
         const roomManager = new RoomManager(room);
         return () => {
             room.disconnect();
+            worker?.terminate();
             roomManager.dispose();
             useTrackingStore.getState().faceTracker.dispose();
 
