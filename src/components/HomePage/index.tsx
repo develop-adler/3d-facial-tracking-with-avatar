@@ -107,8 +107,7 @@ const Page = () => {
                   flex: 1,
                   textAlign: "center",
                   boxSizing: "border-box",
-                  my: { xs: "4rem", md: 0 },
-                  marginTop: { md: `calc(${index} * 35vh)` },
+                  my: { xs: "4rem", md: "8rem" },
                 }}
               >
                 <FadeInOnScroll>
