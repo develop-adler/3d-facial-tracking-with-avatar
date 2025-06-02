@@ -3,15 +3,11 @@ import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 
 import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import { PhysicsShape } from "@babylonjs/core/Physics/v2/physicsShape";
 import { Scene } from "@babylonjs/core/scene";
-import { toast } from "react-toastify";
 
 import type CoreScene from "@/3d/core/CoreScene";
 import type Resource from "@/3d/assets/Resource";
@@ -27,7 +23,6 @@ import type {
     StudioDecorationObjectProperty,
     StudioMeshMetaData,
 } from "@/models/studio";
-import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { isMobile } from "@/utils/browserUtils";
 
 import { clientSettings } from "clientSettings";
@@ -35,7 +30,6 @@ import {
     OBJECT_LOD_LEVELS,
     PHYSICS_SHAPE_FILTER_GROUPS,
     STUDIO_OBJECT_TYPE_DICTIONARY,
-    TOAST_TOP_OPTIONS,
 } from "constant";
 
 import type { AssetContainer, InstantiatedEntries } from "@babylonjs/core/assetContainer";
