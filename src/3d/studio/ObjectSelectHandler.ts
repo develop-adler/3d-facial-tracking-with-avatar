@@ -318,9 +318,9 @@ class ObjectSelectHandler {
         extraMeshList?: Array<Mesh | AbstractMesh>
     ): Array<Mesh | AbstractMesh> {
         if (!this.gpuPicker) return [];
-        const existingList = this.spaceBuilder.coreScene.atom.currentSceneObjects.flatMap(
-            (root) => root.getChildMeshes()
-        );
+        const existingList = this.spaceBuilder.coreScene.atom.atomObjects.flatMap(
+            (object) => object.currentLODRoot
+        ).filter(object => !!object);
         const importedList = this.spaceBuilder.currentObjects.flatMap((root) =>
             root.getChildMeshes()
         );

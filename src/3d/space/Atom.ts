@@ -42,9 +42,9 @@ class Atom {
     readonly objectPhysicsShape: Map<string, PhysicsShape>;
     spacePhysicsBodies: Array<PhysicsBody>;
     numberOfObjects: number;
+    atomObjects: Array<AtomObject>;
 
     private _loadStep: number;
-    private _atomObjects: Array<AtomObject>;
     private readonly _uniqueAtomObjects: Map<string, AtomObject>;
     private readonly _lodObserver: Observer<Camera>;
 
@@ -58,7 +58,7 @@ class Atom {
         this.spacePhysicsBodies = [];
         this.numberOfObjects = 0;
         this._loadStep = -1;
-        this._atomObjects = [];
+        this.atomObjects = [];
         this._uniqueAtomObjects = new Map();
 
         this.skybox = new Skybox(this);
@@ -90,7 +90,7 @@ class Atom {
             lastTime = time;
 
             // switch to lower LODs when at certain distances from camera
-            for (const object of this._atomObjects.values()) {
+            for (const object of this.atomObjects.values()) {
                 const root = object.currentLODRoot;
 
                 if (!root) continue;
@@ -204,7 +204,7 @@ class Atom {
             );
         }
 
-        this.loadCollisions(this._atomObjects);
+        this.loadCollisions(this.atomObjects);
 
         executeWhenReady?.();
 
@@ -349,7 +349,7 @@ class Atom {
                     // noTextures
                 );
                 this._uniqueAtomObjects.set(object.id, atomObject);
-                this._atomObjects.push(atomObject);
+                this.atomObjects.push(atomObject);
 
                 // if (asset.type === 'images') {
                 //     return this.loadStudioImageObject(
@@ -392,7 +392,7 @@ class Atom {
                         repeatedObject.scale,
                         atomObject.container
                     );
-                    this._atomObjects.push(clonedAtomObject);
+                    this.atomObjects.push(clonedAtomObject);
                     try {
                         await clonedAtomObject.load(
                             // quality === "notexture" ? "low" : quality
@@ -546,10 +546,10 @@ class Atom {
             body.dispose();
         }
         this.spacePhysicsBodies = [];
-        for (const object of this._atomObjects) {
+        for (const object of this.atomObjects) {
             object.dispose();
         }
-        this._atomObjects = [];
+        this.atomObjects = [];
 
         this.isPhysicsGenerated = false;
         this.isAtomFinishLoading = false;
