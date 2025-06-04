@@ -11,8 +11,6 @@ import type {
   StudioObjectProperty,
 } from "@/models/studio";
 
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-
 export type ObjectTransform = [number, number, number];
 export type ObjectQuaternion = [number, number, number, number];
 export type ObjectAbsoluteTransforms = {

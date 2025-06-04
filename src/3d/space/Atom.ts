@@ -265,47 +265,22 @@ class Atom {
                 }
             }
 
-            // // hide non-texture objects
-            // if (this._loadStep === 0) {
-            //     for (const mesh of this.lodObjects[-1]) {
-            //         mesh.setEnabled(false);
-            //         for (const child of mesh.getChildMeshes()) child.setEnabled(false);
-            //     }
-
-            //     // for (const object of this._atomObjects) {
-            //     //     object.root
-            //     // }
-
-            //     // // remove non-texture models geometries for lower memory usage
-            //     // this.lodObjects[-1].forEach(mesh => {
-            //     //     mesh
-            //     //         .getChildMeshes(false, (mesh): mesh is Mesh => mesh.getClassName() === 'Mesh')
-            //     //         .forEach(mesh => {
-            //     //             if (mesh.geometry) {
-            //     //                 mesh.geometry.clearCachedData();
-            //     //                 mesh.geometry.dispose();
-            //     //             }
-            //     //         });
-            //     // });
-
-            //     // // remove image assets from list because images don't have LODs
-            //     // assetList = assetList.filter(asset => asset.type !== 'images');
-            // }
-
             this._loadStep++;
         };
 
         (async () => {
             this.isLoadingLODs = true;
 
-            // only load low quality version on mobile
+            // eslint-disable-next-line unicorn/prefer-ternary
             if (isMobile()) {
+                // only load low quality version on mobile
                 await loadSpaceLOD(OBJECT_LOD_LEVELS[2]);
             } else {
                 // load high quality LOD on other devices
-                await loadSpaceLOD(OBJECT_LOD_LEVELS[1]);
+                // await loadSpaceLOD(OBJECT_LOD_LEVELS[1]);
                 await loadSpaceLOD(OBJECT_LOD_LEVELS[4]);
 
+                // load all qualities except lowest
                 // for await (const level of OBJECT_LOD_LEVELS) {
                 //     if (level === OBJECT_LOD_LEVELS[0]) continue; // skip lowest quality
                 //     loadSpaceLOD(level);
