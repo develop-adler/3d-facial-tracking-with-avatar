@@ -22,7 +22,7 @@ const LoadingBar: FC<Props> = ({ isRoomPage }) => {
     return (
         <Box
             sx={{
-                position: isRoomPage ? "absolute" : 'relative',
+                position: "absolute",
                 top: isRoomPage ? "5rem" : "auto",
                 left: isRoomPage ? "50%" : "auto",
                 transform: isRoomPage ? "translateX(-50%)" : "none",

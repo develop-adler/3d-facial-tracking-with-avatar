@@ -249,6 +249,7 @@ const Page = () => {
         {started ? (
           <Box
             sx={{
+              position: "relative", // for child elements to be positioned relative to this box
               width: "50vw",
               height: "50vh",
               border: `4px solid ${COLOR.brandPrimary}`,
