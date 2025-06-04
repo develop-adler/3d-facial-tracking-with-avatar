@@ -113,8 +113,3 @@ export type SpaceJSON = {
 };
 export type ObjectQuality = 'lowest' | 'low' | 'medium' | 'high' | 'ultra';
 export type ObjectQualityWithNoTexture = 'notexture' | ObjectQuality;
-
-export type ObjectLODData = {
-  lods: Record<ObjectQualityWithNoTexture, AbstractMesh | undefined>; // low to high quality LODs order
-  currentLOD?: ObjectQualityWithNoTexture; // current LOD level (index of lods)
-};

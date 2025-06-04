@@ -6,6 +6,8 @@ import SaveStateHandler from "@/3d/studio/SaveStateHandler";
 import eventBus, { EventNames } from "@/eventBus";
 import type { PlaceObjectRPC, SaveStateRPC, UserRequest } from "@/models/multiplayer";
 
+import { clientSettings } from "clientSettings";
+
 class MultiplayerEventHandler {
     readonly spaceBuilder: SpaceBuilder;
 
@@ -191,6 +193,9 @@ class MultiplayerEventHandler {
         const payload = JSON.parse(data.payload) as SaveStateRPC;
         handler.savedStates = payload.savedStates;
         handler.currentStateIndex = payload.currentStateIndex;
+        if (clientSettings.DEBUG) {
+            console.log(data.callerIdentity, "saved states:", handler.savedStates);
+        }
         return "ok" as string;
     }
     private async _undoStudioStateRPC(data: RpcInvocationData) {

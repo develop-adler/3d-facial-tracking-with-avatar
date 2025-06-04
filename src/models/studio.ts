@@ -86,9 +86,6 @@ export type StudioObjectProperty = {
 export type StudioMeshMetaData = {
   id: string;
   name: string;
-  position: ObjectTransform;
-  rotation: ObjectTransform;
-  scale: ObjectTransform;
   type: StudioObjectType;
   type3D: StudioObjectType3D;
   subType: StudioObjectSubType;

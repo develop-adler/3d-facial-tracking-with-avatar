@@ -191,6 +191,13 @@ class MultiplayerManager {
     }
 
     private _loadRoomUsers() {
+        if (this.localAvatar.container) {
+            this.avatarController.start();
+        } else {
+            eventBus.onceWithEvent("avatar:ready", () => {
+                this.avatarController.start();
+            });
+        }
         if (this.coreScene.isPhysicsEnabled) {
             this.initSelfAvatar();
         } else {
@@ -220,14 +227,12 @@ class MultiplayerManager {
         if (this.localAvatar.container) {
             this.localAvatar.showAvatarInfo();
             this.localAvatar.loadAnimations();
-            this.avatarController.start();
             // for debugging
             // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
         } else {
             this.localAvatar.loadAvatar().then(() => {
                 this.localAvatar.showAvatarInfo();
                 this.localAvatar.loadAnimations();
-                this.avatarController.start();
                 // for debugging
                 // this.avatarView ??= new AvatarFaceView(this.coreScene, this.localAvatar, document.querySelector("#pipCanvas") as HTMLCanvasElement);
             });

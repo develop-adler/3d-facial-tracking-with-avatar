@@ -492,6 +492,7 @@ class Avatar {
     }
 
     this.isReady = true;
+    eventBus.emit(`avatar:ready:${this._participant.identity}`, this);
 
     // if (this.isAnimationsReady === true) {
     //   this.isReady = true;

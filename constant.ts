@@ -205,3 +205,4 @@ export const TOAST_TOP_OPTIONS: ToastOptions = {
 };
 
 export const OBJECT_LOD_LEVELS: Array<ObjectQualityWithNoTexture> = ['notexture', 'lowest', 'low', 'medium', 'high', 'ultra'];
+export const OBJECT_LOD_DISTANCES = [60, 40, 20, 10];
