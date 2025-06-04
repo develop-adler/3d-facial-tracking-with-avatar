@@ -1,5 +1,5 @@
 import { BoundingInfo } from "@babylonjs/core/Culling/boundingInfo";
-import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
@@ -175,7 +175,7 @@ class ObjectPlacementHandler {
 
         let rootNode: AbstractMesh | undefined;
         try {
-            const container = await loadAssetContainerAsync(
+            const container = await LoadAssetContainerAsync(
                 resource.url,
                 this.scene,
                 {

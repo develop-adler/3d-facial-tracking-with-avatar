@@ -1,6 +1,6 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { HighlightLayer } from "@babylonjs/core/Layers/highlightLayer";
-import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
@@ -370,7 +370,7 @@ class SpaceBuilder {
             const rootNode = new TransformNode(id + "_rootNode", this.scene);
 
             try {
-                const container = await loadAssetContainerAsync(
+                const container = await LoadAssetContainerAsync(
                     resource.url,
                     this.scene,
                     {
@@ -895,7 +895,7 @@ class SpaceBuilder {
         const qualityToLoad = isMobile() ? "low" : "high";
 
         try {
-            const container = await loadAssetContainerAsync(
+            const container = await LoadAssetContainerAsync(
                 `/static/models/missing_asset_${qualityToLoad}.glb`,
                 this.scene,
                 {

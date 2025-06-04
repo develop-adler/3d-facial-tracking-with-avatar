@@ -7,8 +7,8 @@ import { BoneIKController } from "@babylonjs/core/Bones/boneIKController";
 import { BoneLookController } from "@babylonjs/core/Bones/boneLookController";
 // import { PhysicsViewer } from '@babylonjs/core/Debug/physicsViewer';
 import {
-  loadAssetContainerAsync,
-  importAnimationsAsync,
+  LoadAssetContainerAsync,
+  ImportAnimationsAsync,
 } from "@babylonjs/core/Loading/sceneLoader";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
@@ -352,7 +352,7 @@ class Avatar {
 
     const urlToLoad =
       `https://models.readyplayer.me/${id}.glb?` + RPM_AVATAR_PARAMS;
-    const container = await loadAssetContainerAsync(urlToLoad, this.scene, {
+    const container = await LoadAssetContainerAsync(urlToLoad, this.scene, {
       pluginExtension: ".glb",
       pluginOptions: {
         gltf: {
@@ -887,7 +887,7 @@ class Avatar {
             : `Female${animName}.glb`;
         const url = "/static/avatar/animations/" + fileName;
 
-        await importAnimationsAsync(url, this.scene, {
+        await ImportAnimationsAsync(url, this.scene, {
           pluginExtension: ".glb",
           overwriteAnimations: false,
           animationGroupLoadingMode: 3, // SceneLoaderAnimationGroupLoadingMode.NOSYNC

@@ -1,7 +1,7 @@
 import "@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader";
 
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { loadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 
 import type Resource from "@/3d/assets/Resource";
 import type CoreScene from "@/3d/core/CoreScene";
@@ -168,7 +168,7 @@ class AtomObject {
         let container: AssetContainer;
 
         try {
-            container = await loadAssetContainerAsync(resource.url, this.scene, {
+            container = await LoadAssetContainerAsync(resource.url, this.scene, {
                 pluginExtension: ".glb",
                 pluginOptions: {
                     gltf: {
