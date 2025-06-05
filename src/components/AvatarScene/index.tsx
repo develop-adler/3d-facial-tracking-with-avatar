@@ -5,7 +5,7 @@ import { useEffect, useRef, type FC } from "react";
 import { useMediaDevices, useTrackToggle } from "@livekit/components-react";
 import { ConnectionState, Track, type Room } from "livekit-client";
 
-import { CanvasStyled, WaitingText } from "./styles";
+import { CanvasContainerStyled, CanvasStyled, WaitingText } from "./styles";
 
 import Avatar from "@/3d/avatar/Avatar";
 import CoreScene from "@/3d/core/CoreScene";
@@ -137,6 +137,7 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
             elapsedTime = 0;
             useTrackingStore.getState().faceTracker.detectFace();
             // useTrackingStore.getState().faceTracker.detectHand();
+            // useTrackingStore.getState().faceTracker.detectPose();
         });
 
         return () => {
@@ -182,14 +183,12 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
     return (
         <>
             {/* To display 2D hands from Hand Landmarker */}
-            {/* <CanvasStyled
-                id="hand-canvas"
-                $viewportFill={isViewportFill}
-                $fullscreen={isFullscreen}
-                style={{ border: "none", zIndex: 1 }}
-            /> */}
+            <CanvasStyled id="hand-canvas" />
 
-            <CanvasStyled
+            {/* To display 2D pose from Pose Landmarker for debugging */}
+            <CanvasStyled id="pose-canvas" />
+
+            <CanvasContainerStyled
                 id="avatar-canvas"
                 ref={bjsCanvasContainer}
                 $isForRoom={isRoomPage}

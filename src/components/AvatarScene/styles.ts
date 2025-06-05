@@ -1,14 +1,14 @@
 import { styled } from "@mui/material/styles";
 
-export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
+export const CanvasContainerStyled = styled("div")<{ $isForRoom?: boolean }>(
     ({ $isForRoom }) => ({
         // don't interfere with current DOM elements when in room
-        position: $isForRoom ? 'fixed' : 'static',
+        position: $isForRoom ? 'fixed' : 'absolute',
         width: "100%",
         height: "100%",
         userSelect: "none",
         zIndex: $isForRoom ? -999_999 : 0,
-        visibility: $isForRoom ? "hidden" : "visible", 
+        visibility: $isForRoom ? "hidden" : "visible",
 
         // mirrored
         transform: "scaleX(-1)",
@@ -18,6 +18,23 @@ export const CanvasStyled = styled("div")<{ $isForRoom?: boolean }>(
         filter: "FlipH",
     })
 );
+
+export const CanvasStyled = styled("canvas")({
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    userSelect: "none",
+    touchAction: "none", // prevent touch events from interfering
+    border: "none",
+    zIndex: 1,
+
+    // mirrored
+    transform: "scaleX(-1)",
+    WebkitTransform: "scaleX(-1)",
+    OTransform: "scaleX(-1)",
+    MozTransform: "scaleX(-1)",
+    filter: "FlipH",
+});
 
 export const WaitingText = styled("div")(({ theme }) => ({
     position: "fixed",

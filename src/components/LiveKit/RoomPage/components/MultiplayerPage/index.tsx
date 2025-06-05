@@ -85,6 +85,7 @@ export const MultiplayerPage: FC = () => {
             elapsedTime = 0;
             useTrackingStore.getState().faceTracker.detectFace();
             // useTrackingStore.getState().faceTracker.detectHand();
+            // useTrackingStore.getState().faceTracker.detectPose();
         });
 
         return () => {

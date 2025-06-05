@@ -250,7 +250,9 @@ const Page = () => {
           <Box
             sx={{
               position: "relative", // for child elements to be positioned relative to this box
+              minWidth: "50vw",
               width: "50vw",
+              minHeight: "50vh",
               height: "50vh",
               border: `4px solid ${COLOR.brandPrimary}`,
             }}

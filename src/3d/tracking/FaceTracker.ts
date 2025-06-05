@@ -1,11 +1,12 @@
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { Category, NormalizedLandmark } from "@mediapipe/tasks-vision";
+import { type Category, DrawingUtils, type NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 import type Avatar from "@/3d/avatar/Avatar";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { FaceDetector } from "@/3d/tracking/FaceDetector";
 import { HandDetector } from "@/3d/tracking/HandDetector";
-import { drawConnectors, drawLandmarks } from "@/utils/draw_hands";
+import { PoseDetector } from "@/3d/tracking/PoseDetector";
+import { drawConnectors, drawLandmarks } from "@/utils/landmarker/draw_hands";
 import {
     clamp,
     hasGetUserMedia,
@@ -17,6 +18,7 @@ import {
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { useTrackingStore } from "@/stores/useTrackingStore";
+import { drawPoseLandmarks } from "@/utils/landmarker/draw_pose";
 
 const SafeVideo = (() =>
     typeof document === "undefined"
@@ -30,12 +32,14 @@ class FaceTracker {
     readonly cameraVideoElem: HTMLVideoElement;
     faceDetector: FaceDetector;
     handDetector: HandDetector;
+    poseDetector: PoseDetector;
     private _isMultiplayer: boolean;
     private _isGettingVideoStream: boolean;
     isStreamReady: boolean;
     isAvatarPositionReset: boolean;
     isAvatarHeadRotationReset: boolean;
 
+    private _poseDrawingUtil?: DrawingUtils
     private _isDisposed: boolean;
 
     private constructor() {
@@ -52,6 +56,8 @@ class FaceTracker {
             this.faceDetector.dispose();
             this.handDetector = new HandDetector(this.cameraVideoElem);
             this.handDetector.dispose();
+            this.poseDetector = new PoseDetector(this.cameraVideoElem);
+            this.poseDetector.dispose();
             return;
         }
 
@@ -64,6 +70,8 @@ class FaceTracker {
         this.faceDetector.init();
         this.handDetector = new HandDetector(this.cameraVideoElem);
         this.handDetector.init();
+        this.poseDetector = new PoseDetector(this.cameraVideoElem);
+        this.poseDetector.init();
 
         // for testing only
         // this.cameraVideoElem.id = "webcam";
@@ -229,6 +237,46 @@ class FaceTracker {
         // update bone ik
         avatar.boneIKControllers.left?.update();
         avatar.boneIKControllers.right?.update();
+    }
+
+    async detectPose() {
+        if (!this.isStreamReady) {
+            await this.getUserVideoStream();
+        }
+
+        if (!this.cameraVideoElem.srcObject) return;
+        if (this.poseDetector.isDisposed) return;
+
+        const avatar = useAvatarStore.getState().avatar;
+
+        if (!avatar) return;
+
+        let result;
+        try {
+            result = await this.poseDetector.detect();
+        } catch {
+            this.poseDetector.dispose();
+            this.poseDetector = new PoseDetector(this.cameraVideoElem);
+            this.poseDetector.init();
+            return;
+        }
+
+        if (!result || result.landmarks.length === 0) return;
+
+        // draw 2D pose from landmarks
+        const canvas = document.querySelector(
+            "#pose-canvas"
+        ) as HTMLCanvasElement | null;
+        if (canvas) {
+            const cxt = canvas.getContext("2d");
+            if (!cxt) return;
+            if (!this._poseDrawingUtil) {
+                this._poseDrawingUtil = new DrawingUtils(cxt);
+            }
+            drawPoseLandmarks(cxt, result.landmarks, this._poseDrawingUtil);
+        }
+
+        result.close();
     }
 
     syncMorphTargets(avatar: Avatar, blendShapes: Category[]) {
@@ -429,8 +477,13 @@ class FaceTracker {
      */
     dispose() {
         if (this._isDisposed) return;
+
+        this._poseDrawingUtil?.close();
+        this._poseDrawingUtil = undefined;
+
         this.faceDetector.dispose();
         this.handDetector.dispose();
+        this.poseDetector.dispose();
         // eslint-disable-next-line unicorn/no-null
         this.cameraVideoElem.srcObject = null;
         this.cameraVideoElem.remove();
