@@ -25,6 +25,7 @@ export const CanvasStyled = styled("canvas")({
     height: "100%",
     userSelect: "none",
     touchAction: "none", // prevent touch events from interfering
+    pointerEvents: "none", // prevent mouse events from interfering
     border: "none",
     zIndex: 1,
 
