@@ -3,9 +3,9 @@ import { type Category, DrawingUtils, type NormalizedLandmark } from "@mediapipe
 
 import type Avatar from "@/3d/avatar/Avatar";
 import { useAvatarStore } from "@/stores/useAvatarStore";
-import { FaceDetector } from "@/3d/tracking/FaceDetector";
-import { HandDetector } from "@/3d/tracking/HandDetector";
-import { PoseDetector } from "@/3d/tracking/PoseDetector";
+import { FaceDetector } from "@/utils/tracking/FaceDetector";
+import { HandDetector } from "@/utils/tracking/HandDetector";
+import { PoseDetector } from "@/utils/tracking/PoseDetector";
 import { drawConnectors, drawLandmarks } from "@/utils/landmarker/draw_hands";
 import {
     clamp,
@@ -234,9 +234,7 @@ class FaceTracker {
             );
         }
 
-        // update bone ik
-        avatar.boneIKControllers.left?.update();
-        avatar.boneIKControllers.right?.update();
+        // TODO: update bone ik
     }
 
     async detectPose() {

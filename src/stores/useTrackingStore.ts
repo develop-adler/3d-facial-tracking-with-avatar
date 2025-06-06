@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import FaceTracker from "@/3d/tracking/FaceTracker";
+import FaceTracker from "@/utils/tracking/FaceTracker";
 
 type TrackingStore = {
     faceTracker: FaceTracker;
