@@ -1,11 +1,12 @@
 // import "@babylonjs/core/Animations/animatable";
 import "@babylonjs/core/Engines/Extensions/engine.query"; // for occlusion queries
 import "@babylonjs/core/Rendering/boundingBoxRenderer"; // for occlusion queries
-// import '@babylonjs/core/Meshes/thinInstanceMesh'; // for PhysicsViewer
+// import "@babylonjs/core/Meshes/thinInstanceMesh"; // for PhysicsViewer
+
 // import { Animation } from "@babylonjs/core/Animations/animation";
 import { BoneIKController } from "@babylonjs/core/Bones/boneIKController";
 import { BoneLookController } from "@babylonjs/core/Bones/boneLookController";
-// import { PhysicsViewer } from '@babylonjs/core/Debug/physicsViewer';
+// import { PhysicsViewer } from "@babylonjs/core/Debug/physicsViewer";
 import {
   LoadAssetContainerAsync,
   ImportAnimationsAsync,
@@ -56,6 +57,8 @@ import type { Observer } from "@babylonjs/core/Misc/observable";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import type { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import type { Scene } from "@babylonjs/core/scene";
+import type { VRM } from "@/utils/babylon-vrm.es";
+// import type { VRM } from "@/utils/babylon-vrm.es";
 
 type AnimationsRecord = Record<string, AnimationGroup>;
 
@@ -315,6 +318,71 @@ class Avatar {
     return this;
   }
 
+  async loadVRMAvatar(): Promise<this> {
+    const container = await LoadAssetContainerAsync(
+      "/static/vrm/SampleB.vrm",
+      this.scene,
+      {
+        // pluginExtension: ".vrm",
+        onProgress: (progress) => {
+          const percentage = Math.floor(
+            (progress.loaded / progress.total) * 100
+          );
+          useAvatarLoadingStore.getState().setLoadingPercentage(percentage);
+        },
+      }
+    );
+    useAvatarLoadingStore.getState().setNotLoading();
+    container.addAllToScene();
+
+    // this.coreScene.assignNewScene(vrmScene);
+
+    // console.log('this.scene:', this.scene);
+
+    console.log("VRM container:", container);
+
+    // const vrmManager = this.scene.metadata.vrmManagers[0] as VRMManager;
+    // const vrmManager = this.scene.metadata.vrm[0] as VRM;
+
+    console.log("skeleton0 bones", container.skeletons[0].bones.map((bone) => bone.name));
+    console.log("skeleton1 bones", container.skeletons[1].bones.map((bone) => bone.name));
+    console.log("skeleton2 bones", container.skeletons[2].bones.map((bone) => bone.name));
+
+
+
+    setTimeout(() => {
+      const vrmManager = container.scene.metadata.vrm[0] as VRM;
+      console.log("vrmManager:", vrmManager);
+
+      const shoulderBone = vrmManager.humanoid.humanBones.leftShoulder;
+      console.log("Left shoulder bone:", shoulderBone);
+
+      // let elapsedTime = 0;
+      // this.scene.onBeforeRenderObservable.add((scene) => {
+      //   const delta = scene.getEngine().getDeltaTime() / 1000;
+      //   vrmManager.update(delta);
+      //   elapsedTime += delta;
+
+      //   vrmManager.humanoid.humanBones.leftShoulder.rotationQuaternion =
+      //     Quaternion.FromEulerAngles(
+      //       Math.sin((Math.PI / 4) * (elapsedTime / 200)),
+      //       0,
+      //       Math.PI / 3.5
+      //     );
+      //   vrmManager.humanoid.humanBones.leftLowerLeg.rotationQuaternion = Quaternion.FromEulerAngles(-Math.PI / 6, 0, 0);
+      //   vrmManager.humanoid.humanBones.rightLowerLeg.rotationQuaternion = Quaternion.FromEulerAngles(-Math.PI / 6, 0, 0);
+
+      //   console.log("Left shoulder rotation:", vrmManager.humanoid.humanBones.leftShoulder.rotationQuaternion);
+      // });
+    }, 0);
+
+    this.coreScene.camera.target = container.meshes[0].absolutePosition.add(
+      new Vector3(0, 1.5, 0)
+    );
+
+    return this;
+  }
+
   /**
    * Load avatar from avatar id
    */
@@ -434,7 +502,10 @@ class Avatar {
     });
 
     this.isLoadingAvatar = false;
-    eventBus.emit(`avatar:modelLoaded:${this._participant.identity}`, container);
+    eventBus.emit(
+      `avatar:modelLoaded:${this._participant.identity}`,
+      container
+    );
 
     if (!this._voiceBubble) {
       this._voiceBubble = new AvatarVoiceBubble(this);
@@ -950,20 +1021,42 @@ class Avatar {
   }
 
   loadPhysicsBodies(): void {
-    // load hitboxes for skeleton
-    if (this._skeleton) this._generateHitBoxes(this._skeleton);
+    if (this.coreScene.scene.isPhysicsEnabled()) {
+      // load hitboxes for skeleton
+      if (this._skeleton) this._generateHitBoxes(this._skeleton);
 
-    // capsule body always has to be generated after the physics bodies
-    // otherwise the physics bodies' position will not be correct
-    this._capsuleBody = this._generateCapsuleBody(this.root.absolutePosition);
+      // capsule body always has to be generated after the physics bodies
+      // otherwise the physics bodies' position will not be correct
+      this._capsuleBody = this._generateCapsuleBody(this.root.absolutePosition);
 
-    this._createGroundCheckBody();
+      this._createGroundCheckBody();
 
-    if (clientSettings.DEBUG) {
-      console.log(
-        `Physics bodies created for ${this._participant.identity}:`,
-        this._physicsBodies.map((body) => body.transformNode.name)
-      );
+      if (clientSettings.DEBUG) {
+        console.log(
+          `Physics bodies created for ${this._participant.identity}:`,
+          this._physicsBodies.map((body) => body.transformNode.name)
+        );
+      }
+    } else {
+      eventBus.onceWithEvent("space:scenePhysicsEnabled", () => {
+        // load hitboxes for skeleton
+        if (this._skeleton) this._generateHitBoxes(this._skeleton);
+
+        // capsule body always has to be generated after the physics bodies
+        // otherwise the physics bodies' position will not be correct
+        this._capsuleBody = this._generateCapsuleBody(
+          this.root.absolutePosition
+        );
+
+        this._createGroundCheckBody();
+
+        if (clientSettings.DEBUG) {
+          console.log(
+            `Physics bodies created for ${this._participant.identity}:`,
+            this._physicsBodies.map((body) => body.transformNode.name)
+          );
+        }
+      });
     }
   }
 

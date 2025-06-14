@@ -3,7 +3,7 @@ import { useEffect, type FC } from "react";
 import { useIsSpeaking } from "@livekit/components-react";
 import type { Room } from "livekit-client";
 
-import type Avatar from "@/3d/avatar/Avatar";
+import type Avatar from "@/3dthree/avatar/Avatar";
 
 type Props = {
     room: Room;

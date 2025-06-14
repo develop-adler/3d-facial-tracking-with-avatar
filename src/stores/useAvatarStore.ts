@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type Avatar from "@/3d/avatar/Avatar";
+import type Avatar from "@/3dthree/avatar/Avatar";
 import type { AvatarGender } from "@/models/3d";
 import type { AvatarAudioData, RemoteAvatarAudioData } from "@/models/multiplayer";
 

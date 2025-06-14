@@ -1,4 +1,6 @@
-declare module 'ifvisible.js' {
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare module "ifvisible.js" {
     const ifvisible: {
         on: (eventName: string, callback: () => void) => void;
         off: (eventName: string) => void;
@@ -26,8 +28,7 @@ declare module 'ifvisible.js' {
     export = ifvisible;
 }
 
-declare module 'earcut' {
-    // eslint-disable-next-line
+declare module "earcut" {
     const earcut: {};
     export = earcut;
 }

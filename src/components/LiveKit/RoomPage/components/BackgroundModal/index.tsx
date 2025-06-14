@@ -10,7 +10,7 @@ import {
   Slider,
 } from "@mui/material";
 
-import type CoreScene from "@/3d/core/CoreScene";
+import type CoreScene from "@/3dthree/core/CoreScene";
 import useAssets from "@/hooks/useAssets";
 import { useSceneStore } from "@/stores/useSceneStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
@@ -44,12 +44,7 @@ const BackgroundModal: FC = () => {
   });
 
   const changeSkybox = (assetId: string) => {
-    coreScene?.atom.skybox.load(
-      assetId,
-      undefined,
-      undefined,
-      true
-    );
+    coreScene?.atom.skybox.load(assetId);
     setSkyboxId(assetId);
   };
 

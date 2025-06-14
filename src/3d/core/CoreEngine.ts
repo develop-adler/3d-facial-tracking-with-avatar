@@ -5,6 +5,10 @@ import { DracoCompression } from "@babylonjs/core/Meshes/Compression/dracoCompre
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { registerBuiltInLoaders } from "@babylonjs/loaders/dynamic";
+// import "@/utils/vrm-loader";
+// import "@/utils/vrm-loader-6";
+// import "@/utils/vrm";
+// import "@/utils/babylon-vrm.es";
 
 import Resource from "@/3d/assets/Resource";
 import eventBus from "@/eventBus";
@@ -28,7 +32,7 @@ registerBuiltInLoaders();
 const SafeCanvas = (() =>
     typeof document === "undefined"
         ? ({
-            getContext: () => {},
+            getContext: () => { },
         } as unknown as HTMLCanvasElement)
         : document.createElement("canvas"))();
 

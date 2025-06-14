@@ -42,7 +42,7 @@ const TopMenu: FC = () => {
     };
 
     const switchAvatar = (avatarId: string, gender: AvatarGender) => {
-        avatar?.loadAvatar(avatarId, gender, !isMultiplayer, true);
+        avatar?.loadRPMAvatar(avatarId, gender, !isMultiplayer, true);
     };
 
     const pushRoute = (route: string) => {
@@ -116,7 +116,7 @@ const TopMenu: FC = () => {
                                     ?.trim()
                                     .replaceAll(/\s+/g, "");
 
-                                if (res) avatar?.changeAvatar(res);
+                                if (res) avatar?.changeRPMAvatar(res);
                             }}
                         >
                             Change avatar URL

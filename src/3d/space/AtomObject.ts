@@ -121,7 +121,6 @@ class AtomObject {
 
         // a recursive function that tries to load a LOD
         // if any version is not available, load the next quality version
-
         const getModelLODResource = async (index: number): Promise<Resource> => {
             if (index >= qualities.length) {
                 throw new Error("No available model quality found");

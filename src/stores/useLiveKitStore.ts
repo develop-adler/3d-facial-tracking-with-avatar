@@ -2,7 +2,7 @@ import type { Room } from "livekit-client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
+import type MultiplayerManager from "@/3dthree/multiplayer/MultiplayerManager";
 import type SpaceBuilder from "@/3d/multiplayer/SpaceBuilder";
 import type { RoomJoinInfo, RequestOrigin } from "@/models/multiplayer";
 import LiveKitRoom from "@/LiveKitRoomSingleton";
@@ -52,7 +52,7 @@ export const useLiveKitStore = create<LiveKitStore>()(
             openJoinSpaceModal: undefined,
             openBuildSpaceModal: undefined,
             skyboxEnabled: false,
-            skyboxIntensity: 0.8,
+            skyboxIntensity: 0.6,
             skyboxId: "585760691093336303",
             openChangeBackgroundModal: false,
             setNewRoom: (room) => {

@@ -8,8 +8,8 @@ import { ConnectionState, RoomEvent } from "livekit-client";
 
 import { FacialExpressionCanvas, Multiplayer3DContainer } from "./styles";
 
-import CoreScene from "@/3d/core/CoreScene";
-import MultiplayerManager from "@/3d/multiplayer/MultiplayerManager";
+import CoreScene from "@/3dthree/core/CoreScene";
+import MultiplayerManager from "@/3dthree/multiplayer/MultiplayerManager";
 import AvatarSpeakingHandler from "@/components/LiveKit/RoomPage/components/MultiplayerPage/components/AvatarSpeakingHandler";
 import SpaceBuilderOverlay from "@/components/SpaceBuilderOverlay";
 import { useAvatarStore } from "@/stores/useAvatarStore";
@@ -79,17 +79,15 @@ export const MultiplayerPage: FC = () => {
 
         let elapsedTime = 0;
         const fps = 60;
-        const faceTrackObserver = currentCoreScene.scene.onBeforeRenderObservable.add(() => {
+        const faceTrackObserver = currentCoreScene.addBeforeRenderCallback(() => {
             elapsedTime += 1000 / fps;
             if (elapsedTime < 1000 / fps) return;
             elapsedTime = 0;
-            useTrackingStore.getState().faceTracker.detectFace();
-            // useTrackingStore.getState().faceTracker.detectHand();
-            // useTrackingStore.getState().faceTracker.detectPose();
+            useTrackingStore.getState().faceTracker.track();
         });
 
         return () => {
-            faceTrackObserver.remove();
+            faceTrackObserver();
             useLiveKitStore.getState().setIsMultiplayer(false);
             useLiveKitStore.getState().setIsBuildSpaceMode(false);
             multiplayerManager.dispose();

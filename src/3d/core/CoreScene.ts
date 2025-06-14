@@ -37,9 +37,9 @@ import type { HavokPhysicsWithBindings } from "@babylonjs/havok";
 class CoreScene {
     readonly coreEngine: CoreEngine;
     readonly room: Room;
-    readonly scene: Scene;
-    readonly camera: ArcRotateCamera;
-    readonly atom: Atom;
+    scene: Scene;
+    camera: ArcRotateCamera;
+    atom: Atom;
     readonly remoteAvatarPhysicsShapes: AvatarPhysicsShapes;
     isPhysicsEnabled: boolean = false;
 
@@ -56,10 +56,9 @@ class CoreScene {
 
         this.scene = this._createBabylonScene();
         this.camera = this._createCamera(this.scene);
-        this.scene.activeCameras = [this.camera];
         this.atom = new Atom(this);
 
-        this.coreEngine.engine.runRenderLoop(this._renderScene.bind(this));
+        this.runSceneRenderLoop();
     }
 
     private _createBabylonScene(): Scene {
@@ -69,6 +68,12 @@ class CoreScene {
             useClonedMeshMap: true, // speed-up the disposing of Mesh by reducing the time spent to look for associated cloned meshes
         });
 
+        this._setupBabylonScene(scene);
+
+        return scene;
+    }
+
+    private _setupBabylonScene(scene: Scene): void {
         // disable the default scene clearing behavior
         scene.autoClear = false; // Color buffer
         scene.autoClearDepthAndStencil = true; // Depth and stencil
@@ -129,8 +134,6 @@ class CoreScene {
         eventBus.emit(`space:sceneCreated:${this.room.name}`, scene);
         this.coreEngine.spaceLoadingData.space_scene_created =
             performance.now() - this.coreEngine.spaceLoadingData.space_initialized;
-
-        return scene;
     }
 
     private _createAvatarPhysicsShapes(): void {
@@ -209,6 +212,8 @@ class CoreScene {
         camera.setPosition(cameraPosition);
 
         camera.attachControl();
+
+        this.scene.activeCameras = [camera];
 
         eventBus.emit(`space:cameraCreated:${this.room.name}`, camera);
 
@@ -294,8 +299,36 @@ class CoreScene {
 
     private _renderScene(): void {
         if (this.scene.activeCamera) {
-            this.scene.render();
+            try {
+                this.scene.render();
+            } catch (error) {
+                console.error("Error rendering scene:", error);
+            }
         }
+    }
+
+    assignNewScene(scene: Scene): void {
+        this.stopSceneRenderLoop();
+
+        this.isPhysicsEnabled = false;
+
+        const existingScene = this.scene;
+        this.scene = scene;
+        existingScene.dispose();
+
+        this._setupBabylonScene(scene);
+
+        // re-create camera for the new scene
+        this.camera = this._createCamera(scene);
+
+        this.atom = new Atom(this);
+
+        // re-run the render loop for the new scene
+        this.runSceneRenderLoop();
+    }
+
+    runSceneRenderLoop(): void {
+        this.coreEngine.engine.runRenderLoop(this._renderScene.bind(this));
     }
 
     stopSceneRenderLoop(): void {

@@ -7,14 +7,14 @@ import { ConnectionState, Track, type Room } from "livekit-client";
 
 import { CanvasContainerStyled, CanvasStyled, WaitingText } from "./styles";
 
-import Avatar from "@/3d/avatar/Avatar";
-import CoreScene from "@/3d/core/CoreScene";
+import Avatar from "@/3dthree/avatar/Avatar";
+import CoreScene from "@/3dthree/core/CoreScene";
 import { useAvatarStore } from "@/stores/useAvatarStore";
 import { useEngineStore } from "@/stores/useEngineStore";
 import { useSceneStore } from "@/stores/useSceneStore";
 import { useLiveKitStore } from "@/stores/useLiveKitStore";
 import { useTrackingStore } from "@/stores/useTrackingStore";
-import { useScreenControlStore } from "@/stores/useScreenControlStore";
+// import { useScreenControlStore } from "@/stores/useScreenControlStore";
 
 import { clientSettings } from "clientSettings";
 import { mediaStreamFrom3DCanvas, updateMediaStream } from "global";
@@ -32,8 +32,8 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
     const coreEngine = useEngineStore((state) => state.coreEngine);
     const setScene = useSceneStore((state) => state.setScene);
     const setAvatar = useAvatarStore((state) => state.setAvatar);
-    const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
-    const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
+    // const isFullscreen = useScreenControlStore((state) => state.isFullscreen);
+    // const isViewportFill = useScreenControlStore((state) => state.isViewportFill);
 
     const { toggle } = useTrackToggle({
         source: Track.Source.Camera,
@@ -49,10 +49,10 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        coreEngine.resize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isViewportFill, isFullscreen]);
+    // useEffect(() => {
+    //     coreEngine.resize();
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [isViewportFill, isFullscreen]);
 
     useEffect(() => {
         if (videoDevices.length === 0) return;
@@ -76,9 +76,14 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
             );
             setAvatar(newAvatar);
 
-            currentCoreScene.atom.skybox.load().then(() => {
-                if (!newAvatar!.container) {
-                    newAvatar!.loadAvatar(undefined, undefined, true);
+            currentCoreScene.atom.skybox.load().then(async () => {
+                try {
+                    if (!newAvatar.gltf) {
+                        await newAvatar.loadVRMAvatar();
+                        // await newAvatar.loadRPMAvatar(undefined, undefined, true);
+                    }
+                } catch (error) {
+                    console.error("Failed to load VRM avatar", error);
                 }
             });
         }
@@ -131,17 +136,16 @@ export const AvatarScene: FC<Props> = ({ isRoomPage, room }) => {
 
         let elapsedTime = 0;
         const fps = 60;
-        const faceTrackObserver = currentCoreScene.scene.onBeforeRenderObservable.add(() => {
+        const faceTracker = useTrackingStore.getState().faceTracker;
+        const removeFaceTrackCallback = currentCoreScene.addBeforeRenderCallback(() => {
             elapsedTime += 1000 / fps;
             if (elapsedTime < 1000 / fps) return;
             elapsedTime = 0;
-            useTrackingStore.getState().faceTracker.detectFace();
-            // useTrackingStore.getState().faceTracker.detectHand();
-            // useTrackingStore.getState().faceTracker.detectPose();
+            faceTracker.track();
         });
 
         return () => {
-            faceTrackObserver.remove();
+            removeFaceTrackCallback();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoDevices]);
